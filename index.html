@@ -444,6 +444,64 @@ select {
 /* DIVIDER */
 .divider { height: 1px; background: var(--border); margin: 16px 0; }
 
+/* PROGRAM TAB */
+.program-month-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.program-month-title {
+  font-family: var(--display); font-size: 20px; font-weight: 800;
+  color: var(--text); letter-spacing: -0.01em;
+}
+.program-archive-btn {
+  font-family: var(--mono); font-size: 9px; color: var(--text3);
+  background: none; border: 1px solid var(--border2);
+  border-radius: 6px; padding: 4px 10px; cursor: pointer;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.program-archive-btn.active { color: var(--text); border-color: var(--border2); background: var(--bg3); }
+.program-day-block { margin-bottom: 24px; }
+.program-day-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.program-day-pill {
+  font-family: var(--mono); font-size: 9px; font-weight: 500;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  background: var(--text); color: #fff;
+  padding: 4px 10px; border-radius: 20px;
+}
+.program-day-name {
+  font-family: var(--display); font-size: 17px; font-weight: 700;
+  color: var(--text);
+}
+.program-ex-row {
+  display: flex; align-items: baseline;
+  justify-content: space-between;
+  padding: 11px 0; border-bottom: 1px solid var(--border);
+}
+.program-ex-row:last-child { border-bottom: none; }
+.program-ex-left { display: flex; align-items: baseline; gap: 8px; flex: 1; min-width: 0; }
+.program-ex-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.program-ex-right { text-align: right; flex-shrink: 0; margin-left: 12px; }
+.program-ex-sets { font-family: var(--mono); font-size: 11px; color: var(--text2); }
+.program-ex-weight {
+  font-family: var(--display); font-size: 15px; font-weight: 700;
+  color: var(--text);
+}
+.program-ex-note {
+  font-family: var(--mono); font-size: 10px; color: var(--text3);
+  margin-top: 2px; line-height: 1.4;
+}
+.program-archived-month {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 16px;
+  margin-bottom: 10px; display: flex;
+  justify-content: space-between; align-items: center;
+  cursor: pointer;
+}
+.program-archived-label { font-size: 14px; font-weight: 600; color: var(--text2); }
+.program-archived-date { font-family: var(--mono); font-size: 10px; color: var(--text3); }
+
 @media (max-width: 360px) {
   .lig-4 { grid-template-columns: 1fr 1fr; }
 }
@@ -673,6 +731,16 @@ OVERALL
   </div>
 </div>
 
+<!-- PROGRAM TAB -->
+<div class="panel" id="tab-program">
+  <div class="panel-inner">
+    <div id="program-month-header"></div>
+    <div id="program-content">
+      <div style="color:var(--text3);font-size:13px;padding:8px 0">Loading program…</div>
+    </div>
+  </div>
+</div>
+
 </div><!-- end panels -->
 
 <!-- BOTTOM NAV -->
@@ -684,6 +752,17 @@ OVERALL
       </svg>
     </div>
     Today
+  </button>
+  <button class="nav-btn" onclick="showTab('program',this)">
+    <div class="nav-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="8" y1="13" x2="16" y2="13"/>
+        <line x1="8" y1="17" x2="16" y2="17"/>
+      </svg>
+    </div>
+    Program
   </button>
   <button class="nav-btn" onclick="showTab('history',this)">
     <div class="nav-icon">
@@ -932,6 +1011,7 @@ function showTab(t, btn) {
   (btn || document.querySelector('.nav-btn')).classList.add('active');
   document.getElementById('tab-'+t).classList.add('active');
   if (t === 'history') renderHistory();
+  if (t === 'program') renderProgram();
 }
 
 function selectDay(day, btn) {
@@ -1190,6 +1270,159 @@ async function exportData() {
 
 function importData() {
   alert('To import data, go to your Supabase dashboard and use the Table Editor to paste rows — or ask Claude to do it for you.');
+}
+
+// ─── RENDER PROGRAM TAB ───────────────────────────────────────────────────
+let programCache = null;
+let showingArchive = false;
+
+async function loadMonthlyProgram() {
+  if (programCache) return programCache;
+  try {
+    const tbl = ENV === 'production' ? 'monthly_program' : 'monthly_program_staging';
+    const rows = await sbGet(tbl, 'select=*&order=month.desc,day.asc,order_index.asc');
+    programCache = rows;
+    return rows;
+  } catch(e) {
+    console.warn('Could not load monthly program', e);
+    return [];
+  }
+}
+
+async function renderProgram() {
+  document.getElementById('program-content').innerHTML =
+    '<div style="color:var(--text3);font-size:13px;padding:8px 0">Loading…</div>';
+
+  const rows = await loadMonthlyProgram();
+  if (!rows.length) {
+    document.getElementById('program-month-header').innerHTML = '';
+    document.getElementById('program-content').innerHTML =
+      '<div style="color:var(--text3);font-size:13px">No program loaded yet.</div>';
+    return;
+  }
+
+  const current = rows.filter(r => r.status === 'current');
+  const archived = rows.filter(r => r.status === 'archived');
+  const months = [...new Set(rows.map(r => r.month))].sort((a,b) => b - a);
+  const currentMonth = current.length ? current[0] : null;
+  const archivedMonths = [...new Set(archived.map(r => r.month))].sort((a,b) => b - a);
+
+  // Header
+  document.getElementById('program-month-header').innerHTML = `
+    <div class="program-month-bar">
+      <div class="program-month-title">${currentMonth ? currentMonth.month_label : 'Program'}</div>
+      ${archivedMonths.length ? `<button class="program-archive-btn ${showingArchive ? 'active' : ''}" onclick="toggleArchive()">
+        ${showingArchive ? 'Current' : 'Archive (' + archivedMonths.length + ')'}
+      </button>` : ''}
+    </div>`;
+
+  if (showingArchive) {
+    renderArchivedMonths(archivedMonths, rows);
+    return;
+  }
+
+  renderMonthExercises(current);
+}
+
+function renderMonthExercises(rows) {
+  const dayLabels = { A: 'Day A', B: 'Day B', C: 'Day C' };
+  const dayFocus  = { A: 'Lower + Core', B: 'Upper Push/Pull', C: 'Deadlift + Shoulders' };
+  const days = ['A','B','C'];
+
+  const normalRows = rows.filter(r => r.week_type !== 'deload');
+  const deloadRows = rows.filter(r => r.week_type === 'deload');
+
+  let html = '';
+
+  // Normal weeks
+  days.forEach(day => {
+    const exs = normalRows.filter(r => r.day === day).sort((a,b) => a.order_index - b.order_index);
+    if (!exs.length) return;
+    html += buildDayBlock(day, dayLabels[day], dayFocus[day], exs, false);
+  });
+
+  // Deload week
+  if (deloadRows.length) {
+    html += `<div style="margin:28px 0 16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <div style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);background:#fffbeb;border:1px solid rgba(212,150,10,0.2);padding:4px 10px;border-radius:20px">Week 5 — Deload</div>
+      </div>
+      <div style="font-size:12px;color:var(--text3);font-family:var(--mono);margin-bottom:14px">All weights –20% · Same structure · No singles · Export data after this week</div>
+    </div>`;
+    days.forEach(day => {
+      const exs = deloadRows.filter(r => r.day === day).sort((a,b) => a.order_index - b.order_index);
+      if (!exs.length) return;
+      html += buildDayBlock(day, dayLabels[day], dayFocus[day], exs, true);
+    });
+  }
+
+  document.getElementById('program-content').innerHTML = html;
+}
+
+function buildDayBlock(day, label, focus, exs, isDeload) {
+  let html = `<div class="program-day-block">
+    <div class="program-day-header">
+      <span class="program-day-pill" style="${isDeload ? 'background:var(--gold);' : ''}">${label}</span>
+      <span class="program-day-name">${focus}</span>
+    </div>
+    <div class="card" style="padding:4px 16px">`;
+
+  exs.forEach(ex => {
+    const badgeMap = { anchor: 'badge-anchor', core: 'badge-core', acc: 'badge-acc' };
+    const badgeLabel = ex.badge === 'anchor' ? 'Anchor' : ex.badge === 'core' ? 'Core' : 'Acc';
+    const weightDisplay = ex.unit === 'BW' ? 'BW'
+      : ex.weight < 0 ? `${Math.abs(ex.weight)}kg assist`
+      : `${ex.weight}${ex.unit || 'kg'}`;
+    const setsReps = [ex.sets ? `${ex.sets} sets` : null, ex.reps || null, ex.rest || null]
+      .filter(Boolean).join(' · ');
+
+    html += `<div class="program-ex-row">
+      <div class="program-ex-left">
+        <span class="ex-badge ${badgeMap[ex.badge] || 'badge-acc'}">${badgeLabel}</span>
+        <div>
+          <div class="program-ex-name">${ex.exercise}</div>
+          ${ex.notes ? `<div class="program-ex-note">${ex.notes}</div>` : ''}
+        </div>
+      </div>
+      <div class="program-ex-right">
+        <div class="program-ex-weight" style="${isDeload ? 'color:var(--gold)' : ''}">${weightDisplay}</div>
+        <div class="program-ex-sets">${setsReps}</div>
+      </div>
+    </div>`;
+  });
+
+  html += `</div></div>`;
+  return html;
+}
+
+function renderArchivedMonths(archivedMonths, rows) {
+  let html = '<div class="section-label" style="margin-bottom:16px">Previous months</div>';
+  archivedMonths.forEach(m => {
+    const monthRows = rows.filter(r => r.month === m && r.status === 'archived');
+    const label = monthRows[0]?.month_label || `Month ${m}`;
+    html += `<div class="program-archived-month" onclick="renderArchivedDetail(${m})">
+      <span class="program-archived-label">${label}</span>
+      <span class="program-archived-date">▶</span>
+    </div>`;
+  });
+  document.getElementById('program-content').innerHTML = html;
+}
+
+async function renderArchivedDetail(month) {
+  const rows = await loadMonthlyProgram();
+  const monthRows = rows.filter(r => r.month === month);
+  const label = monthRows[0]?.month_label || `Month ${month}`;
+  document.getElementById('program-month-header').innerHTML = `
+    <div class="program-month-bar">
+      <div class="program-month-title">${label}</div>
+      <button class="program-archive-btn active" onclick="renderProgram()">← Back</button>
+    </div>`;
+  renderMonthExercises(monthRows);
+}
+
+function toggleArchive() {
+  showingArchive = !showingArchive;
+  renderProgram();
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────
