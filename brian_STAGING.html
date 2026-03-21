@@ -570,6 +570,8 @@ select {
   padding: 0 22px 24px;
 }
 
+
+
 /* scrollbar on light bg */
 .panel::-webkit-scrollbar-thumb { background: var(--border2); }
 </style>
@@ -1072,7 +1074,7 @@ function buildDefaultQueue(sessions) {
   return queue;
 }
 
-// ─── RENDER THIS WEEK (day selector + single card) ───────────────────────
+
 let weekQueue = [];
 let selectedDayIdx = 0;
 
@@ -1229,12 +1231,6 @@ function renderSelectedDay() {
   </div>`;
 
   queueEl.innerHTML = html;
-
-  // Auto-open anchor lifts
-  exs.forEach((ex, i) => {
-    const exName = ex.exercise || ex.name;
-    if (PROTOCOLS[exName]) document.getElementById(`ex-${si}_${i}`)?.classList.add('open');
-  });
 }
 
 // ─── DATE PICKER HELPERS ──────────────────────────────────────────────────
@@ -1712,7 +1708,6 @@ function dayNum(d) {
   return d === 'A' ? '1' : d === 'B' ? '2' : d === 'C' ? '3' : d;
 }
 async function init() {
-  // Warm up sessions cache first so queue can check what's logged
   const sessions = await loadSessions();
   document.getElementById('header-sessions').textContent = sessions.length;
 
