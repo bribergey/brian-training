@@ -290,11 +290,11 @@ body {
 }
 
 /* LOG INPUTS */
-.log-input-grid { display: grid; gap: 10px; margin-top: 2px; }
+.log-input-grid { display: grid; gap: 10px; margin-top: 2px; align-items: end; }
 .lig-2 { grid-template-columns: 1fr 1fr; }
 .lig-3 { grid-template-columns: 1fr 1fr 1fr; }
 .lig-4 { grid-template-columns: 1fr 1fr; }
-.input-group {}
+.input-group { display: flex; flex-direction: column; justify-content: flex-end; }
 .input-label {
   font-family: var(--mono); font-size: 10px; color: var(--text);
   text-transform: uppercase; letter-spacing: 0.08em;
