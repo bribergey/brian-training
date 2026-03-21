@@ -716,10 +716,29 @@ OVERALL
 </nav>
 
 <script>
-// ─── SUPABASE CONFIG ───────────────────────────────────────────────────────
+// ─── ENVIRONMENT CONFIG ────────────────────────────────────────────────────
+// ENV: 'staging' hits sessions_staging / program_staging
+//      'production' hits sessions / program
+const ENV = 'production';
+
 const SB_URL  = 'https://mimvmaotzmacgiziovvi.supabase.co';
 const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pbXZtYW90em1hY2dpemlvdnZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNTMzNzYsImV4cCI6MjA4OTYyOTM3Nn0.dJMw37a4m9fBOmZQQOayZ8jKY28p10y_cSca4Sfoqe4';
 const SB_HDRS = { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
+
+const TABLES = {
+  sessions: ENV === 'production' ? 'sessions' : 'sessions_staging',
+  program:  ENV === 'production' ? 'program'  : 'program_staging',
+};
+
+// Small ENV indicator so you always know which version you're looking at
+document.addEventListener('DOMContentLoaded', () => {
+  if (ENV === 'staging') {
+    const badge = document.createElement('div');
+    badge.textContent = 'STAGING';
+    badge.style.cssText = 'position:fixed;bottom:calc(var(--nav-h) + var(--safe-bottom) + 8px);right:12px;background:#f5b800;color:#000;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:0.1em;padding:3px 8px;border-radius:5px;z-index:9999;pointer-events:none;';
+    document.body.appendChild(badge);
+  }
+});
 
 async function sbGet(table, params = '') {
   const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, { headers: SB_HDRS });
@@ -852,7 +871,7 @@ let cachedSessions = null; // in-memory cache so History tab is instant after fi
 // If the program table has rows for the current week, override EXERCISES with those weights.
 async function loadProgram() {
   try {
-    const rows = await sbGet('program', 'select=*&order=day.asc,id.asc');
+    const rows = await sbGet(TABLES.program, 'select=*&order=day.asc,id.asc');
     if (!rows.length) return; // no program written yet, use defaults
 
     // Group by day
@@ -879,14 +898,14 @@ async function loadProgram() {
 // ─── SESSIONS: SUPABASE + localStorage CACHE ─────────────────────────────
 async function loadSessions() {
   try {
-    const rows = await sbGet('sessions', 'select=*&order=date.asc,logged_at.asc');
+    const rows = await sbGet(TABLES.sessions, 'select=*&order=date.asc,logged_at.asc');
     cachedSessions = rows;
     // Mirror to localStorage so app still works if offline
-    localStorage.setItem('brian_v3_cache', JSON.stringify(rows));
+    localStorage.setItem('brian_v3_cache_' + ENV, JSON.stringify(rows));
     return rows;
   } catch(e) {
     console.warn('Supabase unavailable, reading from local cache.', e);
-    const cached = localStorage.getItem('brian_v3_cache');
+    const cached = localStorage.getItem('brian_v3_cache_' + ENV);
     cachedSessions = cached ? JSON.parse(cached) : [];
     return cachedSessions;
   }
@@ -895,9 +914,9 @@ async function loadSessions() {
 async function saveSession(session) {
   // Optimistically add to cache
   if (cachedSessions) cachedSessions.push(session);
-  localStorage.setItem('brian_v3_cache', JSON.stringify(cachedSessions || [session]));
+  localStorage.setItem('brian_v3_cache_' + ENV, JSON.stringify(cachedSessions || [session]));
   // Write to Supabase
-  await sbPost('sessions', {
+  await sbPost(TABLES.sessions, {
     date: session.date,
     day:  session.day,
     notes: session.notes || null,
