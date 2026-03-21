@@ -506,6 +506,62 @@ select {
   .lig-4 { grid-template-columns: 1fr 1fr; }
 }
 
+
+/* TODAY QUEUE */
+.queue-empty {
+  text-align: center; padding: 48px 20px;
+  color: var(--text3); font-size: 13px; line-height: 1.7;
+}
+.queue-empty strong { color: var(--text2); display: block; font-size: 15px; margin-bottom: 6px; }
+.workout-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 16px; overflow: hidden;
+}
+.workout-card-header {
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: flex-start;
+}
+.workout-card-title {
+  font-family: var(--display); font-size: 20px; font-weight: 800;
+  color: var(--text); line-height: 1;
+}
+.workout-card-focus {
+  font-size: 12px; color: var(--text2); margin-top: 4px;
+}
+.workout-card-date {
+  display: flex; align-items: center; gap: 6px;
+}
+.date-display {
+  font-family: var(--mono); font-size: 11px; color: var(--text3);
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 6px; padding: 5px 9px; cursor: pointer;
+  white-space: nowrap;
+}
+.date-display:hover { border-color: var(--text3); color: var(--text2); }
+.date-picker-input {
+  font-family: var(--mono); font-size: 11px; color: var(--text);
+  background: var(--bg3); border: 1.5px solid var(--text);
+  border-radius: 6px; padding: 5px 9px; cursor: pointer;
+  width: 130px; -webkit-appearance: none;
+}
+.workout-card-body { padding: 0 18px 16px; }
+.workout-warmup {
+  background: #fffbeb; border-left: 3px solid var(--gold-bright);
+  border-radius: 0 6px 6px 0; padding: 8px 12px;
+  margin: 12px 0; font-size: 12px; color: var(--text2); line-height: 1.6;
+}
+.workout-warmup-label {
+  font-family: var(--mono); font-size: 9px; color: var(--gold);
+  text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 3px;
+}
+.workout-notes-row {
+  margin-top: 12px;
+}
+.workout-save-row {
+  padding: 0 18px 18px;
+}
+
 /* scrollbar on light bg */
 .panel::-webkit-scrollbar-thumb { background: var(--border2); }
 </style>
@@ -525,57 +581,15 @@ select {
 
 <div class="panels">
 
-<!-- TODAY TAB (combined Program + Log) -->
+<!-- TODAY TAB -->
 <div class="panel active" id="tab-today">
   <div class="panel-inner">
     <div class="success-banner" id="log-success">✓ Workout saved!</div>
-
-    <!-- Day Selector -->
-    <div class="day-selector">
-      <button class="day-btn active" onclick="selectDay('A',this)">
-        <div class="day-btn-label">Mon</div>
-        <div class="day-btn-name">Day A</div>
-        <div class="day-btn-focus">Lower + Core</div>
-      </button>
-      <button class="day-btn" onclick="selectDay('B',this)">
-        <div class="day-btn-label">Wed</div>
-        <div class="day-btn-name">Day B</div>
-        <div class="day-btn-focus">Upper + Pull</div>
-      </button>
-      <button class="day-btn" onclick="selectDay('C',this)">
-        <div class="day-btn-label">Fri</div>
-        <div class="day-btn-name">Day C</div>
-        <div class="day-btn-focus">DL + Shoulders</div>
-      </button>
+    <div id="today-queue">
+      <div style="color:var(--text3);font-size:13px;padding:8px 0">Loading workouts…</div>
     </div>
-
-    <!-- Date -->
-    <div class="date-row">
-      <div class="input-group" style="flex:1">
-        <label class="input-label">Date</label>
-        <input type="text" id="log-date" placeholder="YYYY-MM-DD">
-      </div>
-    </div>
-
-    <!-- Warmup (dynamic) -->
-    <div id="warmup-strip"></div>
-
-    <!-- Exercises -->
-    <div class="section-label">Exercises</div>
-    <div id="log-exercises"></div>
-
-    <!-- Session notes -->
-    <div class="form-group" style="margin-top:8px">
-      <label class="input-label">Session notes</label>
-      <input type="text" id="log-notes" placeholder="Energy, PRs, anything felt off...">
-    </div>
-
-    <button class="btn btn-primary btn-full" onclick="saveWorkout()" style="margin-top:4px">
-      Save Workout
-    </button>
   </div>
 </div>
-
 <!-- HISTORY TAB -->
 <div class="panel" id="tab-history">
   <div class="panel-inner">
@@ -690,9 +704,9 @@ select {
     <div class="card">
       <div class="card-label">Quick reference</div>
       <div class="qref-grid">
-        <div class="qref-item"><div class="qref-day">Monday — Day A</div><div class="qref-body">Lower body + core<br>Anchor: Barbell squat</div></div>
-        <div class="qref-item"><div class="qref-day">Wednesday — Day B</div><div class="qref-body">Upper push + pull<br>Anchors: Bench + Pull-ups</div></div>
-        <div class="qref-item"><div class="qref-day">Friday — Day C</div><div class="qref-body">Deadlift + shoulders<br>Anchors: Deadlift + OHP</div></div>
+        <div class="qref-item"><div class="qref-day">Monday — Day 1</div><div class="qref-body">Lower body + core<br>Anchor: Barbell squat</div></div>
+        <div class="qref-item"><div class="qref-day">Wednesday — Day 2</div><div class="qref-body">Upper push + pull<br>Anchors: Bench + Pull-ups</div></div>
+        <div class="qref-item"><div class="qref-day">Friday — Day 3</div><div class="qref-body">Deadlift + shoulders<br>Anchors: Deadlift + OHP</div></div>
         <div class="qref-item"><div class="qref-day">Week 5 — Deload</div><div class="qref-body">All weights –20%<br>Then Month 2 begins</div></div>
       </div>
     </div>
@@ -808,6 +822,46 @@ const TABLES = {
   sessions: ENV === 'production' ? 'sessions' : 'sessions_staging',
   program:  ENV === 'production' ? 'program'  : 'program_staging',
 };
+
+// ─── SESSIONS: SUPABASE + localStorage CACHE ─────────────────────────────
+let cachedSessions = null;
+
+async function loadSessions() {
+  try {
+    const rows = await sbGet(TABLES.sessions, 'select=*&order=date.asc,logged_at.asc');
+    cachedSessions = rows;
+    localStorage.setItem('brian_v3_cache_' + ENV, JSON.stringify(rows));
+    return rows;
+  } catch(e) {
+    console.warn('Supabase unavailable, reading from local cache.', e);
+    const cached = localStorage.getItem('brian_v3_cache_' + ENV);
+    cachedSessions = cached ? JSON.parse(cached) : [];
+    return cachedSessions;
+  }
+}
+
+async function saveSession(session) {
+  if (cachedSessions) cachedSessions.push(session);
+  localStorage.setItem('brian_v3_cache_' + ENV, JSON.stringify(cachedSessions || [session]));
+  await sbPost(TABLES.sessions, {
+    date: session.date,
+    day:  session.day,
+    notes: session.notes || null,
+    exercises: session.exercises,
+    logged_at: session.logged
+  });
+}
+
+function setStatus(msg, isError = false) {
+  const el = document.getElementById('log-success');
+  el.textContent = msg;
+  el.style.background = isError ? 'rgba(220,38,38,0.1)' : '';
+  el.style.borderColor = isError ? 'rgba(220,38,38,0.3)' : '';
+  el.style.color = isError ? 'var(--red)' : '';
+  el.style.display = 'flex';
+  setTimeout(() => el.style.display = 'none', 4000);
+}
+
 
 // Small ENV indicator so you always know which version you're looking at
 document.addEventListener('DOMContentLoaded', () => {
@@ -944,81 +998,10 @@ const ANCHORS = ['Barbell back squat','Deadlift','Barbell bench press','Assisted
 const START_W  = {'Barbell back squat':40,'Deadlift':60,'Barbell bench press':40,'Assisted pull-up':-27,'Barbell shoulder press':30};
 
 let currentDay = 'A';
-let cachedSessions = null; // in-memory cache so History tab is instant after first load
 
-// ─── LOAD PROGRAM FROM SUPABASE ───────────────────────────────────────────
-// If the program table has rows for the current week, override EXERCISES with those weights.
-async function loadProgram() {
-  try {
-    const rows = await sbGet(TABLES.program, 'select=*&order=day.asc,id.asc');
-    if (!rows.length) return; // no program written yet, use defaults
-
-    // Group by day
-    const byDay = { A: [], B: [], C: [] };
-    rows.forEach(r => { if (byDay[r.day]) byDay[r.day].push(r); });
-
-    ['A','B','C'].forEach(day => {
-      if (!byDay[day].length) return;
-      EXERCISES[day] = byDay[day].map(r => {
-        const base = { name: r.exercise, unit: r.unit || 'kg' };
-        if (r.protocol) {
-          return { ...base, protocol: true, startWeight: r.weight || 0,
-                   protocolData: r.protocol };
-        }
-        return { ...base, sets: r.sets, reps: r.reps,
-                 rest: r.notes || '', startWeight: r.weight || 0 };
-      });
-    });
-  } catch(e) {
-    console.warn('Could not load program from Supabase, using defaults.', e);
-  }
-}
-
-// ─── SESSIONS: SUPABASE + localStorage CACHE ─────────────────────────────
-async function loadSessions() {
-  try {
-    const rows = await sbGet(TABLES.sessions, 'select=*&order=date.asc,logged_at.asc');
-    cachedSessions = rows;
-    // Mirror to localStorage so app still works if offline
-    localStorage.setItem('brian_v3_cache_' + ENV, JSON.stringify(rows));
-    return rows;
-  } catch(e) {
-    console.warn('Supabase unavailable, reading from local cache.', e);
-    const cached = localStorage.getItem('brian_v3_cache_' + ENV);
-    cachedSessions = cached ? JSON.parse(cached) : [];
-    return cachedSessions;
-  }
-}
-
-async function saveSession(session) {
-  // Optimistically add to cache
-  if (cachedSessions) cachedSessions.push(session);
-  localStorage.setItem('brian_v3_cache_' + ENV, JSON.stringify(cachedSessions || [session]));
-  // Write to Supabase
-  await sbPost(TABLES.sessions, {
-    date: session.date,
-    day:  session.day,
-    notes: session.notes || null,
-    exercises: session.exercises,
-    logged_at: session.logged
-  });
-}
-
-// ─── UI HELPERS ───────────────────────────────────────────────────────────
-function showTab(t, btn) {
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  (btn || document.querySelector('.nav-btn')).classList.add('active');
-  document.getElementById('tab-'+t).classList.add('active');
-  if (t === 'history') renderHistory();
-  if (t === 'program') renderProgram();
-}
-
-function selectDay(day, btn) {
-  currentDay = day;
-  document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderLogForm();
+// ─── EXERCISE HELPERS ─────────────────────────────────────────────────────
+function toggleEx(id) {
+  document.getElementById(id)?.classList.toggle('open');
 }
 
 function getBestWeight(name) {
@@ -1037,108 +1020,279 @@ function getBestWeight(name) {
 
 function getSuggested(ex) {
   if (ex.unit === 'BW') return 0;
-  const best = getBestWeight(ex.name);
-  return best !== null ? best : (ex.startWeight || 0);
+  const best = getBestWeight(ex.name || ex.exercise || '');
+  return best !== null ? best : (ex.startWeight || ex.weight || 0);
 }
 
-function toggleEx(id) {
-  document.getElementById(id).classList.toggle('open');
+// ─── DATE HELPERS ────────────────────────────────────────────────────────
+function getMondayOfWeek(d = new Date()) {
+  const day = d.getDay(); // 0=Sun
+  const diff = day === 0 ? -6 : 1 - day;
+  const mon = new Date(d);
+  mon.setDate(d.getDate() + diff);
+  return mon;
+}
+function dateStr(d) {
+  return d.toISOString().split('T')[0];
+}
+function getScheduledDate(dayLabel) {
+  // Default: A=Mon, B=Wed, C=Fri of current week
+  const mon = getMondayOfWeek();
+  const offsets = { A: 0, B: 2, C: 4 };
+  if (offsets[dayLabel] === undefined) return dateStr(new Date());
+  const d = new Date(mon);
+  d.setDate(mon.getDate() + offsets[dayLabel]);
+  return dateStr(d);
+}
+function formatDateDisplay(iso) {
+  if (!iso) return '—';
+  const [y, m, d] = iso.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${months[parseInt(m)-1]} ${parseInt(d)}`;
 }
 
-function setStatus(msg, isError = false) {
-  const el = document.getElementById('log-success');
-  el.textContent = msg;
-  el.style.background = isError ? 'rgba(220,38,38,0.1)' : '';
-  el.style.borderColor = isError ? 'rgba(220,38,38,0.3)' : '';
-  el.style.color = isError ? 'var(--red)' : '';
-  el.style.display = 'flex';
-  setTimeout(() => el.style.display = 'none', 4000);
+// ─── LOAD SCHEDULED QUEUE FROM SUPABASE ──────────────────────────────────
+// Returns program rows that haven't been logged yet, grouped by session
+async function loadQueue() {
+  try {
+    // Get all program rows ordered by scheduled_date, then day
+    const programRows = await sbGet(TABLES.program,
+      'select=*&order=scheduled_date.asc,day.asc,order_index.asc');
+
+    // Get logged sessions to determine what's already done
+    const sessions = cachedSessions || await loadSessions();
+    const loggedKeys = new Set(sessions.map(s => `${s.date}-${s.day}`));
+
+    // Group program rows into sessions
+    const sessionMap = new Map();
+    programRows.forEach(row => {
+      const key = `${row.scheduled_date || 'unscheduled'}-${row.day}`;
+      if (!sessionMap.has(key)) {
+        sessionMap.set(key, {
+          day: row.day,
+          label: row.session_label || row.day,
+          scheduledDate: row.scheduled_date || getScheduledDate(row.day),
+          weekNumber: row.week_number,
+          exercises: [],
+          logged: loggedKeys.has(`${row.scheduled_date || getScheduledDate(row.day)}-${row.day}`)
+        });
+      }
+      sessionMap.get(key).exercises.push(row);
+    });
+
+    const allSessions = [...sessionMap.values()];
+    const pending = allSessions.filter(s => !s.logged);
+
+    // If no program rows exist yet, fall back to default queue (A/B/C this week)
+    if (!programRows.length) {
+      return buildDefaultQueue(sessions);
+    }
+
+    return pending;
+  } catch(e) {
+    console.warn('Could not load queue, using defaults', e);
+    return buildDefaultQueue(cachedSessions || []);
+  }
 }
 
-// ─── RENDER LOG FORM ─────────────────────────────────────────────────────
-function renderLogForm() {
-  const exs = EXERCISES[currentDay];
-  if (!document.getElementById('log-date').value)
-    document.getElementById('log-date').value = new Date().toISOString().split('T')[0];
+function buildDefaultQueue(sessions) {
+  // Determine next day in A→B→C sequence
+  const lastDay = sessions.length ? sessions[sessions.length - 1].day : null;
+  const sequence = ['A', 'B', 'C'];
+  const nextIdx = lastDay ? (sequence.indexOf(lastDay) + 1) % 3 : 0;
 
-  document.getElementById('warmup-strip').innerHTML = `
-    <div class="warmup-strip">
-      <div class="warmup-label">Warm-up</div>
-      <div class="warmup-text">${WARMUPS[currentDay]}</div>
+  // Build upcoming sessions for this week
+  const queue = [];
+  for (let i = 0; i < 3; i++) {
+    const dayIdx = (nextIdx + i) % 3;
+    const day = sequence[dayIdx];
+    const exs = EXERCISES[day];
+    queue.push({
+      day,
+      label: day,
+      scheduledDate: getScheduledDate(day),
+      weekNumber: null,
+      exercises: exs.map((ex, idx) => ({...ex, exercise: ex.name, order_index: idx})),
+      logged: false,
+      isDefault: true
+    });
+  }
+  return queue;
+}
+
+// ─── RENDER TODAY QUEUE ───────────────────────────────────────────────────
+async function renderTodayQueue() {
+  const queue = await loadQueue();
+  const container = document.getElementById('today-queue');
+
+  if (!queue.length) {
+    container.innerHTML = `<div class="queue-empty">
+      <strong>All caught up!</strong>
+      No pending workouts. Your coach will schedule next week's sessions after your check-in.
     </div>`;
+    return;
+  }
+
+  const dayFocus = { A:'Lower + Core', B:'Upper Push/Pull', C:'Deadlift + Shoulders' };
+  const dayFullName = { A:'Day 1', B:'Day 2', C:'Day 3' };
 
   let html = '';
-  exs.forEach((ex, i) => {
-    const sug = getSuggested(ex);
-    const badgeType  = EX_BADGES[ex.name] || 'acc';
-    const badgeLabel = badgeType === 'anchor' ? 'Anchor' : badgeType === 'core' ? 'Core' : 'Accessory';
-    const proto = PROTOCOLS[ex.name];
-    const desc  = EX_DESCRIPTIONS[ex.name];
+  queue.forEach((session, si) => {
+    const title = session.label === session.day
+      ? (dayFullName[session.day] || `Day ${dayNum(session.day)}`)
+      : session.label;
+    const focus = dayFocus[session.day] || '';
+    const dateDisplay = formatDateDisplay(session.scheduledDate);
+    const weekLabel = session.weekNumber ? `Week ${session.weekNumber} · ` : '';
 
-    html += `<div class="ex-block" id="ex-${i}">
-      <div class="ex-block-header" onclick="toggleEx('ex-${i}')">
-        <span class="ex-badge badge-${badgeType}">${badgeLabel}</span>
-        <span class="ex-name">${ex.name}</span>
-        <span class="ex-chevron">▼</span>
+    html += `<div class="workout-card" id="wcard-${si}">
+      <div class="workout-card-header">
+        <div>
+          <div class="workout-card-title">${title}</div>
+          <div class="workout-card-focus">${weekLabel}${focus}</div>
+        </div>
+        <div class="workout-card-date">
+          <span class="date-display" id="date-display-${si}" onclick="openDatePicker(${si},'${session.scheduledDate}')">${dateDisplay}</span>
+          <input type="date" class="date-picker-input" id="date-input-${si}"
+            value="${session.scheduledDate}" style="display:none"
+            onchange="updateDate(${si}, this.value)" onblur="closeDatePicker(${si})">
+        </div>
       </div>
-      <div class="ex-body">`;
+      <div class="workout-card-body">
+        <div class="workout-warmup">
+          <div class="workout-warmup-label">Warm-up</div>
+          ${WARMUPS[session.day] || '5 min cardio · dynamic stretching'}
+        </div>
+        <div class="section-label" style="margin-top:16px">Exercises</div>
+        <div id="wcard-exercises-${si}">`;
 
-    if (proto) {
-      html += `<div class="proto-table">`;
-      proto.rows.forEach(r => {
-        html += `<div class="proto-row"><div class="proto-label">${r.label}</div><div class="proto-val">${r.val}</div></div>`;
-      });
-      html += `</div><div class="proto-note">${proto.note}</div>`;
-      const topSug = Math.round((sug * 1.12) / 2.5) * 2.5;
-      html += `<div class="log-input-grid lig-2" style="margin-bottom:8px">
-        <div class="input-group"><label class="input-label">Activation kg</label><input type="number" id="wa_${i}" value="${sug}" step="2.5"></div>
-        <div class="input-group"><label class="input-label">Top set kg</label><input type="number" id="wt_${i}" value="${topSug}" step="2.5"></div>
+    const exs = session.isDefault ? EXERCISES[session.day] : session.exercises;
+    exs.forEach((ex, i) => {
+      const exName = ex.exercise || ex.name;
+      const exUnit = ex.unit || 'kg';
+      const sug = session.isDefault ? getSuggested({name: exName, unit: exUnit, startWeight: ex.startWeight || ex.weight || 0}) : (ex.weight || 0);
+      const badgeType = EX_BADGES[exName] || 'acc';
+      const badgeLabel = badgeType === 'anchor' ? 'Anchor' : badgeType === 'core' ? 'Core' : 'Acc';
+      const proto = PROTOCOLS[exName];
+      const desc = EX_DESCRIPTIONS[exName];
+      const uid = `${si}_${i}`;
+
+      html += `<div class="ex-block" id="ex-${uid}">
+        <div class="ex-block-header" onclick="toggleEx('ex-${uid}')">
+          <span class="ex-badge badge-${badgeType}">${badgeLabel}</span>
+          <span class="ex-name">${exName}</span>
+          <span class="ex-chevron">▼</span>
+        </div>
+        <div class="ex-body">`;
+
+      if (proto) {
+        html += `<div class="proto-table">`;
+        proto.rows.forEach(r => {
+          html += `<div class="proto-row"><div class="proto-label">${r.label}</div><div class="proto-val">${r.val}</div></div>`;
+        });
+        html += `</div><div class="proto-note">${proto.note}</div>`;
+        const topSug = Math.round((sug * 1.12) / 2.5) * 2.5;
+        html += `<div class="log-input-grid lig-2" style="margin-bottom:8px">
+          <div class="input-group"><label class="input-label">Activation kg</label><input type="number" id="wa_${uid}" value="${sug}" step="2.5"></div>
+          <div class="input-group"><label class="input-label">Top set kg</label><input type="number" id="wt_${uid}" value="${topSug}" step="2.5"></div>
+        </div>
+        <div class="log-input-grid lig-2">
+          <div class="input-group"><label class="input-label">Top set reps</label><input type="number" id="rr_${uid}" placeholder="e.g. 4" min="0" max="10" step="1"></div>
+          <div class="input-group"><label class="input-label">Singles done (0–3)</label><input type="number" id="si_${uid}" placeholder="e.g. 3" min="0" max="3" step="1"></div>
+        </div>`;
+      } else {
+        if (desc) html += `<div class="ex-desc">${desc}</div>`;
+        const setsVal = ex.sets || 3;
+        const repsPlaceholder = (ex.reps || '').split(' ')[0] || '';
+        html += `<div class="log-input-grid lig-4">
+          <div class="input-group"><label class="input-label">Weight (${exUnit})</label><input type="number" id="w_${uid}" value="${sug}" step="0.5"></div>
+          <div class="input-group"><label class="input-label">Sets done</label><input type="number" id="s_${uid}" value="${setsVal}" min="0" max="10"></div>
+          <div class="input-group"><label class="input-label">Reps</label><input type="number" id="r_${uid}" placeholder="${repsPlaceholder}" step="1"></div>
+          <div class="input-group"><label class="input-label">Notes</label><input type="text" id="n_${uid}" placeholder="optional"></div>
+        </div>`;
+      }
+      html += `</div></div>`;
+    });
+
+    html += `</div>
+        <div class="workout-notes-row">
+          <label class="input-label">Session notes</label>
+          <input type="text" id="notes-${si}" placeholder="Energy, PRs, anything felt off...">
+        </div>
       </div>
-      <div class="log-input-grid lig-2">
-        <div class="input-group"><label class="input-label">Top set reps</label><input type="number" id="rr_${i}" placeholder="e.g. 4" min="0" max="10" step="1"></div>
-        <div class="input-group"><label class="input-label">Singles done (0–3)</label><input type="number" id="si_${i}" placeholder="e.g. 3" min="0" max="3" step="1"></div>
-      </div>`;
-    } else {
-      if (desc) html += `<div class="ex-desc">${desc}</div>`;
-      html += `<div class="log-input-grid lig-4">
-        <div class="input-group"><label class="input-label">Weight (${ex.unit})</label><input type="number" id="w_${i}" value="${sug}" step="0.5"></div>
-        <div class="input-group"><label class="input-label">Sets done</label><input type="number" id="s_${i}" value="${ex.sets||3}" min="0" max="10"></div>
-        <div class="input-group"><label class="input-label">Reps</label><input type="number" id="r_${i}" placeholder="${(ex.reps||'').split(' ')[0]}" step="1"></div>
-        <div class="input-group"><label class="input-label">Notes</label><input type="text" id="n_${i}" placeholder="optional"></div>
-      </div>`;
-    }
-    html += `</div></div>`;
+      <div class="workout-save-row">
+        <button class="btn btn-primary btn-full" id="savebtn-${si}" onclick="saveWorkoutFromQueue(${si})">
+          Save ${title}
+        </button>
+      </div>
+    </div>`;
   });
 
-  document.getElementById('log-exercises').innerHTML = html;
-  exs.forEach((ex, i) => { if (ex.protocol) document.getElementById('ex-'+i).classList.add('open'); });
+  container.innerHTML = html;
+
+  // Auto-open anchor lifts for first card only
+  queue.forEach((session, si) => {
+    const exs = session.isDefault ? EXERCISES[session.day] : session.exercises;
+    if (si === 0) {
+      exs.forEach((ex, i) => {
+        const exName = ex.exercise || ex.name;
+        if (PROTOCOLS[exName]) document.getElementById(`ex-${si}_${i}`)?.classList.add('open');
+      });
+    }
+  });
 }
 
-// ─── SAVE WORKOUT ─────────────────────────────────────────────────────────
-async function saveWorkout() {
-  const saveBtn = document.querySelector('.btn-primary');
+// ─── DATE PICKER HELPERS ──────────────────────────────────────────────────
+function openDatePicker(si, currentDate) {
+  document.getElementById(`date-display-${si}`).style.display = 'none';
+  const input = document.getElementById(`date-input-${si}`);
+  input.style.display = 'block';
+  input.focus();
+}
+function closeDatePicker(si) {
+  document.getElementById(`date-display-${si}`).style.display = '';
+  document.getElementById(`date-input-${si}`).style.display = 'none';
+}
+function updateDate(si, newDate) {
+  document.getElementById(`date-display-${si}`).textContent = formatDateDisplay(newDate);
+  closeDatePicker(si);
+}
+
+// ─── SAVE FROM QUEUE ──────────────────────────────────────────────────────
+async function saveWorkoutFromQueue(si) {
+  // Reconstruct queue to get session info
+  const queue = await loadQueue();
+  const session = queue[si];
+  if (!session) return;
+
+  const saveBtn = document.getElementById(`savebtn-${si}`);
   saveBtn.textContent = 'Saving…';
   saveBtn.disabled = true;
 
-  const day   = currentDay;
-  const date  = document.getElementById('log-date').value;
-  const notes = document.getElementById('log-notes').value;
-  const exs   = EXERCISES[day];
+  const day = session.day;
+  const date = document.getElementById(`date-input-${si}`).value ||
+               document.getElementById(`date-display-${si}`).dataset.iso ||
+               session.scheduledDate;
+  const notes = document.getElementById(`notes-${si}`).value;
+  const exs = session.isDefault ? EXERCISES[day] : session.exercises;
 
   const exercises = exs.map((ex, i) => {
-    if (ex.protocol) {
-      return { name: ex.name, unit: ex.unit, protocol: true,
-        activationWeight: document.getElementById('wa_'+i)?.value || '',
-        topWeight: document.getElementById('wt_'+i)?.value || '',
-        weight:    document.getElementById('wt_'+i)?.value || '',
-        topReps:   document.getElementById('rr_'+i)?.value || '',
-        singles:   document.getElementById('si_'+i)?.value || '' };
+    const exName = ex.exercise || ex.name;
+    const exUnit = ex.unit || 'kg';
+    const uid = `${si}_${i}`;
+    if (PROTOCOLS[exName]) {
+      return { name: exName, unit: exUnit, protocol: true,
+        activationWeight: document.getElementById(`wa_${uid}`)?.value || '',
+        topWeight: document.getElementById(`wt_${uid}`)?.value || '',
+        weight: document.getElementById(`wt_${uid}`)?.value || '',
+        topReps: document.getElementById(`rr_${uid}`)?.value || '',
+        singles: document.getElementById(`si_${uid}`)?.value || '' };
     }
-    return { name: ex.name, unit: ex.unit,
-      weight: document.getElementById('w_'+i)?.value || '',
-      sets:   document.getElementById('s_'+i)?.value || '',
-      reps:   document.getElementById('r_'+i)?.value || '',
-      notes:  document.getElementById('n_'+i)?.value || '' };
+    return { name: exName, unit: exUnit,
+      weight: document.getElementById(`w_${uid}`)?.value || '',
+      sets: document.getElementById(`s_${uid}`)?.value || '',
+      reps: document.getElementById(`r_${uid}`)?.value || '',
+      notes: document.getElementById(`n_${uid}`)?.value || '' };
   });
 
   try {
@@ -1146,13 +1300,26 @@ async function saveWorkout() {
     document.getElementById('header-sessions').textContent = (cachedSessions||[]).length;
     setStatus('✓ Workout saved to cloud!');
     document.getElementById('tab-today').scrollTop = 0;
-    document.getElementById('log-notes').value = '';
+    // Refresh queue to remove saved workout
+    await renderTodayQueue();
   } catch(e) {
     setStatus('⚠ Saved locally — will sync when online.', true);
-  } finally {
-    saveBtn.textContent = 'Save Workout';
+    saveBtn.textContent = `Save Day ${day}`;
     saveBtn.disabled = false;
   }
+}
+
+// Keep legacy saveWorkout as alias (used nowhere now but safe to keep)
+async function saveWorkout() { await saveWorkoutFromQueue(0); }
+
+function showTab(t, btn) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  (btn || document.querySelector('.nav-btn')).classList.add('active');
+  document.getElementById('tab-'+t).classList.add('active');
+  if (t === 'history') renderHistory();
+  if (t === 'program') renderProgram();
+  if (t === 'today') renderTodayQueue();
 }
 
 // ─── RENDER HISTORY ───────────────────────────────────────────────────────
@@ -1200,7 +1367,7 @@ async function renderHistory() {
       '<div style="color:var(--text3);font-size:13px">No sessions yet. Head to Today to get started.</div>';
     return;
   }
-  const dayNames = { A:'Day A — Lower + Core', B:'Day B — Upper Push/Pull', C:'Day C — Deadlift + Shoulders' };
+  const dayNames = { A:'Day 1 — Lower + Core', B:'Day 2 — Upper Push/Pull', C:'Day 3 — Deadlift + Shoulders' };
   let histHtml = '';
   [...sessions].reverse().forEach(s => {
     const tags = (s.exercises||[]).filter(e => parseFloat(e.topWeight||e.weight||0) > 0).slice(0,5)
@@ -1226,7 +1393,7 @@ async function copyCheckIn() {
   const sessions = cachedSessions || await loadSessions();
   if (!sessions.length) { alert('No sessions logged yet.'); return; }
   const last = sessions[sessions.length - 1];
-  const dayNames = { A:'Day A — Lower + Core', B:'Day B — Upper push/pull', C:'Day C — Deadlift + Shoulders' };
+  const dayNames = { A:'Day 1 — Lower + Core', B:'Day 2 — Upper Push/Pull', C:'Day 3 — Deadlift + Shoulders' };
   let txt = `Workout check-in — ${dayNames[last.day]} · ${last.date}\n\n`;
   (last.exercises||[]).forEach(ex => {
     if (ex.protocol) {
@@ -1325,7 +1492,7 @@ async function renderProgram() {
 }
 
 function renderMonthExercises(rows) {
-  const dayLabels = { A: 'Day A', B: 'Day B', C: 'Day C' };
+  const dayLabels = { A: 'Day 1', B: 'Day 2', C: 'Day 3' };
   const dayFocus  = { A: 'Lower + Core', B: 'Upper Push/Pull', C: 'Deadlift + Shoulders' };
   const days = ['A','B','C'];
 
@@ -1360,9 +1527,35 @@ function renderMonthExercises(rows) {
 }
 
 function buildDayBlock(day, label, focus, exs, isDeload) {
+  // Look up descriptions from static map (same as Today tab)
+  const descMap = {
+    'Barbell back squat': 'Activation set → top set → 3 singles → back-off',
+    'Barbell bench press': 'Activation set → top set → 3 singles → back-off',
+    'Deadlift': 'Activation set → 3 top sets → back-off',
+    'Barbell shoulder press': 'Activation set → working sets → back-off',
+    'Assisted pull-up': 'Sets 1–2: controlled reps · Set 3: max reps · Set 4: eccentric',
+    'Bulgarian split squat': '3 sets · 10 each leg · bodyweight to start',
+    'Lying leg curl': '3 sets · 12 reps · 3-sec eccentric lowering',
+    'Leg extension (paused)': '3 sets · 12 reps · 1-sec pause at top',
+    'Single-leg calf hops': '3 sets · 15 each · superset with leg ext',
+    'Lying cable crunch': '3 sets · 15 reps · superset with reverse crunch',
+    'Reverse crunch': '3 sets · 15 reps · superset with cable crunch',
+    'Incline cable fly (low-to-high)': '3 sets · 12 reps · full stretch at bottom',
+    'Single-arm cable rear delt row': '3 sets · 12 each arm · lead with elbow',
+    'Cable overhead triceps extension': '3 sets · 12 reps · elbow fixed and high',
+    'Cable external rotation': '2 sets · 15 each · rotator cuff health — never skip',
+    'Weighted plank': '3 sets · 30–45 sec · superset with side plank',
+    'Side plank (knees)': '3 sets · 20 sec each side',
+    'Single-leg landmine RDL': '3 sets · 10 each · hip push back, feel the hamstring',
+    'Lat pulldown': '3 sets · 10 reps · wide overhand to upper chest',
+    'Lying cable biceps curl': '3 sets · 12 reps · full extension, squeeze at top',
+    'Seated cable oblique crunch': '3 sets · 12 each · superset with knee raise',
+    'Single-leg cable knee raise': '3 sets · 12 each · superset with oblique crunch',
+  };
+
   let html = `<div class="program-day-block">
     <div class="program-day-header">
-      <span class="program-day-pill" style="${isDeload ? 'background:var(--gold);' : ''}">${label}</span>
+      <span class="program-day-pill" style="${isDeload ? 'background:var(--gold);color:#000;' : ''}">${label}</span>
       <span class="program-day-name">${focus}</span>
     </div>
     <div class="card" style="padding:4px 16px">`;
@@ -1370,23 +1563,16 @@ function buildDayBlock(day, label, focus, exs, isDeload) {
   exs.forEach(ex => {
     const badgeMap = { anchor: 'badge-anchor', core: 'badge-core', acc: 'badge-acc' };
     const badgeLabel = ex.badge === 'anchor' ? 'Anchor' : ex.badge === 'core' ? 'Core' : 'Acc';
-    const weightDisplay = ex.unit === 'BW' ? 'BW'
-      : ex.weight < 0 ? `${Math.abs(ex.weight)}kg assist`
-      : `${ex.weight}${ex.unit || 'kg'}`;
-    const setsReps = [ex.sets ? `${ex.sets} sets` : null, ex.reps || null, ex.rest || null]
-      .filter(Boolean).join(' · ');
+    const desc = isDeload && ex.deload_note ? ex.deload_note
+      : descMap[ex.exercise] || ex.notes || '';
 
     html += `<div class="program-ex-row">
-      <div class="program-ex-left">
-        <span class="ex-badge ${badgeMap[ex.badge] || 'badge-acc'}">${badgeLabel}</span>
-        <div>
-          <div class="program-ex-name">${ex.exercise}</div>
-          ${ex.notes ? `<div class="program-ex-note">${ex.notes}</div>` : ''}
+      <div class="program-ex-left" style="flex-direction:column;align-items:flex-start;gap:3px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="ex-badge ${badgeMap[ex.badge] || 'badge-acc'}">${badgeLabel}</span>
+          <span class="program-ex-name">${ex.exercise}</span>
         </div>
-      </div>
-      <div class="program-ex-right">
-        <div class="program-ex-weight" style="${isDeload ? 'color:var(--gold)' : ''}">${weightDisplay}</div>
-        <div class="program-ex-sets">${setsReps}</div>
+        ${desc ? `<div class="program-ex-note" style="padding-left:0">${desc}</div>` : ''}
       </div>
     </div>`;
   });
@@ -1426,18 +1612,17 @@ function toggleArchive() {
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────
+
+function dayNum(d) {
+  return d === 'A' ? '1' : d === 'B' ? '2' : d === 'C' ? '3' : d;
+}
 async function init() {
-  document.getElementById('log-date').value = new Date().toISOString().split('T')[0];
+  // Warm up sessions cache first so queue can check what's logged
+  const sessions = await loadSessions();
+  document.getElementById('header-sessions').textContent = sessions.length;
 
-  // Load program overrides from DB (non-blocking — renders default first, updates after)
-  loadProgram().then(() => renderLogForm());
-
-  // Warm up sessions cache in background
-  loadSessions().then(sessions => {
-    document.getElementById('header-sessions').textContent = sessions.length;
-  });
-
-  renderLogForm();
+  // Render the today queue
+  await renderTodayQueue();
 }
 
 init();
