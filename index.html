@@ -335,10 +335,6 @@ select {
   border-color: var(--text); font-weight: 700;
 }
 .btn-primary:active { opacity: 0.85; }
-.btn-gold {
-  background: #fffbeb; color: var(--gold);
-  border-color: rgba(212,150,10,0.3);
-}
 .btn-full { width: 100%; }
 .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
 
@@ -379,20 +375,45 @@ select {
 .bar-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
 
 /* LOG ENTRY */
+/* SESSION DETAIL */
 .log-entry {
   background: var(--bg2); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 20px; margin-bottom: 14px;
+  border-radius: var(--radius-sm); margin-bottom: 14px;
+  overflow: hidden; cursor: pointer; transition: border-color 0.15s;
 }
-.log-entry-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
-.log-entry-day { font-family: var(--display); font-size: 17px; font-weight: 700; color: var(--text); }
+.log-entry:hover { border-color: var(--border2); }
+.log-entry.open { cursor: default; border-color: var(--text); }
+.log-entry-summary {
+  padding: 18px 20px;
+  display: flex; justify-content: space-between; align-items: flex-start;
+}
+.log-entry.open .log-entry-summary { border-bottom: 1px solid var(--border); cursor: pointer; }
+.log-entry-title { font-family: var(--display); font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.02em; line-height: 1; }
+.log-entry-focus { font-size: 13px; font-weight: 500; color: var(--text); opacity: 0.6; margin-top: 4px; }
 .log-entry-date { font-family: var(--mono); font-size: 11px; color: var(--text); opacity: 0.5; }
-.log-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.tag {
-  font-family: var(--mono); font-size: 10px;
-  padding: 4px 9px; background: var(--bg3);
-  border: 1px solid var(--border2); border-radius: 6px; color: var(--text);
+.log-entry-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.log-entry-chevron { color: var(--text); opacity: 0.35; font-size: 11px; margin-left: 12px; flex-shrink: 0; transition: transform 0.2s; margin-top: 4px; }
+.log-entry.open .log-entry-chevron { transform: rotate(180deg); opacity: 1; }
+.log-entry-detail { display: none; padding: 20px; }
+.log-entry.open .log-entry-detail { display: block; }
+.detail-ex-block { padding: 16px 0; border-bottom: 1px solid var(--border); }
+.detail-ex-block:last-of-type { border-bottom: none; }
+.detail-ex-name { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.detail-save-row { margin-top: 20px; display: flex; gap: 10px; align-items: center; }
+.detail-status { font-family: var(--mono); font-size: 11px; color: var(--green-dark); }
+/* Date filters */
+.hist-filters {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px;
 }
-
+.hist-filter-btn {
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  padding: 6px 12px; border-radius: 20px; cursor: pointer;
+  border: 1.5px solid var(--border2); background: none; color: var(--text);
+  transition: all 0.15s; letter-spacing: 0.03em;
+}
+.hist-filter-btn.active {
+  background: var(--text); color: #fff; border-color: var(--text);
+}
 /* NUTRITION */
 .nut-row { padding: 22px 0; border-bottom: 1px solid var(--border); }
 .nut-row:last-child { border-bottom: none; padding-bottom: 0; }
@@ -406,48 +427,19 @@ select {
 .tip-row:last-child { border-bottom: none; }
 .tip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); margin-top: 5px; flex-shrink: 0; }
 
-/* TEMPLATE */
-.template-box {
-  background: var(--bg3); border: 1px solid var(--border);
-  border-radius: var(--radius-xs); padding: 16px;
-  font-family: var(--mono); font-size: 12px; color: var(--text);
-  line-height: 1.85; white-space: pre-wrap; margin-top: 12px;
-}
 
-/* HOW TO */
-.how-step { display: flex; gap: 18px; padding: 20px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
-.how-step:last-child { border-bottom: none; }
-.how-num {
-  width: 34px; height: 34px; border-radius: 50%;
-  background: var(--text); color: #fff;
-  font-family: var(--display); font-size: 14px; font-weight: 800;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.how-body { font-size: 15px; color: var(--text); line-height: 1.7; }
-.how-body strong { color: var(--text); font-weight: 700; }
-.chip {
-  display: inline-block; font-family: var(--mono); font-size: 10px;
-  padding: 2px 8px; background: var(--text); border: 1px solid var(--text);
-  border-radius: 5px; color: #fff; vertical-align: middle; margin: 0 2px;
-}
 
-/* PROGRESSION RULES */
-.rule-row { display: flex; gap: 14px; padding: 16px 0; border-bottom: 1px solid var(--border); font-size: 14px; align-items: flex-start; }
-.rule-row:last-child { border-bottom: none; }
-.rule-label { font-family: var(--mono); font-size: 10px; color: var(--gold); min-width: 80px; flex-shrink: 0; padding-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
-.rule-body { color: var(--text); line-height: 1.6; }
-
-/* QUICK REF GRID */
-.qref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.qref-item {}
-.qref-day { font-family: var(--mono); font-size: 10px; color: var(--green-dark); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.08em; }
-.qref-body { font-size: 14px; color: var(--text); line-height: 1.55; }
 
 /* SECTION HEADER IN CARDS */
 .card-label {
   font-family: var(--mono); font-size: 10px; font-weight: 500;
   letter-spacing: 0.1em; text-transform: uppercase;
   color: var(--text); margin-bottom: 20px;
+}
+.card-section-title {
+  font-family: var(--display); font-size: 20px; font-weight: 800;
+  color: var(--text); letter-spacing: -0.02em; line-height: 1;
+  margin-bottom: 20px;
 }
 
 /* DATE INPUT */
@@ -615,21 +607,22 @@ select {
     </div>
 
     <div class="card card-accent-gold" style="margin-bottom:12px">
-      <div class="card-label">Anchor lifts — best logged</div>
+      <div class="card-section-title">Anchor lifts — best logged</div>
       <div id="lift-tracker"><div style="color:var(--text);font-size:14px">No sessions yet.</div></div>
     </div>
 
     <div class="card">
-      <div class="card-label">Session history</div>
+      <div class="card-section-title">Session history</div>
+      <div class="hist-filters">
+        <button class="hist-filter-btn" onclick="setHistFilter('week',this)">This week</button>
+        <button class="hist-filter-btn active" onclick="setHistFilter('30',this)">Last 30 days</button>
+        <button class="hist-filter-btn" onclick="setHistFilter('90',this)">Last 90 days</button>
+        <button class="hist-filter-btn" onclick="setHistFilter('year',this)">This year</button>
+        <button class="hist-filter-btn" onclick="setHistFilter('lastyear',this)">Last year</button>
+      </div>
       <div id="session-history"><div style="color:var(--text);font-size:14px">No sessions yet. Head to Today to get started.</div></div>
     </div>
 
-    <div class="btn-row" style="margin-top:14px">
-      <button class="btn btn-gold" style="flex:1" onclick="copyCheckIn()">Copy check-in ↗</button>
-      <button class="btn" onclick="exportData()">Export</button>
-      <button class="btn" onclick="importData()">Import</button>
-    </div>
-    <div style="font-size:11px;color:var(--text);margin-top:10px;font-family:var(--mono)">Data saved locally. Export regularly as backup.</div>
   </div>
 </div>
 
@@ -638,7 +631,7 @@ select {
   <div class="panel-inner">
 
     <div class="card card-accent-green">
-      <div class="card-label">Daily targets — 75kg recomp</div>
+      <div class="card-section-title">Daily targets — 75kg recomp</div>
       <div class="stats-grid" style="margin-bottom:8px">
         <div class="stat-card"><div class="stat-val" style="color:var(--blue)">150g</div><div class="stat-label">Protein</div></div>
         <div class="stat-card"><div class="stat-val" style="color:var(--gold)">200g</div><div class="stat-label">Carbs</div></div>
@@ -688,77 +681,6 @@ select {
 </div>
 
 <!-- GUIDE TAB -->
-<div class="panel" id="tab-guide">
-  <div class="panel-inner">
-
-    <div class="card">
-      <div class="card-label">Your weekly rhythm</div>
-      <div class="how-step">
-        <div class="how-num">1</div>
-        <div class="how-body"><strong>Before each session</strong> — open <span class="chip">Today</span> tab. Select the day (A, B, or C). Tap any exercise to expand the protocol — it shows the exact set-by-set structure.</div>
-      </div>
-      <div class="how-step">
-        <div class="how-num">2</div>
-        <div class="how-body"><strong>During or right after</strong> — fill in your weights, sets, and reps right in the <span class="chip">Today</span> tab. Anchor lifts have fields for activation weight, top set, reps, and singles. Hit Save.</div>
-      </div>
-      <div class="how-step">
-        <div class="how-num">3</div>
-        <div class="how-body"><strong>After logging</strong> — go to <span class="chip">History</span>, tap <em>Copy check-in</em>, and paste into our Claude chat. I'll confirm next week's weights and note your progress.</div>
-      </div>
-      <div class="how-step">
-        <div class="how-num">4</div>
-        <div class="how-body"><strong>End of Week 4</strong> — use <em>Export</em> in History and send the JSON to me. I'll design Month 2 based on your actual numbers.</div>
-      </div>
-      <div class="how-step">
-        <div class="how-num">5</div>
-        <div class="how-body"><strong>Anytime</strong> — message me in Claude with questions, pain, missed sessions, or if you want to push harder.</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-label">Quick reference</div>
-      <div class="qref-grid">
-        <div class="qref-item"><div class="qref-day">Monday — Day 1</div><div class="qref-body">Lower body + core<br>Anchor: Barbell squat</div></div>
-        <div class="qref-item"><div class="qref-day">Wednesday — Day 2</div><div class="qref-body">Upper push + pull<br>Anchors: Bench + Pull-ups</div></div>
-        <div class="qref-item"><div class="qref-day">Friday — Day 3</div><div class="qref-body">Deadlift + shoulders<br>Anchors: Deadlift + OHP</div></div>
-        <div class="qref-item"><div class="qref-day">Week 5 — Deload</div><div class="qref-body">All weights –20%<br>Then Month 2 begins</div></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-label">Progression rules</div>
-      <div class="rule-row"><div class="rule-label">Weekly add</div><div class="rule-body">+2.5kg barbell, +1–2kg dumbbells — only if all reps completed with good form.</div></div>
-      <div class="rule-row"><div class="rule-label">Failed reps</div><div class="rule-body">Repeat same weight next week. Two failures → drop 5% and rebuild.</div></div>
-      <div class="rule-row"><div class="rule-label">Pull-ups</div><div class="rule-body">Reduce assist 2.5kg/week. At zero → full pull-ups in Month 2.</div></div>
-      <div class="rule-row"><div class="rule-label">Squat singles</div><div class="rule-body">Skip Week 1. Introduce Week 2 once activation set feels locked in.</div></div>
-      <div class="rule-row"><div class="rule-label">Week 5</div><div class="rule-body">Deload — all weights –20%, same structure. Export history and send to Claude for Month 2.</div></div>
-    </div>
-
-    <div class="card">
-      <div class="card-label">Check-in template</div>
-      <div style="font-size:14px;color:var(--text);margin-bottom:10px">Copy this, fill it in, paste into Claude chat after each session.</div>
-      <button class="btn btn-gold" onclick="copyTemplate()" style="margin-bottom:12px">Copy template</button>
-      <div class="template-box" id="checkin-template">Workout check-in — [DAY A/B/C] · [DATE]
-
-ANCHOR LIFTS
-Squat / Bench / Deadlift / OHP / Pull-up:
-  Activation: [weight]kg × 5 — felt [easy/moderate/hard]
-  Top set: [weight]kg × [reps] — [hit it / stopped at X / failed]
-  Singles: [weight]kg × 1 × [0-3] — [strong / grindy / skipped]
-  Back-off: [weight]kg × 5 — [smooth / tired]
-
-ACCESSORIES (flag anything notable)
-  [Exercise]: [weight] × [sets] — [notes]
-
-OVERALL
-  Energy: [1–10]
-  Pain / anything off: [yes + detail / no]
-  Notes: [free text]</div>
-    </div>
-
-  </div>
-</div>
-
 <!-- PROGRAM TAB -->
 <div class="panel" id="tab-program">
   <div class="panel-inner">
@@ -804,21 +726,17 @@ OVERALL
   </button>
   <button class="nav-btn" onclick="showTab('nutrition',this)">
     <div class="nav-icon">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
-        <line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <g transform="rotate(-120, 12, 12)">
+          <path d="M12 3 L2 21 L22 21 Z"/>
+          <path d="M4.5 19 Q12 15.5 19.5 19" fill="none"/>
+          <circle cx="12" cy="13" r="1.2" fill="currentColor" stroke="none"/>
+          <circle cx="8.5" cy="17" r="1" fill="currentColor" stroke="none"/>
+          <circle cx="15.5" cy="17" r="1" fill="currentColor" stroke="none"/>
+        </g>
       </svg>
     </div>
     Nutrition
-  </button>
-  <button class="nav-btn" onclick="showTab('guide',this)">
-    <div class="nav-icon">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"/>
-        <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-      </svg>
-    </div>
-    Guide
   </button>
 </nav>
 
@@ -898,6 +816,17 @@ async function sbPost(table, body) {
     body: JSON.stringify(body)
   });
   if (!r.ok) throw new Error(await r.text());
+}
+async function sbPatch(table, id, body) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: { ...SB_HDRS, 'Prefer': 'return=representation', 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(await r.text());
+  const rows = await r.json();
+  if (!rows.length) throw new Error('No rows updated — record not found or permission denied');
+  return rows[0];
 }
 
 // ─── STATIC FALLBACK EXERCISES (used if program table is empty) ────────────
@@ -1389,6 +1318,39 @@ function showTab(t, btn) {
 }
 
 // ─── RENDER HISTORY ───────────────────────────────────────────────────────
+let histFilter = '30'; // default
+
+function setHistFilter(f, btn) {
+  histFilter = f;
+  document.querySelectorAll('.hist-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderSessionList();
+}
+
+function getFilterRange(f) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (f === 'week') {
+    const dow = today.getDay();
+    const mon = new Date(today); mon.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
+    return { from: mon, to: null };
+  }
+  if (f === '30')  { const d = new Date(today); d.setDate(d.getDate() - 30); return { from: d, to: null }; }
+  if (f === '90')  { const d = new Date(today); d.setDate(d.getDate() - 90); return { from: d, to: null }; }
+  if (f === 'year') { return { from: new Date(today.getFullYear(), 0, 1), to: null }; }
+  if (f === 'lastyear') {
+    const y = today.getFullYear() - 1;
+    return { from: new Date(y, 0, 1), to: new Date(y, 11, 31) };
+  }
+  return { from: null, to: null };
+}
+
+function formatSessionDate(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${months[m-1]} ${d}, ${y}`;
+}
+
 async function renderHistory() {
   document.getElementById('session-history').innerHTML =
     '<div style="color:var(--text);font-size:14px;padding:8px 0">Loading…</div>';
@@ -1428,83 +1390,165 @@ async function renderHistory() {
   });
   document.getElementById('lift-tracker').innerHTML = liftHtml;
 
-  if (!sessions.length) {
+  // Store all sessions for filter rendering
+  window._historySessions = [...sessions].reverse();
+  renderSessionList();
+}
+
+function renderSessionList() {
+  const allSessions = window._historySessions || [];
+  const { from, to } = getFilterRange(histFilter);
+
+  const filtered = allSessions.filter(s => {
+    const d = new Date(s.date);
+    if (from && d < from) return false;
+    if (to   && d > to)   return false;
+    return true;
+  });
+
+  if (!filtered.length) {
     document.getElementById('session-history').innerHTML =
-      '<div style="color:var(--text);font-size:14px">No sessions yet. Head to Today to get started.</div>';
+      '<div style="color:var(--text);font-size:14px;opacity:0.5;padding:8px 0">No sessions in this period.</div>';
     return;
   }
-  const dayNames = { A:'Day 1 — Lower + Core', B:'Day 2 — Upper Push/Pull', C:'Day 3 — Deadlift + Shoulders' };
+
+  const DAY_LABEL = { A:'Day 1', B:'Day 2', C:'Day 3' };
+  const DAY_FOCUS_MAP = { A:'Lower + Core', B:'Upper Push/Pull', C:'Deadlift + Shoulders' };
   let histHtml = '';
-  [...sessions].reverse().forEach(s => {
-    const tags = (s.exercises||[]).filter(e => parseFloat(e.topWeight||e.weight||0) > 0).slice(0,5)
-      .map(e => {
-        const w = e.topWeight || e.weight;
-        const detail = e.protocol ? `${e.activationWeight}→${w}kg` : `${w}${e.unit||'kg'}`;
-        return `<span class="tag">${e.name.split(' ').slice(0,2).join(' ')}: ${detail}</span>`;
-      }).join('');
-    histHtml += `<div class="log-entry">
-      <div class="log-entry-header">
-        <span class="log-entry-day">${dayNames[s.day]||s.day}</span>
-        <span class="log-entry-date">${s.date}</span>
+
+  filtered.forEach((s, idx) => {
+    const sid = `sess-${idx}`;
+
+    // Unique badge types present in this session (ordered: anchor, upper, lower, core)
+    const badgeOrder = ['anchor','upper','lower','core'];
+    const badgesPresent = [...new Set(
+      (s.exercises||[]).map(ex => EX_BADGES[ex.name] || 'acc').filter(b => b !== 'acc')
+    )].sort((a,b) => badgeOrder.indexOf(a) - badgeOrder.indexOf(b));
+    const badgeMap = { anchor:'badge-anchor', upper:'badge-upper', lower:'badge-lower', core:'badge-core' };
+    const badgeLabel = { anchor:'Anchor', upper:'Upper', lower:'Lower', core:'Core' };
+    const badgesHtml = badgesPresent.map(b =>
+      `<span class="ex-badge ${badgeMap[b]}">${badgeLabel[b]}</span>`
+    ).join('');
+
+    // Build editable exercise rows for detail view
+    let detailHtml = '';
+    (s.exercises||[]).forEach((ex, ei) => {
+      const uid = `${sid}_${ei}`;
+      const bt = EX_BADGES[ex.name] || 'acc';
+      const bl = bt === 'anchor' ? 'Anchor' : bt === 'upper' ? 'Upper' : bt === 'lower' ? 'Lower' : bt === 'core' ? 'Core' : 'Acc';
+      detailHtml += `<div class="detail-ex-block">
+        <div class="detail-ex-name">
+          <span class="ex-badge badge-${bt}">${bl}</span>${ex.name}
+        </div>`;
+      if (ex.protocol) {
+        detailHtml += `<div class="log-input-grid lig-2" style="margin-bottom:10px">
+          <div class="input-group"><label class="input-label">Activation kg</label>
+            <input type="number" id="h_wa_${uid}" value="${ex.activationWeight||''}" step="2.5"></div>
+          <div class="input-group"><label class="input-label">Top set kg</label>
+            <input type="number" id="h_wt_${uid}" value="${ex.topWeight||''}" step="2.5"></div>
+        </div>
+        <div class="log-input-grid lig-2">
+          <div class="input-group"><label class="input-label">Top set reps</label>
+            <input type="number" id="h_rr_${uid}" value="${ex.topReps||''}" min="0" max="10" step="1"></div>
+          <div class="input-group"><label class="input-label">Singles done</label>
+            <input type="number" id="h_si_${uid}" value="${ex.singles||''}" min="0" max="3" step="1"></div>
+        </div>`;
+      } else {
+        detailHtml += `<div class="log-input-grid lig-3" style="margin-bottom:10px">
+          <div class="input-group"><label class="input-label">Weight (${ex.unit||'kg'})</label>
+            <input type="number" id="h_w_${uid}" value="${ex.weight||''}" step="0.5"></div>
+          <div class="input-group"><label class="input-label">Sets</label>
+            <input type="number" id="h_s_${uid}" value="${ex.sets||''}" min="0" max="10"></div>
+          <div class="input-group"><label class="input-label">Reps</label>
+            <input type="number" id="h_r_${uid}" value="${ex.reps||''}" step="1"></div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Notes</label>
+          <input type="text" id="h_n_${uid}" value="${ex.notes||''}" placeholder="optional">
+        </div>`;
+      }
+      detailHtml += `</div>`;
+    });
+
+    histHtml += `<div class="log-entry" id="${sid}" onclick="toggleSession('${sid}')">
+      <div class="log-entry-summary">
+        <div>
+          <div class="log-entry-title">${formatSessionDate(s.date)} / ${DAY_LABEL[s.day]||s.day}</div>
+          <div class="log-entry-focus">${DAY_FOCUS_MAP[s.day]||''}</div>
+          <div class="log-entry-badges">${badgesHtml}</div>
+          ${s.notes ? `<div style="font-size:12px;color:var(--text);opacity:0.6;margin-top:8px;font-family:var(--mono)">${s.notes}</div>` : ''}
+        </div>
+        <span class="log-entry-chevron">▼</span>
       </div>
-      <div class="log-tags">${tags}</div>
-      ${s.notes ? `<div style="font-size:11px;color:var(--text);opacity:0.6;margin-top:8px;font-family:var(--mono)">${s.notes}</div>` : ''}
+      <div class="log-entry-detail" onclick="event.stopPropagation()">
+        ${detailHtml}
+        <div class="input-group" style="margin-top:20px;margin-bottom:0">
+          <label class="input-label">Session notes</label>
+          <input type="text" id="h_notes_${sid}" value="${s.notes||''}" placeholder="Energy, pain, anything notable...">
+        </div>
+        <div class="detail-save-row">
+          <button class="btn btn-primary" style="flex:1" onclick="saveSessionEdit('${sid}','${s.id}',${idx})">Save changes</button>
+          <span class="detail-status" id="status-${sid}"></span>
+        </div>
+      </div>
     </div>`;
   });
+
   document.getElementById('session-history').innerHTML = histHtml;
 }
 
-// ─── CHECK-IN COPY ────────────────────────────────────────────────────────
-async function copyCheckIn() {
-  const sessions = cachedSessions || await loadSessions();
-  if (!sessions.length) { alert('No sessions logged yet.'); return; }
-  const last = sessions[sessions.length - 1];
-  const dayNames = { A:'Day 1 — Lower + Core', B:'Day 2 — Upper Push/Pull', C:'Day 3 — Deadlift + Shoulders' };
-  let txt = `Workout check-in — ${dayNames[last.day]} · ${last.date}\n\n`;
-  (last.exercises||[]).forEach(ex => {
+function toggleSession(sid) {
+  const el = document.getElementById(sid);
+  el.classList.toggle('open');
+}
+
+async function saveSessionEdit(sid, sessionId, idx) {
+  const s = window._historySessions[idx];
+  if (!s) return;
+
+  const btn = document.querySelector(`#${sid} .btn-primary`);
+  const statusEl = document.getElementById(`status-${sid}`);
+  btn.textContent = 'Saving…'; btn.disabled = true;
+  statusEl.textContent = '';
+
+  // Rebuild exercises from inputs
+  const exercises = (s.exercises||[]).map((ex, ei) => {
+    const uid = `${sid}_${ei}`;
     if (ex.protocol) {
-      txt += `${ex.name}:\n  Activation: ${ex.activationWeight}kg × 5\n  Top set: ${ex.topWeight}kg × ${ex.topReps||'?'} reps\n  Singles: ${ex.singles||'?'}/3 completed\n`;
-    } else {
-      txt += `${ex.name}: ${ex.weight}${ex.unit||'kg'} × ${ex.sets||'?'} sets`;
-      if (ex.reps) txt += ` × ${ex.reps} reps`;
-      if (ex.notes) txt += ` — ${ex.notes}`;
-      txt += '\n';
+      return { ...ex,
+        activationWeight: document.getElementById(`h_wa_${uid}`)?.value || ex.activationWeight,
+        topWeight:        document.getElementById(`h_wt_${uid}`)?.value || ex.topWeight,
+        topReps:          document.getElementById(`h_rr_${uid}`)?.value || ex.topReps,
+        singles:          document.getElementById(`h_si_${uid}`)?.value || ex.singles,
+      };
     }
+    return { ...ex,
+      weight: document.getElementById(`h_w_${uid}`)?.value || ex.weight,
+      sets:   document.getElementById(`h_s_${uid}`)?.value || ex.sets,
+      reps:   document.getElementById(`h_r_${uid}`)?.value || ex.reps,
+      notes:  document.getElementById(`h_n_${uid}`)?.value || '',
+    };
   });
-  if (last.notes) txt += `\nSession notes: ${last.notes}`;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(txt).then(() => alert('Check-in copied! Paste it into Claude.')).catch(() => fallbackCopy(txt));
-  } else { fallbackCopy(txt); }
+
+  const notes = document.getElementById(`h_notes_${sid}`)?.value || '';
+
+  try {
+    await sbPatch(TABLES.sessions, sessionId, { exercises, notes });
+    // Update cache
+    cachedSessions = null;
+    statusEl.textContent = '✓ Saved';
+    btn.textContent = 'Save changes'; btn.disabled = false;
+    // Update stored copy so a second edit works correctly
+    window._historySessions[idx] = { ...s, exercises, notes };
+    setTimeout(() => { statusEl.textContent = ''; }, 3000);
+  } catch(e) {
+    statusEl.textContent = '⚠ Error';
+    statusEl.style.color = 'var(--red)';
+    btn.textContent = 'Save changes'; btn.disabled = false;
+  }
 }
 
-function fallbackCopy(txt) {
-  const ta = document.createElement('textarea');
-  ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
-  document.body.appendChild(ta); ta.select();
-  document.execCommand('copy'); document.body.removeChild(ta);
-  alert('Check-in copied! Paste it into Claude.');
-}
-
-function copyTemplate() {
-  const t = document.getElementById('checkin-template').textContent;
-  if (navigator.clipboard) { navigator.clipboard.writeText(t).then(() => alert('Template copied!')).catch(() => fallbackCopy(t)); }
-  else { fallbackCopy(t); }
-}
-
-// Export pulls from Supabase for a full accurate backup
-async function exportData() {
-  const sessions = await loadSessions();
-  const blob = new Blob([JSON.stringify({sessions}, null, 2)], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'brian_training_backup_' + new Date().toISOString().split('T')[0] + '.json';
-  a.click();
-}
-
-function importData() {
-  alert('To import data, go to your Supabase dashboard and use the Table Editor to paste rows — or ask Claude to do it for you.');
-}
-
+// ─── CHECK-IN COPY ────────────────────────────────────────────────────────
 // ─── RENDER PROGRAM TAB ───────────────────────────────────────────────────
 let programCache = null;
 let showingArchive = false;
