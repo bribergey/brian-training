@@ -93,6 +93,20 @@ body {
   font-family: var(--mono); font-size: 10px;
   color: rgba(255,255,255,0.8); letter-spacing: 0.08em; text-transform: uppercase;
 }
+.wake-lock-btn {
+  background: none; border: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 6px 8px; border-radius: 8px;
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.wake-lock-btn:active { background: rgba(255,255,255,0.1); }
+.wake-lock-icon { font-size: 22px; line-height: 1; }
+.wake-lock-label {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: rgba(255,255,255,0.5);
+}
+.wake-lock-btn.active .wake-lock-label { color: var(--green); }
 
 /* BOTTOM NAV */
 .bottom-nav {
@@ -468,10 +482,15 @@ select {
   text-transform: uppercase; letter-spacing: 0.06em;
 }
 .program-archive-btn.active { color: var(--text); border-color: var(--border2); background: var(--bg3); }
-.program-day-block { margin-bottom: 30px; }
+.program-day-block { margin-bottom: 16px; }
 .program-day-header {
-  display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+  cursor: pointer; padding: 14px 16px;
+  background: var(--bg2); border-radius: 12px;
+  user-select: none; -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
 }
+.program-day-header:active { background: var(--bg3); }
 .program-day-pill {
   font-family: var(--mono); font-size: 10px; font-weight: 500;
   letter-spacing: 0.1em; text-transform: uppercase;
@@ -480,8 +499,21 @@ select {
 }
 .program-day-name {
   font-family: var(--display); font-size: 18px; font-weight: 700;
-  color: var(--text);
+  color: var(--text); flex: 1;
 }
+.program-day-chevron {
+  font-size: 12px; color: var(--text); opacity: 0.4;
+  transition: transform 0.2s; display: inline-block;
+}
+.program-day-block.open .program-day-header { border-radius: 12px 12px 0 0; }
+.program-day-block.open .program-day-chevron { transform: rotate(180deg); }
+.program-day-body {
+  display: none;
+  background: var(--bg2); border-radius: 0 0 12px 12px;
+  border: 1px solid var(--border); border-top: none;
+  padding: 4px 16px;
+}
+.program-day-block.open .program-day-body { display: block; }
 .program-ex-row {
   display: flex; align-items: baseline;
   justify-content: space-between;
@@ -497,7 +529,7 @@ select {
   color: var(--text);
 }
 .program-ex-note {
-  font-family: var(--mono); font-size: 11px; color: var(--text); opacity: 0.55;
+  font-size: 13px; font-weight: 400; color: var(--text); opacity: 0.55;
   margin-top: 2px; line-height: 1.4;
 }
 .program-archived-month {
@@ -582,6 +614,10 @@ select {
   <div class="header-left">
     <div class="app-title"><span class="app-title-name">BRIAN'S</span><br><span class="app-title-sub">TRAINING HUB</span></div>
   </div>
+  <button class="wake-lock-btn" id="wake-lock-btn" onclick="toggleWakeLock()" title="Screen wake lock">
+    <span class="wake-lock-icon" id="wake-lock-icon">🔅</span>
+    <span class="wake-lock-label" id="wake-lock-label">Sleep</span>
+  </button>
   <div class="header-badge">
     <div class="header-badge-val" id="header-sessions">0</div>
     <div class="header-badge-label">Sessions</div>
@@ -1078,6 +1114,67 @@ function buildDefaultQueue(sessions) {
 let weekQueue = [];
 let selectedDayIdx = 0;
 
+// ─── DRAFT STATE (localStorage, keyed by day+date) ───────────────────────
+function draftKey(session) {
+  return `brian_draft_${ENV}_${session.day}_${session.scheduledDate}`;
+}
+
+function saveDraft(si) {
+  const session = weekQueue[si];
+  if (!session) return;
+  const exs = session.isDefault ? EXERCISES[session.day] : session.exercises;
+  const draft = { notes: document.getElementById(`notes-${si}`)?.value || '', exercises: {} };
+  exs.forEach((ex, i) => {
+    const uid = `${si}_${i}`;
+    const exName = ex.exercise || ex.name;
+    if (PROTOCOLS[exName]) {
+      draft.exercises[i] = {
+        wa: document.getElementById(`wa_${uid}`)?.value || '',
+        wt: document.getElementById(`wt_${uid}`)?.value || '',
+        rr: document.getElementById(`rr_${uid}`)?.value || '',
+        si: document.getElementById(`si_${uid}`)?.value || ''
+      };
+    } else {
+      draft.exercises[i] = {
+        w:  document.getElementById(`w_${uid}`)?.value || '',
+        s:  document.getElementById(`s_${uid}`)?.value || '',
+        r:  document.getElementById(`r_${uid}`)?.value || '',
+        n:  document.getElementById(`n_${uid}`)?.value || ''
+      };
+    }
+  });
+  localStorage.setItem(draftKey(session), JSON.stringify(draft));
+}
+
+function loadDraft(session) {
+  try { return JSON.parse(localStorage.getItem(draftKey(session))) || null; }
+  catch { return null; }
+}
+
+function clearDraft(session) {
+  localStorage.removeItem(draftKey(session));
+}
+
+function attachDraftListeners(si) {
+  const session = weekQueue[si];
+  if (!session) return;
+  const exs = session.isDefault ? EXERCISES[session.day] : session.exercises;
+  const ids = [`notes-${si}`];
+  exs.forEach((ex, i) => {
+    const uid = `${si}_${i}`;
+    const exName = ex.exercise || ex.name;
+    if (PROTOCOLS[exName]) {
+      ids.push(`wa_${uid}`, `wt_${uid}`, `rr_${uid}`, `si_${uid}`);
+    } else {
+      ids.push(`w_${uid}`, `s_${uid}`, `r_${uid}`, `n_${uid}`);
+    }
+  });
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => saveDraft(si));
+  });
+}
+
 const DAY_DOW   = { A: 'Mon', B: 'Wed', C: 'Fri' };
 const DAY_FOCUS = { A: 'Lower + Core', B: 'Upper Push/Pull', C: 'Deadlift + Shoulders' };
 const DAY_FULL  = { A: 'Day 1', B: 'Day 2', C: 'Day 3' };
@@ -1126,6 +1223,7 @@ function renderDaySelector() {
 }
 
 function selectDay(idx) {
+  saveDraft(selectedDayIdx);
   selectedDayIdx = idx;
   renderDaySelector();
   renderSelectedDay();
@@ -1232,8 +1330,32 @@ function renderSelectedDay() {
 
   queueEl.innerHTML = html;
 
-  // Ensure all exercises start collapsed
-  queueEl.querySelectorAll('.ex-block').forEach(el => el.classList.remove('open'));
+  // Restore draft values if any
+  const draft = loadDraft(session);
+  if (draft) {
+    if (draft.notes) { const el = document.getElementById(`notes-${si}`); if (el) el.value = draft.notes; }
+    const exs2 = session.isDefault ? EXERCISES[session.day] : session.exercises;
+    exs2.forEach((ex, i) => {
+      const uid = `${si}_${i}`;
+      const exName = ex.exercise || ex.name;
+      const d = draft.exercises[i];
+      if (!d) return;
+      if (PROTOCOLS[exName]) {
+        if (d.wa !== '') { const el = document.getElementById(`wa_${uid}`); if (el) el.value = d.wa; }
+        if (d.wt !== '') { const el = document.getElementById(`wt_${uid}`); if (el) el.value = d.wt; }
+        if (d.rr !== '') { const el = document.getElementById(`rr_${uid}`); if (el) el.value = d.rr; }
+        if (d.si !== '') { const el = document.getElementById(`si_${uid}`); if (el) el.value = d.si; }
+      } else {
+        if (d.w !== '')  { const el = document.getElementById(`w_${uid}`);  if (el) el.value = d.w; }
+        if (d.s !== '')  { const el = document.getElementById(`s_${uid}`);  if (el) el.value = d.s; }
+        if (d.r !== '')  { const el = document.getElementById(`r_${uid}`);  if (el) el.value = d.r; }
+        if (d.n !== '')  { const el = document.getElementById(`n_${uid}`);  if (el) el.value = d.n; }
+      }
+    });
+  }
+
+  // Attach listeners to persist draft on every input change
+  attachDraftListeners(si);
 }
 
 // ─── DATE PICKER HELPERS ──────────────────────────────────────────────────
@@ -1291,6 +1413,7 @@ async function saveWorkoutFromQueue(si) {
 
   try {
     await saveSession({ date, day, notes, exercises, logged: new Date().toISOString() });
+    clearDraft(session);
     document.getElementById('header-sessions').textContent = (cachedSessions||[]).length;
     setStatus('✓ Workout saved to cloud!');
     document.getElementById('tab-today').scrollTop = 0;
@@ -1606,59 +1729,42 @@ function renderMonthExercises(rows) {
   const days = ['A','B','C'];
 
   const normalRows = rows.filter(r => r.week_type !== 'deload');
-  const deloadRows = rows.filter(r => r.week_type === 'deload');
 
   let html = '';
 
-  // Normal weeks
   days.forEach(day => {
     const exs = normalRows.filter(r => r.day === day).sort((a,b) => a.order_index - b.order_index);
     if (!exs.length) return;
-    html += buildDayBlock(day, dayLabels[day], dayFocus[day], exs, false);
+    html += buildDayBlock(day, dayLabels[day], dayFocus[day], exs);
   });
-
-  // Deload week
-  if (deloadRows.length) {
-    html += `<div style="margin:28px 0 16px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-        <div style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);background:#fffbeb;border:1px solid rgba(212,150,10,0.2);padding:4px 10px;border-radius:20px">Week 5 — Deload</div>
-      </div>
-      <div style="font-size:13px;color:var(--text);font-family:var(--mono);margin-bottom:14px">All weights –20% · Same structure · No singles · Export data after this week</div>
-    </div>`;
-    days.forEach(day => {
-      const exs = deloadRows.filter(r => r.day === day).sort((a,b) => a.order_index - b.order_index);
-      if (!exs.length) return;
-      html += buildDayBlock(day, dayLabels[day], dayFocus[day], exs, true);
-    });
-  }
 
   document.getElementById('program-content').innerHTML = html;
 }
 
-function buildDayBlock(day, label, focus, exs, isDeload) {
-  // Look up descriptions from static map (same as Today tab)
-  // descMap is a fallback only — DB notes take priority
-  const descMap = {
-    'Barbell back squat': 'Activation set → top set → 3 singles → back-off',
-    'Barbell bench press': 'Activation set → top set → 3 singles → back-off',
-    'Deadlift': 'Activation set → 3 top sets → back-off',
-    'Barbell shoulder press': 'Activation set → working sets → back-off',
-    'Assisted pull-up': 'Sets 1–2: controlled reps · Set 3: max reps · Set 4: eccentric',
-  };
+// Remembers which program days are expanded across tab switches
+const programDayOpen = {};
 
-  let html = `<div class="program-day-block">
-    <div class="program-day-header">
-      <span class="program-day-pill" style="${isDeload ? 'background:var(--gold);color:#000;' : ''}">${label}</span>
+function toggleProgramDay(day) {
+  programDayOpen[day] = !programDayOpen[day];
+  const block = document.getElementById(`program-day-${day}`);
+  if (block) block.classList.toggle('open', programDayOpen[day]);
+}
+
+function buildDayBlock(day, label, focus, exs) {
+  const isOpen = programDayOpen[day] || false;
+  let html = `<div class="program-day-block${isOpen ? ' open' : ''}" id="program-day-${day}">
+    <div class="program-day-header" onclick="toggleProgramDay('${day}')">
+      <span class="program-day-pill">${label}</span>
       <span class="program-day-name">${focus}</span>
+      <span class="program-day-chevron">▼</span>
     </div>
-    <div class="card" style="padding:4px 16px">`;
+    <div class="program-day-body">`;
 
   exs.forEach(ex => {
     const badgeType  = ex.badge || EX_BADGES[ex.exercise] || 'acc';
     const badgeMap   = { anchor: 'badge-anchor', upper: 'badge-upper', lower: 'badge-lower', core: 'badge-core', acc: 'badge-acc' };
     const badgeLabel = badgeType === 'anchor' ? 'Anchor' : badgeType === 'upper' ? 'Upper' : badgeType === 'lower' ? 'Lower' : badgeType === 'core' ? 'Core' : 'Acc';
-    const desc = isDeload && ex.deload_note ? ex.deload_note
-      : ex.notes || descMap[ex.exercise] || '';
+    const desc = ex.description || '';
 
     html += `<div class="program-ex-row">
       <div class="program-ex-left" style="flex-direction:column;align-items:flex-start;gap:3px">
@@ -1718,7 +1824,61 @@ async function init() {
   await renderTodayQueue();
 }
 
+// ─── WAKE LOCK ────────────────────────────────────────────────────────────
+let wakeLock = null;
+let wakeLockEnabled = false;
+
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => {
+      // Re-acquire if user still wants it and page is visible
+      if (wakeLockEnabled && document.visibilityState === 'visible') {
+        requestWakeLock();
+      }
+    });
+    updateWakeLockUI(true);
+  } catch(e) {
+    updateWakeLockUI(false);
+  }
+}
+
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release(); wakeLock = null; }
+  updateWakeLockUI(false);
+}
+
+function updateWakeLockUI(active) {
+  const btn   = document.getElementById('wake-lock-btn');
+  const icon  = document.getElementById('wake-lock-icon');
+  const label = document.getElementById('wake-lock-label');
+  if (!btn) return;
+  if (active) {
+    btn.classList.add('active');
+    icon.textContent  = '🔆';
+    label.textContent = 'Awake';
+  } else {
+    btn.classList.remove('active');
+    icon.textContent  = '🔅';
+    label.textContent = 'Sleep';
+  }
+}
+
+async function toggleWakeLock() {
+  wakeLockEnabled = !wakeLockEnabled;
+  if (wakeLockEnabled) { await requestWakeLock(); }
+  else { releaseWakeLock(); }
+}
+
+// Re-acquire wake lock when tab becomes visible again (e.g. switching back from another app)
+document.addEventListener('visibilitychange', () => {
+  if (wakeLockEnabled && document.visibilityState === 'visible') requestWakeLock();
+});
+
 init();
+wakeLockEnabled = true;
+requestWakeLock();
 </script>
 </body>
 </html>
