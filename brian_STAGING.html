@@ -101,7 +101,8 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 .wake-lock-btn:active { background: rgba(255,255,255,0.1); }
-.wake-lock-icon { font-size: 22px; line-height: 1; }
+.wake-lock-icon { font-size: 22px; line-height: 1; filter: grayscale(1); opacity: 0.5; }
+.wake-lock-btn.active .wake-lock-icon { filter: none; opacity: 1; }
 .wake-lock-label {
   font-family: var(--mono); font-size: 9px; letter-spacing: 0.06em;
   text-transform: uppercase; color: rgba(255,255,255,0.5);
@@ -299,8 +300,8 @@ body {
   margin-bottom: 16px; line-height: 1.6;
 }
 .ex-desc {
-  font-size: 14px; color: var(--text); line-height: 1.65;
-  margin-bottom: 14px;
+  font-size: 15px; font-weight: 400; color: var(--text); line-height: 1.65;
+  margin-bottom: 14px; margin-top: 2px;
 }
 
 /* LOG INPUTS */
@@ -327,6 +328,13 @@ input[type=text]:focus, input[type=number]:focus, select:focus, textarea:focus {
 input[type=number] { -moz-appearance: textfield; }
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+.stepper { display: flex; align-items: stretch; background: var(--bg3); border: 1.5px solid var(--border2); border-radius: var(--radius-xs); overflow: hidden; transition: border-color 0.15s; }
+.stepper:focus-within { border-color: var(--text); background: var(--bg2); }
+.stepper input[type=number] { flex: 1; background: transparent; border: none; text-align: center; padding: 11px 4px; min-width: 0; }
+.stepper input[type=number]:focus { background: transparent; }
+.stepper-btn { background: none; border: none; border-left: 1.5px solid var(--border2); padding: 0 13px; font-size: 18px; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; user-select: none; }
+.stepper-btn:first-child { border-left: none; border-right: 1.5px solid var(--border2); }
+.stepper-btn:active { background: var(--border2); }
 select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239a9a94' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 12px center;
@@ -378,15 +386,16 @@ select {
 }
 
 /* LIFT TRACKER */
-.lift-row { padding: 18px 0; border-bottom: 1px solid var(--border); }
-.lift-row:last-child { border-bottom: none; padding-bottom: 0; }
-.lift-row-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.lift-cards { display: flex; flex-direction: column; gap: 12px; }
+.lift-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+.lift-card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
 .lift-name { font-size: 15px; font-weight: 600; color: var(--text); }
-.lift-right { display: flex; align-items: baseline; gap: 7px; }
-.lift-val { font-family: var(--display); font-size: 20px; font-weight: 800; color: var(--text); }
-.lift-date { font-family: var(--mono); font-size: 10px; color: var(--text); opacity: 0.45; }
-.bar { height: 5px; background: var(--bg4); border-radius: 3px; overflow: hidden; }
-.bar-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+.lift-val { font-family: var(--display); font-size: 22px; font-weight: 800; color: var(--green); }
+.lift-val-unit { font-family: var(--mono); font-size: 11px; color: var(--text); opacity: 0.5; margin-left: 2px; }
+.lift-sparkline { width: 100%; height: 56px; display: block; }
+.lift-spark-labels { display: flex; justify-content: space-between; margin-top: 4px; }
+.lift-spark-label { font-family: var(--mono); font-size: 9px; color: var(--text); opacity: 0.4; }
+.lift-no-data { font-family: var(--mono); font-size: 11px; color: var(--text); opacity: 0.4; padding: 8px 0; }
 
 /* LOG ENTRY */
 /* SESSION DETAIL */
@@ -412,7 +421,7 @@ select {
 .log-entry.open .log-entry-detail { display: block; }
 .detail-ex-block { padding: 16px 0; border-bottom: 1px solid var(--border); }
 .detail-ex-block:last-of-type { border-bottom: none; }
-.detail-ex-name { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.detail-ex-name { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
 .detail-save-row { margin-top: 20px; display: flex; gap: 10px; align-items: center; }
 .detail-status { font-family: var(--mono); font-size: 11px; color: var(--green-dark); }
 /* Date filters */
@@ -521,16 +530,11 @@ select {
 }
 .program-ex-row:last-child { border-bottom: none; }
 .program-ex-left { display: flex; align-items: baseline; gap: 8px; flex: 1; min-width: 0; }
-.program-ex-name { font-size: 15px; font-weight: 600; color: var(--text); }
 .program-ex-right { text-align: right; flex-shrink: 0; margin-left: 12px; }
 .program-ex-sets { font-family: var(--mono); font-size: 12px; color: var(--text); opacity: 0.6; }
 .program-ex-weight {
   font-family: var(--display); font-size: 16px; font-weight: 700;
   color: var(--text);
-}
-.program-ex-note {
-  font-size: 13px; font-weight: 400; color: var(--text); opacity: 0.55;
-  margin-top: 2px; line-height: 1.4;
 }
 .program-archived-month {
   background: var(--bg3); border: 1px solid var(--border);
@@ -589,7 +593,7 @@ select {
 .workout-warmup {
   background: #fffbeb; border-left: 3px solid var(--gold-bright);
   border-radius: 0 6px 6px 0; padding: 8px 12px;
-  margin: 16px 0; font-size: 13px; color: var(--text); line-height: 1.6;
+  margin: 16px 0; font-size: 14px; color: var(--text); line-height: 1.6;
 }
 .workout-warmup-label {
   font-family: var(--mono); font-size: 10px; color: var(--gold);
@@ -614,9 +618,9 @@ select {
   <div class="header-left">
     <div class="app-title"><span class="app-title-name">BRIAN'S</span><br><span class="app-title-sub">TRAINING HUB</span></div>
   </div>
-  <button class="wake-lock-btn" id="wake-lock-btn" onclick="toggleWakeLock()" title="Screen wake lock">
-    <span class="wake-lock-icon" id="wake-lock-icon">🔅</span>
-    <span class="wake-lock-label" id="wake-lock-label">Sleep</span>
+  <button class="wake-lock-btn active" id="wake-lock-btn" onclick="toggleWakeLock()" title="Screen wake lock">
+    <span class="wake-lock-icon" id="wake-lock-icon">🔆</span>
+    <span class="wake-lock-label" id="wake-lock-label">Awake</span>
   </button>
   <div class="header-badge">
     <div class="header-badge-val" id="header-sessions">0</div>
@@ -963,7 +967,7 @@ const EX_DESCRIPTIONS = {
 
 const EX_BADGES = {
   // Anchors
-  'Barbell back squat':'anchor','Barbell bench press':'anchor','Assisted pull-up':'anchor',
+  'Barbell back squat':'anchor','Barbell bench press':'anchor','Assisted pull-up':'upper','Pull-up':'anchor',
   'Deadlift':'anchor','Barbell shoulder press':'anchor',
   // Lower body
   'Bulgarian split squat':'lower','Lying leg curl':'lower','Leg extension (paused)':'lower',
@@ -984,12 +988,39 @@ const WARMUPS = {
   C: '5 min row · cat-cow × 10 · hip hinge with dowel × 10 · face pulls × 15 · dead bugs × 10'
 };
 
-const ANCHORS = ['Barbell back squat','Deadlift','Barbell bench press','Assisted pull-up','Barbell shoulder press'];
-const START_W  = {'Barbell back squat':40,'Deadlift':60,'Barbell bench press':40,'Assisted pull-up':-27,'Barbell shoulder press':30};
+const ANCHORS = ['Barbell back squat','Deadlift','Barbell bench press','Pull-up','Barbell shoulder press'];
+const START_W  = {'Barbell back squat':40,'Deadlift':60,'Barbell bench press':40,'Barbell shoulder press':30};
+// Lifts tracked by reps instead of weight
+const ANCHOR_REPS = new Set(['Pull-up']);
+const START_REPS  = {'Pull-up': 0};
 
 let currentDay = 'A';
 
 // ─── EXERCISE HELPERS ─────────────────────────────────────────────────────
+// ─── STEPPER HELPER ──────────────────────────────────────────────────────
+function stepperHtml(id, value, min, max, placeholder, step) {
+  const val  = value !== undefined && value !== '' ? value : '';
+  const minAttr = min  !== undefined ? `min="${min}"` : '';
+  const maxAttr = max  !== undefined ? `max="${max}"` : '';
+  const phAttr  = placeholder ? `placeholder="${placeholder}"` : '';
+  const st      = step || 1;
+  return `<div class="stepper">
+    <button type="button" class="stepper-btn" onclick="stepField('${id}',-${st},${min??0},${max??999},${st})">−</button>
+    <input type="number" inputmode="numeric" pattern="[0-9]*" id="${id}" value="${val}" ${minAttr} ${maxAttr} ${phAttr} step="${st}">
+    <button type="button" class="stepper-btn" onclick="stepField('${id}',${st},${min??0},${max??999},${st})">+</button>
+  </div>`;
+}
+
+function stepField(id, delta, min, max, step) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const st      = step || 1;
+  const current = parseFloat(el.value) || 0;
+  const next    = Math.min(max, Math.max(min, Math.round((current + delta) / st) * st));
+  el.value      = next % 1 === 0 ? next : next.toFixed(1);
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 // Remembers which exercises are expanded across tab switches
 const exOpen = {};
 
@@ -1040,6 +1071,57 @@ function getScheduledDate(dayLabel) {
   d.setDate(mon.getDate() + offsets[dayLabel]);
   return dateStr(d);
 }
+function getWeekKey(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const jan4 = new Date(d.getFullYear(), 0, 4);
+  const startOfWeek1 = new Date(jan4);
+  startOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+  const diff = d - startOfWeek1;
+  const week = Math.floor(diff / (7 * 86400000)) + 1;
+  return `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
+}
+
+function buildSparkline(points, startVal, weeks, unit) {
+  unit = unit || 'kg';
+  const W = 300, H = 48, PAD = 10;
+  const n = points.length;
+  const minV = Math.min(...points);
+  const maxV = Math.max(...points);
+  const range = maxV - minV || 1;
+
+  const toX = i => PAD + (i / Math.max(n - 1, 1)) * (W - PAD * 2);
+  const toY = v => PAD + (1 - (v - minV) / range) * (H - PAD * 2);
+
+  const pathD = points.map((v, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ');
+
+  const dots = points.map((v, i) => {
+    const isLast = i === points.length - 1;
+    const isBest = v === Math.max(...points);
+    const r    = isLast ? 4 : 3;
+    const fill = (isBest || isLast) ? 'var(--green)' : 'var(--bg2)';
+    return `<circle cx="${toX(i).toFixed(1)}" cy="${toY(v).toFixed(1)}" r="${r}" fill="${fill}" stroke="var(--green)" stroke-width="2"/>`;
+  }).join('');
+
+  const valueLabels = points.slice(0, -1).map((v, i) => {
+    const labelY = (toY(v) - 7).toFixed(1);
+    const isFirst = i === 0;
+    const color = isFirst ? 'opacity="0.45"' : 'opacity="0.6"';
+    return `<text x="${toX(i).toFixed(1)}" y="${labelY}" text-anchor="middle" font-size="9" fill="var(--text)" ${color} font-family="monospace">${v}${unit}</text>`;
+  }).join('');
+
+  const weekLabel = weeks.length ? `Wk ${weeks[weeks.length-1].split('-W')[1]}` : '';
+
+  return `<svg class="lift-sparkline" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+    <path d="${pathD}" fill="none" stroke="var(--green)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.6"/>
+    ${dots}
+    ${valueLabels}
+  </svg>
+  <div class="lift-spark-labels">
+    <span class="lift-spark-label">Start</span>
+    <span class="lift-spark-label">${weekLabel}</span>
+  </div>`;
+}
+
 function formatDateDisplay(iso) {
   if (!iso) return '—';
   const [y, m, d] = iso.split('-');
@@ -1297,21 +1379,21 @@ function renderSelectedDay() {
       html += `</div><div class="proto-note">${proto.note}</div>`;
       const topSug = Math.round((sug * 1.12) / 2.5) * 2.5;
       html += `<div class="log-input-grid lig-2" style="margin-bottom:8px">
-        <div class="input-group"><label class="input-label">Activation kg</label><input type="number" id="wa_${uid}" value="${sug}" step="2.5"></div>
-        <div class="input-group"><label class="input-label">Top set kg</label><input type="number" id="wt_${uid}" value="${topSug}" step="2.5"></div>
+        <div class="input-group"><label class="input-label">Activation kg</label>${stepperHtml(`wa_${uid}`, sug, 0, 300, '', 2.5)}</div>
+        <div class="input-group"><label class="input-label">Top set kg</label>${stepperHtml(`wt_${uid}`, topSug, 0, 300, '', 2.5)}</div>
       </div>
       <div class="log-input-grid lig-2">
-        <div class="input-group"><label class="input-label">Top set reps</label><input type="number" id="rr_${uid}" placeholder="e.g. 4" min="0" max="10" step="1"></div>
-        <div class="input-group"><label class="input-label">Singles done (0–3)</label><input type="number" id="si_${uid}" placeholder="e.g. 3" min="0" max="3" step="1"></div>
+        <div class="input-group"><label class="input-label">Top set reps</label>${stepperHtml(`rr_${uid}`, '', 0, 10, 'e.g. 4')}</div>
+        <div class="input-group"><label class="input-label">Singles done (0–3)</label>${stepperHtml(`si_${uid}`, '', 0, 3, 'e.g. 3')}</div>
       </div>`;
     } else {
       if (desc) html += `<div class="ex-desc">${desc}</div>`;
       const setsVal = ex.sets || 3;
       const repsPlaceholder = (ex.reps || '').split(' ')[0] || '';
       html += `<div class="log-input-grid lig-3" style="margin-bottom:10px">
-        <div class="input-group"><label class="input-label">Weight (${exUnit})</label><input type="number" id="w_${uid}" value="${sug}" step="0.5"></div>
-        <div class="input-group"><label class="input-label">Sets</label><input type="number" id="s_${uid}" value="${setsVal}" min="0" max="10"></div>
-        <div class="input-group"><label class="input-label">Reps</label><input type="number" id="r_${uid}" placeholder="${repsPlaceholder}" step="1"></div>
+        <div class="input-group"><label class="input-label">Weight (${exUnit})</label>${stepperHtml(`w_${uid}`, sug, 0, 300, '', 0.5)}</div>
+        <div class="input-group"><label class="input-label">Sets</label>${stepperHtml(`s_${uid}`, setsVal, 0, 10)}</div>
+        <div class="input-group"><label class="input-label">Reps</label>${stepperHtml(`r_${uid}`, '', 0, 50, repsPlaceholder)}</div>
       </div>
       <div class="input-group">
         <label class="input-label">Notes</label>
@@ -1383,6 +1465,21 @@ function closeDatePicker(si) {
 function updateDate(si, newDate) {
   document.getElementById(`date-display-${si}`).textContent = formatDateDisplay(newDate);
   closeDatePicker(si);
+}
+
+function openHistoryDatePicker(sid) {
+  document.getElementById(`h_date_display_${sid}`).style.display = 'none';
+  const input = document.getElementById(`h_date_${sid}`);
+  input.style.display = 'block';
+  input.focus();
+}
+function closeHistoryDatePicker(sid) {
+  document.getElementById(`h_date_display_${sid}`).style.display = '';
+  document.getElementById(`h_date_${sid}`).style.display = 'none';
+}
+function updateHistoryDate(sid, newDate) {
+  document.getElementById(`h_date_display_${sid}`).textContent = formatDateDisplay(newDate);
+  closeHistoryDatePicker(sid);
 }
 
 // ─── SAVE FROM QUEUE ──────────────────────────────────────────────────────
@@ -1495,32 +1592,52 @@ async function renderHistory() {
   document.getElementById('stat-streak').textContent   = sessions.length > 0 ? Math.ceil(sessions.length / 3) : 0;
   document.getElementById('header-sessions').textContent = sessions.length;
 
-  // Lift tracker
-  const bests = {};
-  ANCHORS.forEach(l => bests[l] = null);
+  // Lift tracker — build weekly top weights (or reps) per anchor lift
+  const weeklyBests = {};
+  ANCHORS.forEach(l => weeklyBests[l] = {});
+
   sessions.forEach(s => {
+    const weekKey = getWeekKey(s.date);
     (s.exercises||[]).forEach(ex => {
-      if (bests.hasOwnProperty(ex.name)) {
-        const v = Math.abs(parseFloat(ex.topWeight || ex.weight || 0));
-        if (!bests[ex.name] || v > bests[ex.name].val)
-          bests[ex.name] = { val: v, date: s.date };
+      if (weeklyBests.hasOwnProperty(ex.name)) {
+        const isRepBased = ANCHOR_REPS.has(ex.name);
+        const v = isRepBased
+          ? Math.abs(parseFloat(ex.reps || 0))
+          : Math.abs(parseFloat(ex.topWeight || ex.weight || 0));
+        if (v > 0) {
+          if (!weeklyBests[ex.name][weekKey] || v > weeklyBests[ex.name][weekKey])
+            weeklyBests[ex.name][weekKey] = v;
+        }
       }
     });
   });
-  let liftHtml = '';
+
+  let liftHtml = '<div class="lift-cards">';
   ANCHORS.forEach(l => {
-    const b   = bests[l];
-    const sw  = Math.abs(START_W[l]);
-    const cur = b ? b.val : sw;
-    const pct = Math.min(98, Math.round((cur / 120) * 100));
-    liftHtml += `<div class="lift-row">
-      <div class="lift-row-header">
+    const weekMap    = weeklyBests[l];
+    const weeks      = Object.keys(weekMap).sort();
+    const isRepBased = ANCHOR_REPS.has(l);
+    const startVal   = isRepBased ? START_REPS[l] : Math.abs(START_W[l]);
+    const curVal     = weeks.length ? weekMap[weeks[weeks.length - 1]] : null;
+    const display    = curVal ?? startVal;
+    const unit       = isRepBased ? 'reps' : 'kg';
+
+    liftHtml += `<div class="lift-card">
+      <div class="lift-card-header">
         <span class="lift-name">${l}</span>
-        <span class="lift-right"><span class="lift-val">${cur}kg</span><span class="lift-date">${b ? b.date : 'starting'}</span></span>
-      </div>
-      <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
-    </div>`;
+        <span><span class="lift-val">${display}</span><span class="lift-val-unit">${unit}</span></span>
+      </div>`;
+
+    if (weeks.length === 0) {
+      liftHtml += `<div class="lift-no-data">No data yet — log a session to start tracking</div>`;
+    } else {
+      const points = [startVal, ...weeks.map(w => weekMap[w])];
+      liftHtml += buildSparkline(points, startVal, weeks, unit);
+    }
+
+    liftHtml += `</div>`;
   });
+  liftHtml += '</div>';
   document.getElementById('lift-tracker').innerHTML = liftHtml;
 
   // Store all sessions for filter rendering
@@ -1576,24 +1693,24 @@ function renderSessionList() {
       if (ex.protocol) {
         detailHtml += `<div class="log-input-grid lig-2" style="margin-bottom:10px">
           <div class="input-group"><label class="input-label">Activation kg</label>
-            <input type="number" id="h_wa_${uid}" value="${ex.activationWeight||''}" step="2.5"></div>
+            ${stepperHtml(`h_wa_${uid}`, ex.activationWeight||'', 0, 300, '', 2.5)}</div>
           <div class="input-group"><label class="input-label">Top set kg</label>
-            <input type="number" id="h_wt_${uid}" value="${ex.topWeight||''}" step="2.5"></div>
+            ${stepperHtml(`h_wt_${uid}`, ex.topWeight||'', 0, 300, '', 2.5)}</div>
         </div>
         <div class="log-input-grid lig-2">
           <div class="input-group"><label class="input-label">Top set reps</label>
-            <input type="number" id="h_rr_${uid}" value="${ex.topReps||''}" min="0" max="10" step="1"></div>
+            ${stepperHtml(`h_rr_${uid}`, ex.topReps||'', 0, 10, '')}</div>
           <div class="input-group"><label class="input-label">Singles done</label>
-            <input type="number" id="h_si_${uid}" value="${ex.singles||''}" min="0" max="3" step="1"></div>
+            ${stepperHtml(`h_si_${uid}`, ex.singles||'', 0, 3, '')}</div>
         </div>`;
       } else {
         detailHtml += `<div class="log-input-grid lig-3" style="margin-bottom:10px">
           <div class="input-group"><label class="input-label">Weight (${ex.unit||'kg'})</label>
-            <input type="number" id="h_w_${uid}" value="${ex.weight||''}" step="0.5"></div>
+            ${stepperHtml(`h_w_${uid}`, ex.weight||'', 0, 300, '', 0.5)}</div>
           <div class="input-group"><label class="input-label">Sets</label>
-            <input type="number" id="h_s_${uid}" value="${ex.sets||''}" min="0" max="10"></div>
+            ${stepperHtml(`h_s_${uid}`, ex.sets||'', 0, 10, '')}</div>
           <div class="input-group"><label class="input-label">Reps</label>
-            <input type="number" id="h_r_${uid}" value="${ex.reps||''}" step="1"></div>
+            ${stepperHtml(`h_r_${uid}`, ex.reps||'', 0, 50, '')}</div>
         </div>
         <div class="input-group">
           <label class="input-label">Notes</label>
@@ -1607,7 +1724,6 @@ function renderSessionList() {
       <div class="log-entry-summary">
         <div>
           <div class="log-entry-title">${formatSessionDate(s.date)} / ${DAY_LABEL[s.day]||s.day}</div>
-          <div class="log-entry-focus">${DAY_FOCUS_MAP[s.day]||''}</div>
           <div class="log-entry-badges">${badgesHtml}</div>
           ${s.notes ? `<div style="font-size:12px;color:var(--text);opacity:0.6;margin-top:8px;font-family:var(--mono)">${s.notes}</div>` : ''}
         </div>
@@ -1615,7 +1731,13 @@ function renderSessionList() {
       </div>
       <div class="log-entry-detail" onclick="event.stopPropagation()">
         ${detailHtml}
-        <div class="input-group" style="margin-top:20px;margin-bottom:0">
+        <div class="input-group" style="margin-top:20px;margin-bottom:12px">
+          <label class="input-label">Date</label>
+          <span class="date-display" id="h_date_display_${sid}" onclick="openHistoryDatePicker('${sid}')">${formatDateDisplay(s.date)}</span>
+          <input type="date" class="date-picker-input" id="h_date_${sid}" value="${s.date||''}" style="display:none"
+            onchange="updateHistoryDate('${sid}', this.value)" onblur="closeHistoryDatePicker('${sid}')">
+        </div>
+        <div class="input-group" style="margin-bottom:0">
           <label class="input-label">Session notes</label>
           <input type="text" id="h_notes_${sid}" value="${s.notes||''}" placeholder="Energy, pain, anything notable...">
         </div>
@@ -1664,15 +1786,16 @@ async function saveSessionEdit(sid, sessionId, idx) {
   });
 
   const notes = document.getElementById(`h_notes_${sid}`)?.value || '';
+  const date  = document.getElementById(`h_date_${sid}`)?.value  || s.date;
 
   try {
-    await sbPatch(TABLES.sessions, sessionId, { exercises, notes });
+    await sbPatch(TABLES.sessions, sessionId, { exercises, notes, date });
     // Update cache
     cachedSessions = null;
     statusEl.textContent = '✓ Saved';
     btn.textContent = 'Save changes'; btn.disabled = false;
     // Update stored copy so a second edit works correctly
-    window._historySessions[idx] = { ...s, exercises, notes };
+    window._historySessions[idx] = { ...s, exercises, notes, date };
     setTimeout(() => { statusEl.textContent = ''; }, 3000);
   } catch(e) {
     statusEl.textContent = '⚠ Error';
@@ -1781,9 +1904,9 @@ function buildDayBlock(day, label, focus, exs) {
       <div class="program-ex-left" style="flex-direction:column;align-items:flex-start;gap:3px">
         <div style="display:flex;align-items:center;gap:8px">
           <span class="ex-badge ${badgeMap[badgeType] || 'badge-acc'}">${badgeLabel}</span>
-          <span class="program-ex-name">${ex.exercise}</span>
+          <span class="ex-name">${ex.exercise}</span>
         </div>
-        ${desc ? `<div class="program-ex-note" style="padding-left:0">${desc}</div>` : ''}
+        ${desc ? `<div class="ex-desc" style="padding-left:0">${desc}</div>` : ''}
       </div>
     </div>`;
   });
