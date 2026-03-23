@@ -1390,8 +1390,10 @@ function renderSelectedDay() {
       if (desc) html += `<div class="ex-desc">${desc}</div>`;
       const setsVal = ex.sets || 3;
       const repsPlaceholder = (ex.reps || '').split(' ')[0] || '';
-      html += `<div class="log-input-grid lig-3" style="margin-bottom:10px">
+      html += `<div class="log-input-grid lig-1" style="margin-bottom:10px">
         <div class="input-group"><label class="input-label">Weight (${exUnit})</label>${stepperHtml(`w_${uid}`, sug, 0, 300, '', 0.5)}</div>
+      </div>
+      <div class="log-input-grid lig-2" style="margin-bottom:10px">
         <div class="input-group"><label class="input-label">Sets</label>${stepperHtml(`s_${uid}`, setsVal, 0, 10)}</div>
         <div class="input-group"><label class="input-label">Reps</label>${stepperHtml(`r_${uid}`, '', 0, 50, repsPlaceholder)}</div>
       </div>
@@ -1704,9 +1706,11 @@ function renderSessionList() {
             ${stepperHtml(`h_si_${uid}`, ex.singles||'', 0, 3, '')}</div>
         </div>`;
       } else {
-        detailHtml += `<div class="log-input-grid lig-3" style="margin-bottom:10px">
+        detailHtml += `<div class="log-input-grid lig-1" style="margin-bottom:10px">
           <div class="input-group"><label class="input-label">Weight (${ex.unit||'kg'})</label>
             ${stepperHtml(`h_w_${uid}`, ex.weight||'', 0, 300, '', 0.5)}</div>
+        </div>
+        <div class="log-input-grid lig-2" style="margin-bottom:10px">
           <div class="input-group"><label class="input-label">Sets</label>
             ${stepperHtml(`h_s_${uid}`, ex.sets||'', 0, 10, '')}</div>
           <div class="input-group"><label class="input-label">Reps</label>
@@ -1725,7 +1729,6 @@ function renderSessionList() {
         <div>
           <div class="log-entry-title">${formatSessionDate(s.date)} / ${DAY_LABEL[s.day]||s.day}</div>
           <div class="log-entry-badges">${badgesHtml}</div>
-          ${s.notes ? `<div style="font-size:12px;color:var(--text);opacity:0.6;margin-top:8px;font-family:var(--mono)">${s.notes}</div>` : ''}
         </div>
         <span class="log-entry-chevron">▼</span>
       </div>
