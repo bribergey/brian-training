@@ -990,8 +990,14 @@ const START_W  = {'Barbell back squat':40,'Deadlift':60,'Barbell bench press':40
 let currentDay = 'A';
 
 // ─── EXERCISE HELPERS ─────────────────────────────────────────────────────
+// Remembers which exercises are expanded across tab switches
+const exOpen = {};
+
 function toggleEx(id) {
-  document.getElementById(id)?.classList.toggle('open');
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('open');
+  exOpen[id] = el.classList.contains('open');
 }
 
 function getBestWeight(name) {
@@ -1353,6 +1359,11 @@ function renderSelectedDay() {
       }
     });
   }
+
+  // Restore open exercises from session state
+  Object.entries(exOpen).forEach(([id, open]) => {
+    if (open) document.getElementById(id)?.classList.add('open');
+  });
 
   // Attach listeners to persist draft on every input change
   attachDraftListeners(si);
