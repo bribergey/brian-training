@@ -304,6 +304,25 @@ body {
   margin-bottom: 14px; margin-top: 2px;
 }
 
+/* TIMER WIDGET */
+.timer-widget {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--bg3); border: 1.5px solid var(--border2);
+  border-radius: var(--radius-xs); padding: 12px 14px; margin-bottom: 10px;
+}
+.timer-display {
+  font-family: var(--display); font-size: 32px; font-weight: 800;
+  color: var(--text); letter-spacing: -0.02em; flex: 1; line-height: 1;
+}
+.timer-display.running { color: var(--green); }
+.timer-btn {
+  background: var(--text); color: #fff; border: none; border-radius: 8px;
+  padding: 10px 16px; font-family: var(--mono); font-size: 11px;
+  font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.timer-btn.reset { background: var(--bg4); color: var(--text); }
+
 /* LOG INPUTS */
 .log-input-grid { display: grid; gap: 10px; margin-top: 2px; align-items: end; }
 .lig-2 { grid-template-columns: 1fr 1fr; }
@@ -907,6 +926,14 @@ const EXERCISES_DEFAULT = {
 let EXERCISES = JSON.parse(JSON.stringify(EXERCISES_DEFAULT));
 
 // ─── PROTOCOLS & DISPLAY META (static — UI only, Claude updates weights via DB) ──
+// Detect timed exercises from DB data — no hardcoding needed
+// Coach just uses "sec" in reps (e.g. "30–45 sec") or unit (e.g. "sec")
+function isTimedExercise(ex) {
+  const reps = (ex.reps || '').toLowerCase();
+  const unit = (ex.unit || '').toLowerCase();
+  return reps.includes('sec') || unit.includes('sec');
+}
+
 const PROTOCOLS = {
   'Barbell back squat': {
     rows: [
@@ -1382,9 +1409,13 @@ function renderSelectedDay() {
         <div class="input-group"><label class="input-label">Activation kg</label>${stepperHtml(`wa_${uid}`, sug, 0, 300, '', 2.5)}</div>
         <div class="input-group"><label class="input-label">Top set kg</label>${stepperHtml(`wt_${uid}`, topSug, 0, 300, '', 2.5)}</div>
       </div>
-      <div class="log-input-grid lig-2">
+      <div class="log-input-grid lig-2" style="margin-bottom:10px">
         <div class="input-group"><label class="input-label">Top set reps</label>${stepperHtml(`rr_${uid}`, '', 0, 10, 'e.g. 4')}</div>
         <div class="input-group"><label class="input-label">Singles done (0–3)</label>${stepperHtml(`si_${uid}`, '', 0, 3, 'e.g. 3')}</div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Notes</label>
+        <input type="text" id="n_${uid}" placeholder="optional">
       </div>`;
     } else {
       if (desc) html += `<div class="ex-desc">${desc}</div>`;
@@ -1392,12 +1423,20 @@ function renderSelectedDay() {
       const repsPlaceholder = (ex.reps || '').split(' ')[0] || '';
       html += `<div class="log-input-grid lig-1" style="margin-bottom:10px">
         <div class="input-group"><label class="input-label">Weight (${exUnit})</label>${stepperHtml(`w_${uid}`, sug, 0, 300, '', 0.5)}</div>
-      </div>
+      </div>`;
+      if (isTimedExercise(ex)) {
+        html += `<div class="input-group" style="margin-bottom:10px"><label class="input-label">Timer</label>${timerHtml(uid)}</div>
       <div class="log-input-grid lig-2" style="margin-bottom:10px">
         <div class="input-group"><label class="input-label">Sets</label>${stepperHtml(`s_${uid}`, setsVal, 0, 10)}</div>
+        <div class="input-group"><label class="input-label">Time (sec)</label><input type="number" inputmode="numeric" pattern="[0-9]*" id="r_${uid}" placeholder="${repsPlaceholder}" step="1" style="width:100%"></div>
+      </div>`;
+      } else {
+        html += `<div class="log-input-grid lig-2" style="margin-bottom:10px">
+        <div class="input-group"><label class="input-label">Sets</label>${stepperHtml(`s_${uid}`, setsVal, 0, 10)}</div>
         <div class="input-group"><label class="input-label">Reps</label>${stepperHtml(`r_${uid}`, '', 0, 50, repsPlaceholder)}</div>
-      </div>
-      <div class="input-group">
+      </div>`;
+      }
+      html += `<div class="input-group">
         <label class="input-label">Notes</label>
         <input type="text" id="n_${uid}" placeholder="optional">
       </div>`;
@@ -1512,7 +1551,8 @@ async function saveWorkoutFromQueue(si) {
         topWeight: document.getElementById(`wt_${uid}`)?.value || '',
         weight: document.getElementById(`wt_${uid}`)?.value || '',
         topReps: document.getElementById(`rr_${uid}`)?.value || '',
-        singles: document.getElementById(`si_${uid}`)?.value || '' };
+        singles: document.getElementById(`si_${uid}`)?.value || '',
+        notes: document.getElementById(`n_${uid}`)?.value || '' };
     }
     return { name: exName, unit: exUnit,
       weight: document.getElementById(`w_${uid}`)?.value || '',
@@ -1699,11 +1739,15 @@ function renderSessionList() {
           <div class="input-group"><label class="input-label">Top set kg</label>
             ${stepperHtml(`h_wt_${uid}`, ex.topWeight||'', 0, 300, '', 2.5)}</div>
         </div>
-        <div class="log-input-grid lig-2">
+        <div class="log-input-grid lig-2" style="margin-bottom:10px">
           <div class="input-group"><label class="input-label">Top set reps</label>
             ${stepperHtml(`h_rr_${uid}`, ex.topReps||'', 0, 10, '')}</div>
           <div class="input-group"><label class="input-label">Singles done</label>
             ${stepperHtml(`h_si_${uid}`, ex.singles||'', 0, 3, '')}</div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Notes</label>
+          <input type="text" id="h_n_${uid}" value="${ex.notes||''}" placeholder="optional">
         </div>`;
       } else {
         detailHtml += `<div class="log-input-grid lig-1" style="margin-bottom:10px">
@@ -1778,6 +1822,7 @@ async function saveSessionEdit(sid, sessionId, idx) {
         topWeight:        document.getElementById(`h_wt_${uid}`)?.value || ex.topWeight,
         topReps:          document.getElementById(`h_rr_${uid}`)?.value || ex.topReps,
         singles:          document.getElementById(`h_si_${uid}`)?.value || ex.singles,
+        notes:            document.getElementById(`h_n_${uid}`)?.value || ex.notes || '',
       };
     }
     return { ...ex,
@@ -2012,6 +2057,59 @@ async function toggleWakeLock() {
 document.addEventListener('visibilitychange', () => {
   if (wakeLockEnabled && document.visibilityState === 'visible') requestWakeLock();
 });
+
+// ─── EXERCISE TIMER ──────────────────────────────────────────────────────
+const timerState = {};
+
+function timerHtml(uid) {
+  return `<div class="timer-widget" id="timer-${uid}">
+    <div class="timer-display" id="timer-display-${uid}">0:00.0</div>
+    <button class="timer-btn" id="timer-toggle-${uid}" onclick="timerToggle('${uid}')">Start</button>
+    <button class="timer-btn reset" onclick="timerReset('${uid}')">Reset</button>
+  </div>`;
+}
+
+function timerToggle(uid) {
+  if (!timerState[uid]) timerState[uid] = { running: false, elapsed: 0, startedAt: null };
+  const t = timerState[uid];
+  if (t.running) {
+    clearInterval(t.interval);
+    t.elapsed += Date.now() - t.startedAt;
+    t.running = false;
+    document.getElementById(`timer-toggle-${uid}`).textContent = 'Start';
+    document.getElementById(`timer-display-${uid}`).classList.remove('running');
+    // Auto-fill the time field with elapsed seconds rounded to nearest second
+    const seconds = Math.round(t.elapsed / 1000);
+    const repsEl = document.getElementById(`r_${uid}`);
+    if (repsEl) {
+      repsEl.value = seconds;
+      repsEl.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  } else {
+    t.startedAt = Date.now();
+    t.running = true;
+    document.getElementById(`timer-toggle-${uid}`).textContent = 'Stop';
+    document.getElementById(`timer-display-${uid}`).classList.add('running');
+    t.interval = setInterval(() => {
+      const totalMs = t.elapsed + Date.now() - t.startedAt;
+      const total   = Math.floor(totalMs / 1000);
+      const ms      = Math.floor((totalMs % 1000) / 100); // one decimal
+      const m = Math.floor(total / 60);
+      const s = String(total % 60).padStart(2, '0');
+      const el = document.getElementById(`timer-display-${uid}`);
+      if (el) el.textContent = `${m}:${s}.${ms}`;
+    }, 100);
+  }
+}
+
+function timerReset(uid) {
+  if (timerState[uid]?.interval) clearInterval(timerState[uid].interval);
+  timerState[uid] = { running: false, elapsed: 0, startedAt: null };
+  const display = document.getElementById(`timer-display-${uid}`);
+  const toggle  = document.getElementById(`timer-toggle-${uid}`);
+  if (display) { display.textContent = '0:00.0'; display.classList.remove('running'); }
+  if (toggle)  toggle.textContent = 'Start';
+}
 
 init();
 wakeLockEnabled = true;
