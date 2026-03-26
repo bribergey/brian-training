@@ -1166,20 +1166,33 @@ async function loadQueue() {
 
     // Get logged sessions to determine what's already done
     const sessions = cachedSessions || await loadSessions();
-    const loggedKeys = new Set(sessions.map(s => `${s.date}-${s.day}`));
+
+    // Match using explicit program_session_key — immune to date changes and delays
+    const loggedKeys = new Set(sessions
+      .filter(s => s.program_session_key)
+      .map(s => s.program_session_key)
+    );
+    // Fallback for sessions logged before this system existed: match by date+day
+    const loggedDateKeys = new Set(sessions
+      .filter(s => !s.program_session_key)
+      .map(s => `${s.date}-${s.day}`)
+    );
 
     // Group program rows into sessions
     const sessionMap = new Map();
     programRows.forEach(row => {
       const key = `${row.scheduled_date || 'unscheduled'}-${row.day}`;
       if (!sessionMap.has(key)) {
+        const isLogged = loggedKeys.has(row.session_key) ||
+                         loggedDateKeys.has(`${row.scheduled_date}-${row.day}`);
         sessionMap.set(key, {
           day: row.day,
           label: row.session_label || row.day,
           scheduledDate: row.scheduled_date || getScheduledDate(row.day),
           weekNumber: row.week_number,
+          sessionKey: row.session_key,
           exercises: [],
-          logged: loggedKeys.has(`${row.scheduled_date || getScheduledDate(row.day)}-${row.day}`)
+          logged: isLogged
         });
       }
       sessionMap.get(key).exercises.push(row);
@@ -1562,7 +1575,8 @@ async function saveWorkoutFromQueue(si) {
   });
 
   try {
-    await saveSession({ date, day, notes, exercises, logged: new Date().toISOString() });
+    await saveSession({ date, day, notes, exercises, logged: new Date().toISOString(),
+      program_session_key: session.sessionKey || null });
     clearDraft(session);
     document.getElementById('header-sessions').textContent = (cachedSessions||[]).length;
     setStatus('✓ Workout saved to cloud!');
