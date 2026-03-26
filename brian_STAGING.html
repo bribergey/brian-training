@@ -623,7 +623,17 @@ select {
 }
 .workout-save-row {
   padding: 0 22px 24px;
+  display: flex; flex-direction: column; gap: 10px;
 }
+.btn-skip {
+  background: none; border: 1.5px solid var(--border2); color: var(--text);
+  opacity: 0.5; font-family: var(--mono); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  border-radius: var(--radius-xs); padding: 12px; text-align: center;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s, border-color 0.15s;
+}
+.btn-skip:active { opacity: 1; border-color: var(--text); }
 
 
 
@@ -841,7 +851,9 @@ async function saveSession(session) {
     day:  session.day,
     notes: session.notes || null,
     exercises: session.exercises,
-    logged_at: session.logged
+    logged_at: session.logged,
+    skipped: session.skipped || false,
+    program_session_key: session.program_session_key || null
   });
 }
 
@@ -1467,6 +1479,7 @@ function renderSelectedDay() {
       <button class="btn btn-primary btn-full" id="savebtn-${si}" onclick="saveWorkoutFromQueue(${si})">
         Save ${title}
       </button>
+      <button class="btn-skip" onclick="skipWorkout(${si})">Skip this workout</button>
     </div>
   </div>`;
 
@@ -1537,6 +1550,59 @@ function updateHistoryDate(sid, newDate) {
 }
 
 // ─── SAVE FROM QUEUE ──────────────────────────────────────────────────────
+async function skipWorkout(si) {
+  const queue = await loadQueue();
+  const session = queue[si];
+  if (!session) return;
+
+  const notesEl  = document.getElementById(`notes-${si}`);
+  const skipBtn  = document.querySelector(`#wcard-${si} .btn-skip`);
+  const saveBtn  = document.getElementById(`savebtn-${si}`);
+
+  // Focus notes field with skip prompt if empty
+  if (!notesEl.value) {
+    notesEl.placeholder = 'Why are you skipping? (coach will see this)';
+    notesEl.focus();
+    // Change skip button to confirm after they've had a chance to add notes
+    skipBtn.textContent = 'Confirm skip';
+    skipBtn.onclick = () => confirmSkip(si);
+    return;
+  }
+  await confirmSkip(si);
+}
+
+async function confirmSkip(si) {
+  const queue = await loadQueue();
+  const session = queue[si];
+  if (!session) return;
+
+  const skipBtn = document.querySelector(`#wcard-${si} .btn-skip`);
+  const saveBtn = document.getElementById(`savebtn-${si}`);
+  skipBtn.textContent = 'Skipping…';
+  skipBtn.disabled = true;
+  saveBtn.disabled = true;
+
+  const day   = session.day;
+  const date  = document.getElementById(`date-input-${si}`)?.value ||
+                session.scheduledDate;
+  const notes = document.getElementById(`notes-${si}`)?.value || '';
+
+  try {
+    await saveSession({ date, day, notes, exercises: [], skipped: true,
+      logged: new Date().toISOString(),
+      program_session_key: session.sessionKey || null });
+    clearDraft(session);
+    setStatus('Workout skipped — noted for your coach.');
+    document.getElementById('tab-today').scrollTop = 0;
+    await renderTodayQueue();
+  } catch(e) {
+    setStatus('⚠ Could not save skip.', true);
+    skipBtn.textContent = 'Confirm skip';
+    skipBtn.disabled = false;
+    saveBtn.disabled = false;
+  }
+}
+
 async function saveWorkoutFromQueue(si) {
   // Reconstruct queue to get session info
   const queue = await loadQueue();
@@ -1642,17 +1708,18 @@ async function renderHistory() {
     '<div style="color:var(--text);font-size:14px;padding:8px 0">Loading…</div>';
 
   const sessions = await loadSessions();
+  const realSessions = sessions.filter(s => !s.skipped);
 
-  document.getElementById('stat-sessions').textContent = sessions.length;
-  document.getElementById('stat-weeks').textContent    = sessions.length > 0 ? Math.ceil(sessions.length / 3) : 0;
-  document.getElementById('stat-streak').textContent   = sessions.length > 0 ? Math.ceil(sessions.length / 3) : 0;
-  document.getElementById('header-sessions').textContent = sessions.length;
+  document.getElementById('stat-sessions').textContent = realSessions.length;
+  document.getElementById('stat-weeks').textContent    = realSessions.length > 0 ? Math.ceil(realSessions.length / 3) : 0;
+  document.getElementById('stat-streak').textContent   = realSessions.length > 0 ? Math.ceil(realSessions.length / 3) : 0;
+  document.getElementById('header-sessions').textContent = realSessions.length;
 
   // Lift tracker — build weekly top weights (or reps) per anchor lift
   const weeklyBests = {};
   ANCHORS.forEach(l => weeklyBests[l] = {});
 
-  sessions.forEach(s => {
+  realSessions.forEach(s => {
     const weekKey = getWeekKey(s.date);
     (s.exercises||[]).forEach(ex => {
       if (weeklyBests.hasOwnProperty(ex.name)) {
@@ -1697,7 +1764,7 @@ async function renderHistory() {
   document.getElementById('lift-tracker').innerHTML = liftHtml;
 
   // Store all sessions for filter rendering
-  window._historySessions = [...sessions].reverse();
+  window._historySessions = [...realSessions].reverse();
   renderSessionList();
 }
 
