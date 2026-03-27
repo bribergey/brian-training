@@ -1226,7 +1226,7 @@ function saveDraft(si) {
     // Collect however many set rows currently exist in the DOM
     const sets = collectSetRows(uid);
     draft.exercises[i] = {
-      sets,
+      sets: sets !== null ? sets : undefined, // undefined = never opened, don't override on restore
       n: document.getElementById(`n_${uid}`)?.value || ''
     };
   });
@@ -1390,8 +1390,8 @@ function renderSelectedDay() {
       const uid = `${si}_${i}`;
       const d = draft.exercises[i];
       if (!d) return;
-      // Restore set rows from draft
-      if (d.sets && d.sets.length) {
+      // Restore set rows from draft — only if sets was actually captured (not undefined)
+      if (Array.isArray(d.sets)) {
         restoreSetRows(uid, ex, d.sets);
       }
       if (d.n) { const el = document.getElementById(`n_${uid}`); if (el) el.value = d.n; }
@@ -2218,7 +2218,7 @@ function renumberSetRows(uid) {
 
 function collectSetRows(uid) {
   const container = document.getElementById(`set-rows-${uid}`);
-  if (!container) return [];
+  if (!container) return null; // null = never rendered, don't save to draft
   return Array.from(container.children).map((_, j) => {
     const w = document.getElementById(`set_${uid}_${j}_w`)?.value ?? '';
     const r = document.getElementById(`set_${uid}_${j}_r`)?.value ?? '';
