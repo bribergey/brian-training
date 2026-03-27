@@ -271,7 +271,9 @@ body {
   flex-shrink: 0; width: 16px; text-align: center;
 }
 .ex-block.open .ex-chevron { transform: rotate(180deg); }
-.ex-body { padding: 0 0 18px; display: none; }
+.ex-body { padding: 0 16px 18px; display: none; }
+.ex-body .set-rows, .ex-body .set-row-headers { margin-left: -16px; margin-right: -16px; }
+.ex-body .set-add-btn { margin-left: -16px; margin-right: -16px; width: calc(100% + 32px); }
 .ex-block.open .ex-body { display: block; }
 
 /* PROTOCOL BOX */
@@ -450,6 +452,8 @@ select {
 .log-entry-detail { display: none; padding: 20px; }
 .log-entry.open .log-entry-detail { display: block; }
 .detail-ex-block { padding: 16px 0; border-bottom: 1px solid var(--border); }
+.detail-ex-block .set-rows, .detail-ex-block .set-row-headers { margin-left: -20px; margin-right: -20px; }
+.detail-ex-block .set-add-btn { margin-left: -20px; margin-right: -20px; width: calc(100% + 40px); }
 .detail-ex-block:last-of-type { border-bottom: none; }
 .detail-ex-name { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
 .detail-save-row { margin-top: 20px; display: flex; gap: 10px; align-items: center; }
