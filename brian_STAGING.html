@@ -354,6 +354,17 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
 .stepper-btn { background: none; border: none; border-left: 1.5px solid var(--border2); padding: 0 13px; font-size: 18px; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; user-select: none; }
 .stepper-btn:first-child { border-left: none; border-right: 1.5px solid var(--border2); }
 .stepper-btn:active { background: var(--border2); }
+
+/* SET-BY-SET ROWS */
+.set-rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.set-row { display: grid; grid-template-columns: 28px 1fr 1fr 36px; gap: 6px; align-items: center; }
+.set-row-num { font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--text); opacity: 0.35; text-align: center; padding-top: 2px; }
+.set-row-label { font-family: var(--mono); font-size: 9px; color: var(--text); opacity: 0.45; text-transform: uppercase; letter-spacing: 0.06em; text-align: center; margin-bottom: 3px; }
+.set-row-headers { display: grid; grid-template-columns: 28px 1fr 1fr 36px; gap: 6px; margin-bottom: 2px; }
+.set-remove-btn { background: none; border: none; color: var(--text); opacity: 0.25; font-size: 18px; cursor: pointer; padding: 0; text-align: center; line-height: 1; -webkit-tap-highlight-color: transparent; }
+.set-remove-btn:active { opacity: 0.7; }
+.set-add-btn { width: 100%; background: none; border: 1.5px dashed var(--border2); border-radius: var(--radius-xs); padding: 10px; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); opacity: 0.4; cursor: pointer; margin-bottom: 10px; -webkit-tap-highlight-color: transparent; }
+.set-add-btn:active { opacity: 0.8; background: var(--bg3); }
 select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239a9a94' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 12px center;
@@ -946,64 +957,6 @@ function isTimedExercise(ex) {
   return reps.includes('sec') || unit.includes('sec');
 }
 
-const PROTOCOLS = {
-  'Barbell back squat': {
-    rows: [
-      {label:'Set 1', val:'<strong>40kg × 5</strong> — activation. Full depth, controlled, groove the pattern.'},
-      {label:'Set 2', val:'<strong>45kg × 4–5</strong> — top set. Stop 1 rep before failure. Technique must hold.'},
-      {label:'Sets 3–5', val:'<strong>45kg × 1</strong> — singles. Rest 90 sec. Neural drive, confidence at load.'},
-      {label:'Set 6', val:'<strong>40kg × 5</strong> — back-off. Smooth and deliberate, reinforce technique.'},
-    ],
-    note: '+2.5kg/week on top set · Singles from Week 2 only · Week 1: skip singles, do 4×5 at 40kg instead'
-  },
-  'Barbell bench press': {
-    rows: [
-      {label:'Set 1', val:'<strong>40kg × 5</strong> — activation. 1-sec pause on chest each rep.'},
-      {label:'Set 2', val:'<strong>47.5kg × 3–5</strong> — top set. Stop 1 rep before failure.'},
-      {label:'Sets 3–5', val:'<strong>47.5kg × 1</strong> — singles. Rest 90 sec. Heavy but not grinding.'},
-      {label:'Set 6', val:'<strong>40kg × 5</strong> — back-off. Full range, deliberate.'},
-    ],
-    note: '+2.5kg/week · Goal: 50kg W2 → 52.5kg W3 → 55kg W4'
-  },
-  'Deadlift': {
-    rows: [
-      {label:'Set 1', val:'<strong>50kg × 4</strong> — activation. Full reset between reps, brace hard.'},
-      {label:'Sets 2–4', val:'<strong>65kg × 3</strong> — top sets. Conventional, quality over quantity.'},
-      {label:'Set 5', val:'<strong>50kg × 4</strong> — back-off. Controlled, feel the hinge pattern.'},
-    ],
-    note: '+2.5–5kg/week · Singles introduced Month 2 once pattern is solid'
-  },
-  'Barbell shoulder press': {
-    rows: [
-      {label:'Set 1', val:'<strong>25kg × 5</strong> — activation.'},
-      {label:'Sets 2–4', val:'<strong>30kg × 5</strong> — working sets. Stop 1–2 reps before failure.'},
-      {label:'Set 5', val:'<strong>25kg × 8</strong> — back-off. Higher reps, feel the shoulder pattern.'},
-    ],
-    note: '+2.5kg/week · Singles introduced Month 2 when pressing 40kg+'
-  }
-};
-
-const EX_DESCRIPTIONS = {
-  'Bulgarian split squat': '3 sets × 10 each leg · Rest 90 sec · Bodyweight first, add 2×5kg once form is solid',
-  'Lying leg curl': '3 sets × 12 reps · Rest 60 sec · 3-sec eccentric lowering · Start: 22kg',
-  'Leg extension (paused)': '3 sets × 12 reps · Pause 1 sec at top · Superset with single-leg calf hops · Rest 60 sec · Start: 20kg',
-  'Single-leg calf hops': '3 sets × 15 each · Bodyweight · Superset with leg extension · Rest 60 sec',
-  'Lying cable crunch': '3 sets × 15 reps · Superset with reverse crunch · Rest 60 sec/round · Start: 10kg',
-  'Reverse crunch': '3 sets × 15 reps · Bodyweight · Superset with cable crunch · Rest 60 sec/round',
-  'Assisted pull-up': 'Sets 1–2: 6 reps at ~27kg assist · Set 3: max reps · Set 4: hold + eccentric × 3 · Rest 2 min · Reduce assist 2.5kg/week · Goal: unassisted by Week 4',
-  'Incline cable fly (low-to-high)': '3 sets × 12 reps · Rest 60 sec · Full stretch at bottom · Start: 9kg each side',
-  'Single-arm cable rear delt row': '3 sets × 12 each arm · Rest 60 sec · Lead with elbow · Start: 7kg',
-  'Cable overhead triceps extension': '3 sets × 12 reps · Rest 60 sec · Elbow fixed and high · Start: 8kg',
-  'Cable external rotation': '2 sets × 15 each arm · Rest 45 sec · Never skip — rotator cuff health · Start: 5kg',
-  'Weighted plank': '3 sets × 30–45 sec · 5kg on back · Superset with side plank · Rest 45 sec',
-  'Side plank (knees)': '3 sets × 20 sec each side · Superset with weighted plank · Rest 45 sec between rounds',
-  'Single-leg landmine RDL': '3 sets × 10 each leg · Rest 75 sec · Hip push back, feel hamstring · Start: 17kg',
-  'Lat pulldown': '3 sets × 10 reps · Rest 75 sec · Wide overhand, pull to upper chest · Start: 42kg',
-  'Lying cable biceps curl': '3 sets × 12 reps · Rest 60 sec · Full extension, squeeze at top · Start: 10kg',
-  'Seated cable oblique crunch': '3 sets × 12 each · Superset with single-leg cable knee raise · Rest 60 sec · Start: 9kg',
-  'Single-leg cable knee raise': '3 sets × 12 each · Superset with oblique crunch · Rest 60 sec · Start: 6kg'
-};
-
 const EX_BADGES = {
   // Anchors
   'Barbell back squat':'anchor','Barbell bench press':'anchor','Assisted pull-up':'upper','Pull-up':'anchor',
@@ -1266,22 +1219,12 @@ function saveDraft(si) {
   const draft = { notes: document.getElementById(`notes-${si}`)?.value || '', exercises: {} };
   exs.forEach((ex, i) => {
     const uid = `${si}_${i}`;
-    const exName = ex.exercise || ex.name;
-    if (PROTOCOLS[exName]) {
-      draft.exercises[i] = {
-        wa: document.getElementById(`wa_${uid}`)?.value || '',
-        wt: document.getElementById(`wt_${uid}`)?.value || '',
-        rr: document.getElementById(`rr_${uid}`)?.value || '',
-        si: document.getElementById(`si_${uid}`)?.value || ''
-      };
-    } else {
-      draft.exercises[i] = {
-        w:  document.getElementById(`w_${uid}`)?.value || '',
-        s:  document.getElementById(`s_${uid}`)?.value || '',
-        r:  document.getElementById(`r_${uid}`)?.value || '',
-        n:  document.getElementById(`n_${uid}`)?.value || ''
-      };
-    }
+    // Collect however many set rows currently exist in the DOM
+    const sets = collectSetRows(uid);
+    draft.exercises[i] = {
+      sets,
+      n: document.getElementById(`n_${uid}`)?.value || ''
+    };
   });
   localStorage.setItem(draftKey(session), JSON.stringify(draft));
 }
@@ -1298,21 +1241,11 @@ function clearDraft(session) {
 function attachDraftListeners(si) {
   const session = weekQueue[si];
   if (!session) return;
-  const exs = session.isDefault ? EXERCISES[session.day] : session.exercises;
-  const ids = [`notes-${si}`];
-  exs.forEach((ex, i) => {
-    const uid = `${si}_${i}`;
-    const exName = ex.exercise || ex.name;
-    if (PROTOCOLS[exName]) {
-      ids.push(`wa_${uid}`, `wt_${uid}`, `rr_${uid}`, `si_${uid}`);
-    } else {
-      ids.push(`w_${uid}`, `s_${uid}`, `r_${uid}`, `n_${uid}`);
-    }
-  });
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('input', () => saveDraft(si));
-  });
+  // Use event delegation on the workout card — catches all current and dynamically added inputs
+  const card = document.getElementById(`wcard-${si}`);
+  if (card) {
+    card.addEventListener('input', () => saveDraft(si));
+  }
 }
 
 const DAY_DOW   = { A: 'Mon', B: 'Wed', C: 'Fri' };
@@ -1406,13 +1339,9 @@ function renderSelectedDay() {
   exs.forEach((ex, i) => {
     const exName     = ex.exercise || ex.name;
     const exUnit     = ex.unit || 'kg';
-    const sug        = session.isDefault
-      ? getSuggested({name: exName, unit: exUnit, startWeight: ex.startWeight || ex.weight || 0})
-      : (ex.weight || 0);
     const badgeType  = ex.badge || EX_BADGES[exName] || 'acc';
     const badgeLabel = badgeType === 'anchor' ? 'Anchor' : badgeType === 'core' ? 'Core' : badgeType === 'upper' ? 'Upper' : badgeType === 'lower' ? 'Lower' : 'Acc';
-    const proto      = PROTOCOLS[exName];
-    const desc       = EX_DESCRIPTIONS[exName];
+    const desc       = ex.coach_notes || '';
     const uid        = `${si}_${i}`;
 
     html += `<div class="ex-block" id="ex-${uid}">
@@ -1423,49 +1352,12 @@ function renderSelectedDay() {
       </div>
       <div class="ex-body">`;
 
-    if (proto) {
-      html += `<div class="proto-table">`;
-      proto.rows.forEach(r => {
-        html += `<div class="proto-row"><div class="proto-label">${r.label}</div><div class="proto-val">${r.val}</div></div>`;
-      });
-      html += `</div><div class="proto-note">${proto.note}</div>`;
-      const topSug = Math.round((sug * 1.12) / 2.5) * 2.5;
-      html += `<div class="log-input-grid lig-2" style="margin-bottom:8px">
-        <div class="input-group"><label class="input-label">Activation kg</label>${stepperHtml(`wa_${uid}`, sug, 0, 300, '', 2.5)}</div>
-        <div class="input-group"><label class="input-label">Top set kg</label>${stepperHtml(`wt_${uid}`, topSug, 0, 300, '', 2.5)}</div>
-      </div>
-      <div class="log-input-grid lig-2" style="margin-bottom:10px">
-        <div class="input-group"><label class="input-label">Top set reps</label>${stepperHtml(`rr_${uid}`, '', 0, 10, 'e.g. 4')}</div>
-        <div class="input-group"><label class="input-label">Singles done (0–3)</label>${stepperHtml(`si_${uid}`, '', 0, 3, 'e.g. 3')}</div>
-      </div>
-      <div class="input-group">
-        <label class="input-label">Notes</label>
-        <input type="text" id="n_${uid}" placeholder="optional">
-      </div>`;
-    } else {
-      if (desc) html += `<div class="ex-desc">${desc}</div>`;
-      const setsVal = ex.sets || 3;
-      const repsPlaceholder = (ex.reps || '').split(' ')[0] || '';
-      html += `<div class="log-input-grid lig-1" style="margin-bottom:10px">
-        <div class="input-group"><label class="input-label">Weight (${exUnit})</label>${stepperHtml(`w_${uid}`, sug, 0, 300, '', 0.5)}</div>
-      </div>`;
-      if (isTimedExercise(ex)) {
-        html += `<div class="input-group" style="margin-bottom:10px"><label class="input-label">Timer</label>${timerHtml(uid)}</div>
-      <div class="log-input-grid lig-2" style="margin-bottom:10px">
-        <div class="input-group"><label class="input-label">Sets</label>${stepperHtml(`s_${uid}`, setsVal, 0, 10)}</div>
-        <div class="input-group"><label class="input-label">Time (sec)</label><input type="number" inputmode="numeric" pattern="[0-9]*" id="r_${uid}" placeholder="${repsPlaceholder}" step="1" style="width:100%"></div>
-      </div>`;
-      } else {
-        html += `<div class="log-input-grid lig-2" style="margin-bottom:10px">
-        <div class="input-group"><label class="input-label">Sets</label>${stepperHtml(`s_${uid}`, setsVal, 0, 10)}</div>
-        <div class="input-group"><label class="input-label">Reps</label>${stepperHtml(`r_${uid}`, '', 0, 50, repsPlaceholder)}</div>
-      </div>`;
-      }
-      html += `<div class="input-group">
-        <label class="input-label">Notes</label>
-        <input type="text" id="n_${uid}" placeholder="optional">
-      </div>`;
-    }
+    if (desc) html += `<div class="ex-desc">${desc}</div>`;
+    html += buildSetRows(uid, ex, exUnit);
+    html += `<div class="input-group">
+      <label class="input-label">Notes</label>
+      <input type="text" id="n_${uid}" placeholder="optional">
+    </div>`;
     html += `</div></div>`;
   });
 
@@ -1492,20 +1384,13 @@ function renderSelectedDay() {
     const exs2 = session.isDefault ? EXERCISES[session.day] : session.exercises;
     exs2.forEach((ex, i) => {
       const uid = `${si}_${i}`;
-      const exName = ex.exercise || ex.name;
       const d = draft.exercises[i];
       if (!d) return;
-      if (PROTOCOLS[exName]) {
-        if (d.wa !== '') { const el = document.getElementById(`wa_${uid}`); if (el) el.value = d.wa; }
-        if (d.wt !== '') { const el = document.getElementById(`wt_${uid}`); if (el) el.value = d.wt; }
-        if (d.rr !== '') { const el = document.getElementById(`rr_${uid}`); if (el) el.value = d.rr; }
-        if (d.si !== '') { const el = document.getElementById(`si_${uid}`); if (el) el.value = d.si; }
-      } else {
-        if (d.w !== '')  { const el = document.getElementById(`w_${uid}`);  if (el) el.value = d.w; }
-        if (d.s !== '')  { const el = document.getElementById(`s_${uid}`);  if (el) el.value = d.s; }
-        if (d.r !== '')  { const el = document.getElementById(`r_${uid}`);  if (el) el.value = d.r; }
-        if (d.n !== '')  { const el = document.getElementById(`n_${uid}`);  if (el) el.value = d.n; }
+      // Restore set rows from draft
+      if (d.sets && d.sets.length) {
+        restoreSetRows(uid, ex, d.sets);
       }
+      if (d.n) { const el = document.getElementById(`n_${uid}`); if (el) el.value = d.n; }
     });
   }
 
@@ -1624,20 +1509,12 @@ async function saveWorkoutFromQueue(si) {
     const exName = ex.exercise || ex.name;
     const exUnit = ex.unit || 'kg';
     const uid = `${si}_${i}`;
-    if (PROTOCOLS[exName]) {
-      return { name: exName, unit: exUnit, protocol: true,
-        activationWeight: document.getElementById(`wa_${uid}`)?.value || '',
-        topWeight: document.getElementById(`wt_${uid}`)?.value || '',
-        weight: document.getElementById(`wt_${uid}`)?.value || '',
-        topReps: document.getElementById(`rr_${uid}`)?.value || '',
-        singles: document.getElementById(`si_${uid}`)?.value || '',
-        notes: document.getElementById(`n_${uid}`)?.value || '' };
-    }
-    return { name: exName, unit: exUnit,
-      weight: document.getElementById(`w_${uid}`)?.value || '',
-      sets: document.getElementById(`s_${uid}`)?.value || '',
-      reps: document.getElementById(`r_${uid}`)?.value || '',
-      notes: document.getElementById(`n_${uid}`)?.value || '' };
+    return {
+      name: exName,
+      unit: exUnit,
+      sets: collectSetRows(uid),
+      notes: document.getElementById(`n_${uid}`)?.value || ''
+    };
   });
 
   try {
@@ -1724,9 +1601,20 @@ async function renderHistory() {
     (s.exercises||[]).forEach(ex => {
       if (weeklyBests.hasOwnProperty(ex.name)) {
         const isRepBased = ANCHOR_REPS.has(ex.name);
-        const v = isRepBased
-          ? Math.abs(parseFloat(ex.reps || 0))
-          : Math.abs(parseFloat(ex.topWeight || ex.weight || 0));
+        let v = 0;
+        if (Array.isArray(ex.sets) && ex.sets.length) {
+          // New format — find best set
+          if (isRepBased) {
+            v = Math.max(...ex.sets.map(s => parseFloat(s.reps || 0)));
+          } else {
+            v = Math.max(...ex.sets.map(s => Math.abs(parseFloat(s.weight || 0))));
+          }
+        } else {
+          // Legacy format
+          v = isRepBased
+            ? Math.abs(parseFloat(ex.reps || 0))
+            : Math.abs(parseFloat(ex.topWeight || ex.weight || 0));
+        }
         if (v > 0) {
           if (!weeklyBests[ex.name][weekKey] || v > weeklyBests[ex.name][weekKey])
             weeklyBests[ex.name][weekKey] = v;
@@ -1813,39 +1701,31 @@ function renderSessionList() {
         <div class="detail-ex-name">
           <span class="ex-badge badge-${bt}">${bl}</span>${ex.name}
         </div>`;
-      if (ex.protocol) {
-        detailHtml += `<div class="log-input-grid lig-2" style="margin-bottom:10px">
-          <div class="input-group"><label class="input-label">Activation kg</label>
-            ${stepperHtml(`h_wa_${uid}`, ex.activationWeight||'', 0, 300, '', 2.5)}</div>
-          <div class="input-group"><label class="input-label">Top set kg</label>
-            ${stepperHtml(`h_wt_${uid}`, ex.topWeight||'', 0, 300, '', 2.5)}</div>
-        </div>
-        <div class="log-input-grid lig-2" style="margin-bottom:10px">
-          <div class="input-group"><label class="input-label">Top set reps</label>
-            ${stepperHtml(`h_rr_${uid}`, ex.topReps||'', 0, 10, '')}</div>
-          <div class="input-group"><label class="input-label">Singles done</label>
-            ${stepperHtml(`h_si_${uid}`, ex.singles||'', 0, 3, '')}</div>
-        </div>
-        <div class="input-group">
-          <label class="input-label">Notes</label>
-          <input type="text" id="h_n_${uid}" value="${ex.notes||''}" placeholder="optional">
-        </div>`;
-      } else {
-        detailHtml += `<div class="log-input-grid lig-1" style="margin-bottom:10px">
-          <div class="input-group"><label class="input-label">Weight (${ex.unit||'kg'})</label>
-            ${stepperHtml(`h_w_${uid}`, ex.weight||'', 0, 300, '', 0.5)}</div>
-        </div>
-        <div class="log-input-grid lig-2" style="margin-bottom:10px">
-          <div class="input-group"><label class="input-label">Sets</label>
-            ${stepperHtml(`h_s_${uid}`, ex.sets||'', 0, 10, '')}</div>
-          <div class="input-group"><label class="input-label">Reps</label>
-            ${stepperHtml(`h_r_${uid}`, ex.reps||'', 0, 50, '')}</div>
-        </div>
-        <div class="input-group">
-          <label class="input-label">Notes</label>
-          <input type="text" id="h_n_${uid}" value="${ex.notes||''}" placeholder="optional">
-        </div>`;
+      // Convert legacy format to sets array for editing if needed
+      const isNewFormat = Array.isArray(ex.sets);
+      const exForRender = isNewFormat ? ex : legacyToSets(ex);
+
+      // For legacy sessions, show original data as read-only reference
+      if (!isNewFormat) {
+        const parts = [];
+        if (ex.activationWeight) parts.push(`Activation: ${ex.activationWeight}${ex.unit||'kg'}`);
+        if (ex.topWeight || ex.weight) parts.push(`Top set: ${ex.topWeight||ex.weight}${ex.unit||'kg'}`);
+        if (ex.topReps || ex.reps) parts.push(`Reps: ${ex.topReps||ex.reps}`);
+        if (ex.singles && parseInt(ex.singles) > 0) parts.push(`Singles: ${ex.singles}`);
+        if (ex.sets && !Array.isArray(ex.sets)) parts.push(`Sets: ${ex.sets}`);
+        if (parts.length) {
+          detailHtml += `<div style="font-family:var(--mono);font-size:10px;color:var(--text);opacity:0.4;margin-bottom:10px;line-height:1.8;padding:8px 10px;background:var(--bg3);border-radius:6px;border-left:2px solid var(--border2)">
+            <span style="text-transform:uppercase;letter-spacing:0.08em;font-weight:700;display:block;margin-bottom:4px">Original logged data</span>
+            ${parts.join(' · ')}
+          </div>`;
+        }
       }
+
+      detailHtml += buildSetRows(uid, exForRender, ex.unit || 'kg');
+      detailHtml += `<div class="input-group">
+        <label class="input-label">Notes</label>
+        <input type="text" id="h_n_${uid}" value="${ex.notes||''}" placeholder="optional">
+      </div>`;
       detailHtml += `</div>`;
     });
 
@@ -1894,24 +1774,12 @@ async function saveSessionEdit(sid, sessionId, idx) {
   btn.textContent = 'Saving…'; btn.disabled = true;
   statusEl.textContent = '';
 
-  // Rebuild exercises from inputs
+  // Rebuild exercises from inputs — always collect set rows (legacy was converted via legacyToSets)
   const exercises = (s.exercises||[]).map((ex, ei) => {
     const uid = `${sid}_${ei}`;
-    if (ex.protocol) {
-      return { ...ex,
-        activationWeight: document.getElementById(`h_wa_${uid}`)?.value || ex.activationWeight,
-        topWeight:        document.getElementById(`h_wt_${uid}`)?.value || ex.topWeight,
-        topReps:          document.getElementById(`h_rr_${uid}`)?.value || ex.topReps,
-        singles:          document.getElementById(`h_si_${uid}`)?.value || ex.singles,
-        notes:            document.getElementById(`h_n_${uid}`)?.value || ex.notes || '',
-      };
-    }
-    return { ...ex,
-      weight: document.getElementById(`h_w_${uid}`)?.value || ex.weight,
-      sets:   document.getElementById(`h_s_${uid}`)?.value || ex.sets,
-      reps:   document.getElementById(`h_r_${uid}`)?.value || ex.reps,
-      notes:  document.getElementById(`h_n_${uid}`)?.value || '',
-    };
+    const notes = document.getElementById(`h_n_${uid}`)?.value || ex.notes || '';
+    const sets = collectSetRows(uid);
+    return { name: ex.name, unit: ex.unit, sets, notes };
   });
 
   const notes = document.getElementById(`h_notes_${sid}`)?.value || '';
@@ -2159,12 +2027,21 @@ function timerToggle(uid) {
     t.running = false;
     document.getElementById(`timer-toggle-${uid}`).textContent = 'Start';
     document.getElementById(`timer-display-${uid}`).classList.remove('running');
-    // Auto-fill the time field with elapsed seconds rounded to nearest second
+    // Auto-fill first empty reps field in the set rows
     const seconds = Math.round(t.elapsed / 1000);
-    const repsEl = document.getElementById(`r_${uid}`);
-    if (repsEl) {
-      repsEl.value = seconds;
-      repsEl.dispatchEvent(new Event('input', { bubbles: true }));
+    const container = document.getElementById(`set-rows-${uid}`);
+    if (container) {
+      const rows = Array.from(container.children);
+      const j = rows.findIndex((_, idx) => {
+        const el = document.getElementById(`set_${uid}_${idx}_r`);
+        return el && (el.value === '' || el.value === '0');
+      });
+      const targetIdx = j >= 0 ? j : rows.length - 1;
+      const repsEl = document.getElementById(`set_${uid}_${targetIdx}_r`);
+      if (repsEl) {
+        repsEl.value = seconds;
+        repsEl.dispatchEvent(new Event('input', { bubbles: true }));
+      }
     }
   } else {
     t.startedAt = Date.now();
@@ -2190,6 +2067,171 @@ function timerReset(uid) {
   const toggle  = document.getElementById(`timer-toggle-${uid}`);
   if (display) { display.textContent = '0:00.0'; display.classList.remove('running'); }
   if (toggle)  toggle.textContent = 'Start';
+}
+
+// ─── SET-BY-SET HELPERS ──────────────────────────────────────────────────
+
+// Detect whether an ex object uses timed reps
+// (reused from isTimedExercise but works on program rows AND session exercises)
+function isTimedEx(ex) {
+  const reps = (ex.reps || '').toLowerCase();
+  const unit = (ex.unit || '').toLowerCase();
+  return reps.includes('sec') || unit.includes('sec');
+}
+
+// Convert a legacy exercise object (old summary format) into a synthetic sets array
+function legacyToSets(ex) {
+  const sets = [];
+  const numSets = parseInt(ex.sets) || 3;
+  const weight  = parseFloat(ex.activationWeight || ex.weight) || 0;
+  const topW    = parseFloat(ex.topWeight || ex.weight) || weight;
+  const reps    = ex.topReps || ex.reps || '';
+
+  if (ex.protocol && ex.activationWeight) {
+    // Protocol: activation set, then top sets, then singles if any
+    sets.push({ weight: parseFloat(ex.activationWeight), reps: reps });
+    sets.push({ weight: topW, reps: reps });
+    if (ex.singles && parseInt(ex.singles) > 0) {
+      for (let i = 0; i < parseInt(ex.singles); i++) {
+        sets.push({ weight: topW, reps: 1 });
+      }
+    }
+    sets.push({ weight: parseFloat(ex.activationWeight), reps: reps });
+  } else {
+    for (let i = 0; i < numSets; i++) {
+      sets.push({ weight: parseFloat(ex.weight) || 0, reps: ex.reps || '' });
+    }
+  }
+  return { ...ex, sets };
+}
+
+// Build the set-rows HTML for an exercise
+// ex can be a program row (has suggested_sets) or a session exercise (has sets array)
+function buildSetRows(uid, ex, unit) {
+  const isTimed = isTimedEx(ex);
+  const repLabel = isTimed ? 'Time (s)' : 'Reps';
+
+  // Determine initial sets data
+  let sets;
+  if (Array.isArray(ex.sets) && ex.sets.length) {
+    // Session exercise with saved sets
+    sets = ex.sets;
+  } else if (Array.isArray(ex.suggested_sets) && ex.suggested_sets.length) {
+    // Program row with coach suggestions
+    sets = ex.suggested_sets;
+  } else {
+    // Fallback: 3 empty sets
+    sets = [{weight: '', reps: ''}, {weight: '', reps: ''}, {weight: '', reps: ''}];
+  }
+
+  let html = `<div class="set-row-headers">
+    <div></div>
+    <div class="set-row-label">Weight (${unit || 'kg'})</div>
+    <div class="set-row-label">${repLabel}</div>
+    <div></div>
+  </div>
+  <div class="set-rows" id="set-rows-${uid}">`;
+
+  sets.forEach((s, j) => {
+    html += buildSetRowHtml(uid, j, s.weight ?? '', s.reps ?? '', isTimed);
+  });
+
+  html += `</div>`;
+
+  if (isTimed) {
+    html += `<div style="margin-bottom:10px"><label class="input-label">Timer</label>${timerHtml(uid)}</div>`;
+  }
+
+  html += `<button class="set-add-btn" onclick="addSet('${uid}', '${unit || 'kg'}', ${isTimed})">+ Add set</button>`;
+
+  return html;
+}
+
+function buildSetRowHtml(uid, j, weight, reps, isTimed) {
+  const wId = `set_${uid}_${j}_w`;
+  const rId = `set_${uid}_${j}_r`;
+  const step = 0.5;
+  return `<div class="set-row" id="set-row-${uid}-${j}">
+    <div class="set-row-num">${j + 1}</div>
+    <div>${stepperHtml(wId, weight, 0, 300, '', step)}</div>
+    <div>${isTimed
+      ? `<input type="number" inputmode="numeric" pattern="[0-9]*" id="${rId}" value="${reps}" style="width:100%;background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--radius-xs);padding:11px 13px;font-size:16px;font-family:var(--sans);font-weight:500;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;-moz-appearance:textfield">`
+      : stepperHtml(rId, reps, 0, 99, '')
+    }</div>
+    <button class="set-remove-btn" onclick="removeSet('${uid}', ${j})">×</button>
+  </div>`;
+}
+
+function addSet(uid, unit, isTimed) {
+  const container = document.getElementById(`set-rows-${uid}`);
+  if (!container) return;
+  const j = container.children.length;
+  // Copy last set's weight as default
+  const lastWEl = document.getElementById(`set_${uid}_${j-1}_w`);
+  const lastW = lastWEl ? lastWEl.value : '';
+  container.insertAdjacentHTML('beforeend', buildSetRowHtml(uid, j, lastW, '', isTimed));
+  // Re-number all rows
+  renumberSetRows(uid);
+}
+
+function removeSet(uid, j) {
+  const container = document.getElementById(`set-rows-${uid}`);
+  if (!container || container.children.length <= 1) return; // always keep at least 1
+  const row = document.getElementById(`set-row-${uid}-${j}`);
+  if (row) row.remove();
+  renumberSetRows(uid);
+}
+
+function renumberSetRows(uid) {
+  const container = document.getElementById(`set-rows-${uid}`);
+  if (!container) return;
+  Array.from(container.children).forEach((row, j) => {
+    // Update ID
+    row.id = `set-row-${uid}-${j}`;
+    // Update set number label
+    const numEl = row.querySelector('.set-row-num');
+    if (numEl) numEl.textContent = j + 1;
+    // Update input IDs and stepper onclick attrs
+    const wInput = row.querySelector(`[id^="set_${uid}_"]`);
+    const inputs = row.querySelectorAll('input[type=number]');
+    if (inputs[0]) inputs[0].id = `set_${uid}_${j}_w`;
+    if (inputs[1]) inputs[1].id = `set_${uid}_${j}_r`;
+    // Update stepper buttons
+    const btns = row.querySelectorAll('.stepper-btn');
+    if (btns.length >= 2) {
+      btns[0].setAttribute('onclick', `stepField('set_${uid}_${j}_w',-0.5,0,300,0.5)`);
+      btns[1].setAttribute('onclick', `stepField('set_${uid}_${j}_w',0.5,0,300,0.5)`);
+    }
+    if (btns.length >= 4) {
+      btns[2].setAttribute('onclick', `stepField('set_${uid}_${j}_r',-1,0,99,1)`);
+      btns[3].setAttribute('onclick', `stepField('set_${uid}_${j}_r',1,0,99,1)`);
+    }
+    // Update remove button
+    const removeBtn = row.querySelector('.set-remove-btn');
+    if (removeBtn) removeBtn.setAttribute('onclick', `removeSet('${uid}', ${j})`);
+  });
+}
+
+function collectSetRows(uid) {
+  const container = document.getElementById(`set-rows-${uid}`);
+  if (!container) return [];
+  return Array.from(container.children).map((_, j) => {
+    const w = document.getElementById(`set_${uid}_${j}_w`)?.value ?? '';
+    const r = document.getElementById(`set_${uid}_${j}_r`)?.value ?? '';
+    return { weight: w === '' ? '' : parseFloat(w), reps: r === '' ? '' : parseFloat(r) };
+  });
+}
+
+function restoreSetRows(uid, ex, sets) {
+  const container = document.getElementById(`set-rows-${uid}`);
+  if (!container) return;
+  const isTimed = isTimedEx(ex);
+  const unit = ex.unit || 'kg';
+  // Rebuild the container with draft sets
+  container.innerHTML = '';
+  sets.forEach((s, j) => {
+    container.insertAdjacentHTML('beforeend', buildSetRowHtml(uid, j, s.weight ?? '', s.reps ?? '', isTimed));
+  });
 }
 
 init();
