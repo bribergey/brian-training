@@ -1706,25 +1706,7 @@ function renderSessionList() {
           <span class="ex-badge badge-${bt}">${bl}</span>${ex.name}
         </div>`;
       // Convert legacy format to sets array for editing if needed
-      const isNewFormat = Array.isArray(ex.sets);
-      const exForRender = isNewFormat ? ex : legacyToSets(ex);
-
-      // For legacy sessions, show original data as read-only reference
-      if (!isNewFormat) {
-        const parts = [];
-        if (ex.activationWeight) parts.push(`Activation: ${ex.activationWeight}${ex.unit||'kg'}`);
-        if (ex.topWeight || ex.weight) parts.push(`Top set: ${ex.topWeight||ex.weight}${ex.unit||'kg'}`);
-        if (ex.topReps || ex.reps) parts.push(`Reps: ${ex.topReps||ex.reps}`);
-        if (ex.singles && parseInt(ex.singles) > 0) parts.push(`Singles: ${ex.singles}`);
-        if (ex.sets && !Array.isArray(ex.sets)) parts.push(`Sets: ${ex.sets}`);
-        if (parts.length) {
-          detailHtml += `<div style="font-family:var(--mono);font-size:10px;color:var(--text);opacity:0.4;margin-bottom:10px;line-height:1.8;padding:8px 10px;background:var(--bg3);border-radius:6px;border-left:2px solid var(--border2)">
-            <span style="text-transform:uppercase;letter-spacing:0.08em;font-weight:700;display:block;margin-bottom:4px">Original logged data</span>
-            ${parts.join(' · ')}
-          </div>`;
-        }
-      }
-
+      const exForRender = Array.isArray(ex.sets) ? ex : legacyToSets(ex);
       detailHtml += buildSetRows(uid, exForRender, ex.unit || 'kg');
       detailHtml += `<div class="input-group">
         <label class="input-label">Notes</label>
@@ -2174,16 +2156,23 @@ function addSet(uid, unit, isTimed) {
   const lastWEl = document.getElementById(`set_${uid}_${j-1}_w`);
   const lastW = lastWEl ? lastWEl.value : '';
   container.insertAdjacentHTML('beforeend', buildSetRowHtml(uid, j, lastW, '', isTimed));
-  // Re-number all rows
   renumberSetRows(uid);
+  saveDraftFromUid(uid);
 }
 
 function removeSet(uid, j) {
   const container = document.getElementById(`set-rows-${uid}`);
-  if (!container || container.children.length <= 1) return; // always keep at least 1
+  if (!container || container.children.length <= 1) return;
   const row = document.getElementById(`set-row-${uid}-${j}`);
   if (row) row.remove();
   renumberSetRows(uid);
+  saveDraftFromUid(uid);
+}
+
+// Extract si from uid (format: "si_exerciseIndex") and trigger saveDraft
+function saveDraftFromUid(uid) {
+  const si = parseInt(uid.split('_')[0]);
+  if (!isNaN(si)) saveDraft(si);
 }
 
 function renumberSetRows(uid) {
