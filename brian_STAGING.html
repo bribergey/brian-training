@@ -1080,8 +1080,8 @@ function buildSparkline(points, weeks, unit) {
     return `<text x="${toX(i).toFixed(1)}" y="${labelY}" text-anchor="middle" font-size="9" fill="var(--text)" opacity="0.5" font-family="monospace">${v}${unit}</text>`;
   }).join('');
 
-  const firstWeek = weeks.length ? `Wk ${weeks[0].split('-W')[1]}` : '';
-  const lastWeek  = weeks.length > 1 ? `Wk ${weeks[weeks.length-1].split('-W')[1]}` : '';
+  const firstWeek = weeks.length ? `Wk 1` : '';
+  const lastWeek  = weeks.length > 1 ? `Wk ${weeks.length}` : '';
 
   return `<svg class="lift-sparkline" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
     ${pathD ? `<path d="${pathD}" fill="none" stroke="var(--green)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.6"/>` : ''}
