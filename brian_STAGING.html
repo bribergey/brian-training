@@ -421,6 +421,11 @@ select {
 .lift-spark-label { font-family: var(--mono); font-size: 9px; color: var(--text); opacity: 0.4; }
 .lift-no-data { font-family: var(--mono); font-size: 11px; color: var(--text); opacity: 0.4; padding: 8px 0; }
 
+/* ME TAB CHIPS */
+.me-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.me-chip { background: var(--bg3); border: 1.5px solid var(--border2); border-radius: 20px; padding: 6px 12px; font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text); opacity: 0.45; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.me-chip.active { background: rgba(26,219,78,0.12); border-color: var(--green); color: var(--green); opacity: 1; font-weight: 700; }
+
 /* LOG ENTRY */
 /* SESSION DETAIL */
 .log-entry {
@@ -759,6 +764,12 @@ select {
   </div>
 </div>
 
+<div class="panel" id="tab-me">
+  <div class="panel-inner" id="me-inner">
+    <div style="color:var(--text);font-size:14px;opacity:0.5;padding:8px 0">Loading...</div>
+  </div>
+</div>
+
 </div><!-- end panels -->
 
 <!-- BOTTOM NAV -->
@@ -805,6 +816,15 @@ select {
       </svg>
     </div>
     Nutrition
+  </button>
+  <button class="nav-btn" onclick="showTab('me',this)">
+    <div class="nav-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    </div>
+    Me
   </button>
 </nav>
 
@@ -1495,6 +1515,7 @@ function showTab(t, btn) {
   if (t === 'history') renderHistory();
   if (t === 'program') renderProgram();
   if (t === 'today') renderTodayQueue();
+  if (t === 'me') renderMe();
 }
 
 // ─── RENDER HISTORY ───────────────────────────────────────────────────────
@@ -2254,6 +2275,286 @@ function restoreSetRows(uid, ex, sets) {
   sets.forEach((s, j) => {
     container.insertAdjacentHTML('beforeend', buildSetRowHtml(uid, j, s.weight ?? '', s.reps ?? '', isTimed));
   });
+}
+
+// ─── ME TAB ───────────────────────────────────────────────────────────────
+
+const GOALS_OPTIONS = ['Build strength','Muscle gain','Fat loss','Body recomposition','Improve fitness / endurance','General health','Sport performance'];
+const EQUIPMENT_OPTIONS = ['Barbell','Cables','Dumbbells','Machines','Bodyweight'];
+const DAYS_OPTIONS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const EXPERIENCE_OPTIONS = ['Beginner','Intermediate','Advanced'];
+
+let meProfile = null;
+let meMeasurements = [];
+
+async function renderMe() {
+  const el = document.getElementById('me-inner');
+  el.innerHTML = '<div style="color:var(--text);font-size:14px;opacity:0.5;padding:8px 0">Loading...</div>';
+
+  try {
+    const [profile, measurements] = await Promise.all([
+      sbGet(ENV === 'production' ? 'user_profile' : 'user_profile_staging', 'select=*&limit=1'),
+      sbGet(ENV === 'production' ? 'user_measurements' : 'user_measurements_staging', 'select=*&order=logged_at.desc')
+    ]);
+    meProfile     = profile[0] || {};
+    meMeasurements = measurements || [];
+  } catch(e) {
+    meProfile = {}; meMeasurements = [];
+  }
+
+  const p = meProfile;
+  const latestWeight  = meMeasurements.find(m => m.weight_kg)?.weight_kg || '';
+  const latestBf      = meMeasurements.find(m => m.body_fat_pct)?.body_fat_pct || '';
+
+  // Age from DOB
+  let ageStr = '';
+  if (p.dob) {
+    const dob = new Date(p.dob);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    if (today < new Date(today.getFullYear(), dob.getMonth(), dob.getDate())) age--;
+    ageStr = age + ' years old';
+  }
+
+  // Chart for weight history
+  const weightPoints = [...meMeasurements].reverse().filter(m => m.weight_kg);
+  const bfPoints     = [...meMeasurements].reverse().filter(m => m.body_fat_pct);
+
+  function miniSparkline(vals, unit) {
+    if (vals.length === 0) return `<div style="font-family:var(--mono);font-size:10px;color:var(--text);opacity:0.35;padding:8px 0">No data yet</div>`;
+    if (vals.length === 1) {
+      return `<div style="font-family:var(--mono);font-size:10px;color:var(--text);opacity:0.4;margin-bottom:8px">1 entry · ${vals[0].date || ''}</div>`;
+    }
+    const W = 280, H = 60, PAD_X = 8, PAD_TOP = 20, PAD_BOT = 8;
+    const vs = vals.map(p => p.v);
+    const minV = Math.min(...vs), maxV = Math.max(...vs), range = maxV - minV || 1;
+    const toX = i => PAD_X + (i / (vals.length - 1)) * (W - PAD_X * 2);
+    const toY = v => PAD_TOP + (1 - (v - minV) / range) * (H - PAD_TOP - PAD_BOT);
+    const pathD = vs.map((v, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ');
+    const dots  = vs.map((v, i) => {
+      const isLast = i === vs.length - 1;
+      return `<circle cx="${toX(i).toFixed(1)}" cy="${toY(v).toFixed(1)}" r="${isLast ? 4 : 3}" fill="${isLast ? 'var(--green)' : 'var(--bg2)'}" stroke="var(--green)" stroke-width="1.5"/>`;
+    }).join('');
+    const labels = vs.slice(0, -1).map((v, i) =>
+      `<text x="${toX(i).toFixed(1)}" y="${(toY(v) - 6).toFixed(1)}" text-anchor="middle" font-size="9" fill="var(--text)" opacity="0.4" font-family="monospace">${v}${unit}</text>`
+    ).join('');
+    const firstDate = vals[0].date ? `<span class="lift-spark-label">${vals[0].date}</span>` : '';
+    const lastDate  = vals[vals.length-1].date ? `<span class="lift-spark-label">${vals[vals.length-1].date}</span>` : '';
+    return `<svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="display:block;margin:4px 0 4px;overflow:visible">
+      <path d="${pathD}" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" opacity="0.6"/>
+      ${dots}${labels}
+    </svg>
+    <div class="lift-spark-labels" style="margin-bottom:12px">${firstDate}${lastDate}</div>`;
+  }
+
+  function multiSelect(id, options, selected) {
+    return options.map(o => {
+      const active = (selected || []).includes(o);
+      return `<button type="button" class="me-chip${active ? ' active' : ''}" onclick="meToggleChip('${id}','${o}',this)">${o}</button>`;
+    }).join('');
+  }
+
+  function timeVal(t) { return t ? t.slice(0,5) : ''; }
+
+  el.innerHTML = `
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-section-title">Profile</div>
+      <div class="input-group" style="margin-bottom:14px">
+        <label class="input-label">Name</label>
+        <input type="text" id="me-name" value="${p.name||''}">
+      </div>
+      <div class="log-input-grid lig-2" style="margin-bottom:14px">
+        <div class="input-group">
+          <label class="input-label">Date of birth</label>
+          <input type="date" id="me-dob" value="${p.dob||''}" class="date-picker-input" style="display:block;width:100%" onchange="meUpdateAge(this.value)">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Age</label>
+          <div id="me-age-display" style="font-family:var(--display);font-size:20px;font-weight:800;color:var(--text);padding-top:6px">${ageStr || '—'}</div>
+        </div>
+      </div>
+      <div class="log-input-grid lig-2" style="margin-bottom:0">
+        <div class="input-group">
+          <label class="input-label">Height (cm)</label>
+          <input type="number" inputmode="numeric" id="me-height" value="${p.height_cm||''}">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Experience</label>
+          <select id="me-experience">
+            ${EXPERIENCE_OPTIONS.map(o => `<option value="${o}"${p.experience_level===o?' selected':''}>${o}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-section-title">Weight</div>
+      <div style="font-family:var(--display);font-size:28px;font-weight:800;color:var(--text);margin-bottom:18px">${latestWeight ? latestWeight + 'kg' : '—'}</div>
+      ${miniSparkline(weightPoints.map(m => ({v: parseFloat(m.weight_kg), date: m.logged_at})), 'kg')}
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-section-title">Body Fat</div>
+      <div style="font-family:var(--display);font-size:28px;font-weight:800;color:var(--text);margin-bottom:18px">${latestBf ? latestBf + '%' : '—'}</div>
+      ${miniSparkline(bfPoints.map(m => ({v: parseFloat(m.body_fat_pct), date: m.logged_at})), '%')}
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-section-title">Log measurement</div>
+      <div class="input-group" style="margin-bottom:10px">
+        <label class="input-label">Date</label>
+        <input type="date" id="me-new-date" value="${new Date().toISOString().split('T')[0]}" class="date-picker-input" style="display:block;width:100%">
+      </div>
+      <div class="log-input-grid lig-2" style="margin-bottom:10px">
+        <div class="input-group">
+          <label class="input-label">Weight (kg)</label>
+          <input type="number" inputmode="numeric" id="me-new-weight" placeholder="e.g. 75" step="0.1">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Body fat % <span style="opacity:0.4;font-weight:400">(optional)</span></label>
+          <input type="number" inputmode="numeric" id="me-new-bf" placeholder="e.g. 18" step="0.1">
+        </div>
+      </div>
+      <div class="input-group" style="margin-bottom:14px">
+        <label class="input-label">Notes (optional)</label>
+        <input type="text" id="me-new-notes" placeholder="e.g. morning, fasted">
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="btn btn-primary" style="flex:1" id="me-log-btn" onclick="logMeasurement()">Log measurement</button>
+        <span id="me-log-status" style="font-family:var(--mono);font-size:11px;color:var(--green);display:none">✓ Logged</span>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-section-title">Training</div>
+      <div class="log-input-grid lig-2" style="margin-bottom:14px">
+        <div class="input-group">
+          <label class="input-label">Days per week</label>
+          <input type="number" inputmode="numeric" id="me-training-days" value="${p.training_days_per_week||''}" min="1" max="7">
+        </div>
+      </div>
+      <div class="input-group" style="margin-bottom:14px">
+        <label class="input-label">Preferred days</label>
+        <div class="me-chips" id="me-preferred-days">${multiSelect('me-preferred-days', DAYS_OPTIONS, p.preferred_days)}</div>
+      </div>
+      <div class="log-input-grid lig-2" style="margin-bottom:0">
+        <div class="input-group">
+          <label class="input-label">Training from</label>
+          <input type="time" id="me-window-start" value="${timeVal(p.training_window_start)}" class="date-picker-input" style="display:block;width:100%">
+        </div>
+        <div class="input-group">
+          <label class="input-label">To</label>
+          <input type="time" id="me-window-end" value="${timeVal(p.training_window_end)}" class="date-picker-input" style="display:block;width:100%">
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-section-title">Goals</div>
+      <div class="me-chips" id="me-goals">${multiSelect('me-goals', GOALS_OPTIONS, p.goals)}</div>
+    </div>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-section-title">Health Context</div>
+      <div class="input-group" style="margin-bottom:14px">
+        <label class="input-label">Injuries or limitations</label>
+        <textarea id="me-injuries" rows="3" style="width:100%;background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--radius-xs);padding:11px 13px;font-size:16px;font-family:var(--sans);font-weight:500;color:var(--text);outline:none;resize:none" placeholder="e.g. mild lower back sensitivity">${p.injuries||''}</textarea>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Equipment access</label>
+        <div class="me-chips" id="me-equipment">${multiSelect('me-equipment', EQUIPMENT_OPTIONS, p.equipment)}</div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:32px">
+      <button class="btn btn-primary btn-full" id="me-save-btn" onclick="saveProfile()">Save profile</button>
+      <span id="me-save-status" style="font-family:var(--mono);font-size:11px;color:var(--green);display:none;white-space:nowrap">✓ Saved</span>
+    </div>
+  `;
+}
+
+function meUpdateAge(dob) {
+  if (!dob) return;
+  const d = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - d.getFullYear();
+  if (today < new Date(today.getFullYear(), d.getMonth(), d.getDate())) age--;
+  const el = document.getElementById('me-age-display');
+  if (el) el.textContent = age + ' years old';
+}
+
+function meToggleChip(groupId, value, btn) {
+  btn.classList.toggle('active');
+}
+
+function meGetChips(groupId) {
+  return Array.from(document.querySelectorAll(`#${groupId} .me-chip.active`)).map(b => b.textContent);
+}
+
+async function logMeasurement() {
+  const weight = document.getElementById('me-new-weight')?.value;
+  const bf     = document.getElementById('me-new-bf')?.value;
+  const notes  = document.getElementById('me-new-notes')?.value || null;
+  const date   = document.getElementById('me-new-date')?.value || new Date().toISOString().split('T')[0];
+  const btn    = document.getElementById('me-log-btn');
+  const status = document.getElementById('me-log-status');
+  if (!weight && !bf) return;
+
+  btn.textContent = 'Saving…'; btn.disabled = true;
+  status.style.display = 'none';
+
+  try {
+    await sbPost(ENV === 'production' ? 'user_measurements' : 'user_measurements_staging', {
+      logged_at: date,
+      weight_kg: weight ? parseFloat(weight) : null,
+      body_fat_pct: bf ? parseFloat(bf) : null,
+      notes
+    });
+    btn.textContent = 'Log measurement'; btn.disabled = false;
+    status.textContent = '✓ Logged'; status.style.display = 'block';
+    setTimeout(() => { status.style.display = 'none'; renderMe(); }, 1500);
+  } catch(e) {
+    btn.textContent = 'Log measurement'; btn.disabled = false;
+    status.textContent = '⚠ Error saving'; status.style.display = 'block';
+  }
+}
+
+async function saveProfile() {
+  const p = meProfile;
+  const status = document.getElementById('me-save-status');
+  const body = {
+    name:                    document.getElementById('me-name')?.value || null,
+    dob:                     document.getElementById('me-dob')?.value || null,
+    height_cm:               parseFloat(document.getElementById('me-height')?.value) || null,
+    training_days_per_week:  parseInt(document.getElementById('me-training-days')?.value) || null,
+    preferred_days:          meGetChips('me-preferred-days'),
+    training_window_start:   document.getElementById('me-window-start')?.value || null,
+    training_window_end:     document.getElementById('me-window-end')?.value || null,
+    goals:                   meGetChips('me-goals'),
+    injuries:                document.getElementById('me-injuries')?.value || null,
+    experience_level:        document.getElementById('me-experience')?.value || null,
+    equipment:               meGetChips('me-equipment'),
+    updated_at:              new Date().toISOString()
+  };
+
+  const btn = document.getElementById('me-save-btn');
+  btn.textContent = 'Saving…'; btn.disabled = true;
+  status.style.display = 'none';
+
+  try {
+    if (p.id) {
+      await sbPatch(ENV === 'production' ? 'user_profile' : 'user_profile_staging', p.id, body);
+    } else {
+      await sbPost(ENV === 'production' ? 'user_profile' : 'user_profile_staging', body);
+    }
+    meProfile = { ...p, ...body };
+    btn.textContent = 'Save profile'; btn.disabled = false;
+    status.textContent = '✓ Saved'; status.style.display = 'block';
+    setTimeout(() => { status.style.display = 'none'; }, 2500);
+  } catch(e) {
+    btn.textContent = 'Save profile'; btn.disabled = false;
+    status.textContent = '⚠ Error saving'; status.style.display = 'block';
+  }
 }
 
 init();
