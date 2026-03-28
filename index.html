@@ -340,18 +340,19 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
 .stepper:focus-within { border-color: var(--text); background: var(--bg2); }
 .stepper input[type=number] { flex: 1; background: transparent; border: none; text-align: center; padding: 11px 4px; min-width: 0; }
 .stepper input[type=number]:focus { background: transparent; }
-.stepper-btn { background: none; border: none; border-left: 1.5px solid var(--border2); padding: 0 10px; font-size: 18px; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; user-select: none; }
+.stepper-btn { background: none; border: none; border-left: 1.5px solid var(--border2); padding: 0 10px; font-size: 18px; color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; user-select: none; touch-action: manipulation; }
 .stepper-btn:first-child { border-left: none; border-right: 1.5px solid var(--border2); }
 .stepper-btn:active { background: var(--border2); }
 
 /* SET-BY-SET ROWS */
 .set-rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
-.set-row { display: grid; grid-template-columns: 20px 1fr 1fr 28px; gap: 4px; align-items: center; }
+.set-row { display: grid; grid-template-columns: 20px 1fr 1fr 36px; gap: 4px; align-items: center; }
 .set-row-num { font-family: var(--mono); font-size: 9px; font-weight: 700; color: var(--text); opacity: 0.35; text-align: center; padding-top: 2px; }
 .set-row-label { font-family: var(--mono); font-size: 9px; color: var(--text); opacity: 0.45; text-transform: uppercase; letter-spacing: 0.06em; text-align: center; margin-bottom: 3px; }
-.set-row-headers { display: grid; grid-template-columns: 20px 1fr 1fr 28px; gap: 4px; margin-bottom: 2px; }
-.set-remove-btn { background: none; border: none; color: var(--text); opacity: 0.25; font-size: 16px; cursor: pointer; padding: 0; text-align: center; line-height: 1; -webkit-tap-highlight-color: transparent; }
+.set-row-headers { display: grid; grid-template-columns: 20px 1fr 1fr 36px; gap: 4px; margin-bottom: 2px; }
+.set-remove-btn { background: none; border: none; color: var(--text); opacity: 0.25; font-size: 16px; cursor: pointer; padding: 0 4px; text-align: center; line-height: 1; -webkit-tap-highlight-color: transparent; touch-action: manipulation; position: relative; }
 .set-remove-btn:active { opacity: 0.7; }
+.set-remove-btn.holding { color: var(--red, #e24b4a); opacity: 1; }
 .set-add-btn { width: 100%; background: none; border: 1.5px dashed var(--border2); border-radius: var(--radius-xs); padding: 10px; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); opacity: 0.4; cursor: pointer; margin-bottom: 10px; -webkit-tap-highlight-color: transparent; }
 .set-add-btn:active { opacity: 0.8; background: var(--bg3); }
 
@@ -2175,7 +2176,7 @@ function buildSetRowHtml(uid, j, weight, reps, isTimed) {
       ? `<input type="number" inputmode="numeric" pattern="[0-9]*" id="${rId}" value="${reps}" style="width:100%;background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--radius-xs);padding:11px 13px;font-size:16px;font-family:var(--sans);font-weight:500;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;-moz-appearance:textfield">`
       : stepperHtml(rId, reps, 0, 99, '')
     }</div>
-    <button class="set-remove-btn" onclick="removeSet('${uid}', ${j})">×</button>
+    <button class="set-remove-btn" onmousedown="startRemoveHold(this,'${uid}',${j})" ontouchstart="startRemoveHold(this,'${uid}',${j})" onmouseup="cancelRemoveHold()" onmouseleave="cancelRemoveHold()" ontouchend="cancelRemoveHold()" ontouchcancel="cancelRemoveHold()">×</button>
   </div>`;
 }
 
@@ -2201,6 +2202,23 @@ function removeSet(uid, j) {
 }
 
 // Extract si from uid (format: "si_exerciseIndex") and trigger saveDraft
+// ─── HOLD-TO-DELETE ──────────────────────────────────────────────────────
+let _removeHoldTimer = null;
+
+function startRemoveHold(btn, uid, j) {
+  cancelRemoveHold();
+  btn.classList.add('holding');
+  _removeHoldTimer = setTimeout(() => {
+    btn.classList.remove('holding');
+    removeSet(uid, j);
+  }, 600);
+}
+
+function cancelRemoveHold() {
+  if (_removeHoldTimer) { clearTimeout(_removeHoldTimer); _removeHoldTimer = null; }
+  document.querySelectorAll('.set-remove-btn.holding').forEach(b => b.classList.remove('holding'));
+}
+
 function saveDraftFromUid(uid) {
   const si = parseInt(uid.split('_')[0]);
   if (!isNaN(si)) saveDraft(si);
@@ -2232,7 +2250,11 @@ function renumberSetRows(uid) {
     }
     // Update remove button
     const removeBtn = row.querySelector('.set-remove-btn');
-    if (removeBtn) removeBtn.setAttribute('onclick', `removeSet('${uid}', ${j})`);
+    if (removeBtn) {
+      removeBtn.setAttribute('onmousedown', `startRemoveHold(this,'${uid}',${j})`);
+      removeBtn.setAttribute('ontouchstart', `startRemoveHold(this,'${uid}',${j})`);
+      removeBtn.removeAttribute('onclick');
+    }
   });
 }
 
