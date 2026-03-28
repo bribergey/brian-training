@@ -214,19 +214,6 @@ body {
 }
 .day-btn.active .day-btn-focus { color: rgba(255,255,255,0.8); opacity: 1; }
 
-/* WARMUP */
-.warmup-strip {
-  background: #fffbeb; border: 1px solid rgba(212,150,10,0.2);
-  border-left: 4px solid var(--gold-bright);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  padding: 16px 18px; margin-bottom: 26px;
-}
-.warmup-label {
-  font-family: var(--mono); font-size: 10px; color: var(--gold);
-  text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 5px;
-}
-.warmup-text { font-size: 14px; color: var(--text); line-height: 1.65; }
-
 /* EXERCISE BLOCKS */
 .ex-block {
   background: var(--bg2); border: 1px solid var(--border);
@@ -367,6 +354,12 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
 .set-remove-btn:active { opacity: 0.7; }
 .set-add-btn { width: 100%; background: none; border: 1.5px dashed var(--border2); border-radius: var(--radius-xs); padding: 10px; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); opacity: 0.4; cursor: pointer; margin-bottom: 10px; -webkit-tap-highlight-color: transparent; }
 .set-add-btn:active { opacity: 0.8; background: var(--bg3); }
+
+/* SUPERSET GROUPING */
+.ss-group { position: relative; margin: 4px 0; }
+.ss-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--green); border-radius: 0 0 3px 3px; opacity: 0.6; }
+.ss-label { position: absolute; left: 8px; top: -9px; font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--green); background: var(--bg2); padding: 0 4px; }
+.ss-group .ex-block { margin-left: 10px; }
 select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239a9a94' fill='none' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 12px center;
@@ -624,15 +617,6 @@ select {
   width: 140px; -webkit-appearance: none;
 }
 .workout-card-body { padding: 0 22px 22px; }
-.workout-warmup {
-  background: #fffbeb; border-left: 3px solid var(--gold-bright);
-  border-radius: 0 6px 6px 0; padding: 8px 12px;
-  margin: 16px 0; font-size: 14px; color: var(--text); line-height: 1.6;
-}
-.workout-warmup-label {
-  font-family: var(--mono); font-size: 10px; color: var(--gold);
-  text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 3px;
-}
 .workout-notes-row {
   margin-top: 18px;
 }
@@ -978,17 +962,9 @@ const EX_BADGES = {
   'Single-leg cable knee raise':'core','Cable external rotation':'core',
 };
 
-const WARMUPS = {
-  A: '5 min bike/row · leg swings × 10 each · bodyweight squats × 15 · hip circles × 10',
-  B: '5 min row · arm circles × 10 · band pull-aparts × 15 · push-up × 10 · rotator cuff × 10 each',
-  C: '5 min row · cat-cow × 10 · hip hinge with dowel × 10 · face pulls × 15 · dead bugs × 10'
-};
-
 const ANCHORS = ['Barbell back squat','Deadlift','Barbell bench press','Pull-up','Barbell shoulder press'];
-const START_W  = {'Barbell back squat':40,'Deadlift':60,'Barbell bench press':40,'Barbell shoulder press':30};
 // Lifts tracked by reps instead of weight
 const ANCHOR_REPS = new Set(['Pull-up']);
-const START_REPS  = {'Pull-up': 0};
 
 let currentDay = 'A';
 
@@ -1077,7 +1053,7 @@ function getWeekKey(dateStr) {
   return `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
 }
 
-function buildSparkline(points, startVal, weeks, unit) {
+function buildSparkline(points, weeks, unit) {
   unit = unit || 'kg';
   const W = 300, H = 48, PAD = 10;
   const n = points.length;
@@ -1088,7 +1064,7 @@ function buildSparkline(points, startVal, weeks, unit) {
   const toX = i => PAD + (i / Math.max(n - 1, 1)) * (W - PAD * 2);
   const toY = v => PAD + (1 - (v - minV) / range) * (H - PAD * 2);
 
-  const pathD = points.map((v, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ');
+  const pathD = n > 1 ? points.map((v, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ') : '';
 
   const dots = points.map((v, i) => {
     const isLast = i === points.length - 1;
@@ -1098,23 +1074,23 @@ function buildSparkline(points, startVal, weeks, unit) {
     return `<circle cx="${toX(i).toFixed(1)}" cy="${toY(v).toFixed(1)}" r="${r}" fill="${fill}" stroke="var(--green)" stroke-width="2"/>`;
   }).join('');
 
+  // Label all dots except the last (current val is already shown at top)
   const valueLabels = points.slice(0, -1).map((v, i) => {
     const labelY = (toY(v) - 7).toFixed(1);
-    const isFirst = i === 0;
-    const color = isFirst ? 'opacity="0.45"' : 'opacity="0.6"';
-    return `<text x="${toX(i).toFixed(1)}" y="${labelY}" text-anchor="middle" font-size="9" fill="var(--text)" ${color} font-family="monospace">${v}${unit}</text>`;
+    return `<text x="${toX(i).toFixed(1)}" y="${labelY}" text-anchor="middle" font-size="9" fill="var(--text)" opacity="0.5" font-family="monospace">${v}${unit}</text>`;
   }).join('');
 
-  const weekLabel = weeks.length ? `Wk ${weeks[weeks.length-1].split('-W')[1]}` : '';
+  const firstWeek = weeks.length ? `Wk ${weeks[0].split('-W')[1]}` : '';
+  const lastWeek  = weeks.length > 1 ? `Wk ${weeks[weeks.length-1].split('-W')[1]}` : '';
 
   return `<svg class="lift-sparkline" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
-    <path d="${pathD}" fill="none" stroke="var(--green)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.6"/>
+    ${pathD ? `<path d="${pathD}" fill="none" stroke="var(--green)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.6"/>` : ''}
     ${dots}
     ${valueLabels}
   </svg>
   <div class="lift-spark-labels">
-    <span class="lift-spark-label">Start</span>
-    <span class="lift-spark-label">${weekLabel}</span>
+    <span class="lift-spark-label">${firstWeek}</span>
+    <span class="lift-spark-label">${lastWeek}</span>
   </div>`;
 }
 
@@ -1332,38 +1308,11 @@ function renderSelectedDay() {
       </div>
     </div>
     <div class="workout-card-body">
-      <div class="workout-warmup">
-        <div class="workout-warmup-label">Warm-up</div>
-        ${WARMUPS[session.day] || '5 min cardio · dynamic stretching'}
-      </div>
       <div class="section-label" style="margin-top:16px">Exercises</div>
       <div id="wcard-exercises-${si}">`;
 
   const exs = session.isDefault ? EXERCISES[session.day] : session.exercises;
-  exs.forEach((ex, i) => {
-    const exName     = ex.exercise || ex.name;
-    const exUnit     = ex.unit || 'kg';
-    const badgeType  = ex.badge || EX_BADGES[exName] || 'acc';
-    const badgeLabel = badgeType === 'anchor' ? 'Anchor' : badgeType === 'core' ? 'Core' : badgeType === 'upper' ? 'Upper' : badgeType === 'lower' ? 'Lower' : 'Acc';
-    const desc       = ex.coach_notes || '';
-    const uid        = `${si}_${i}`;
-
-    html += `<div class="ex-block" id="ex-${uid}">
-      <div class="ex-block-header" onclick="toggleEx('ex-${uid}')">
-        <span class="ex-badge badge-${badgeType}">${badgeLabel}</span>
-        <span class="ex-name">${exName}</span>
-        <span class="ex-chevron">▼</span>
-      </div>
-      <div class="ex-body">`;
-
-    if (desc) html += `<div class="ex-desc">${desc}</div>`;
-    html += buildSetRows(uid, ex, exUnit);
-    html += `<div class="input-group">
-      <label class="input-label">Notes</label>
-      <input type="text" id="n_${uid}" placeholder="optional">
-    </div>`;
-    html += `</div></div>`;
-  });
+  html += renderExerciseList(exs, si);
 
   html += `</div>
       <div class="workout-notes-row">
@@ -1632,22 +1581,21 @@ async function renderHistory() {
     const weekMap    = weeklyBests[l];
     const weeks      = Object.keys(weekMap).sort();
     const isRepBased = ANCHOR_REPS.has(l);
-    const startVal   = isRepBased ? START_REPS[l] : Math.abs(START_W[l]);
     const curVal     = weeks.length ? weekMap[weeks[weeks.length - 1]] : null;
-    const display    = curVal ?? startVal;
     const unit       = isRepBased ? 'reps' : 'kg';
+    const display    = curVal !== null ? curVal : '—';
 
     liftHtml += `<div class="lift-card">
       <div class="lift-card-header">
         <span class="lift-name">${l}</span>
-        <span><span class="lift-val">${display}</span><span class="lift-val-unit">${unit}</span></span>
+        <span><span class="lift-val">${display}</span><span class="lift-val-unit">${curVal !== null ? unit : ''}</span></span>
       </div>`;
 
     if (weeks.length === 0) {
       liftHtml += `<div class="lift-no-data">No data yet — log a session to start tracking</div>`;
     } else {
-      const points = [startVal, ...weeks.map(w => weekMap[w])];
-      liftHtml += buildSparkline(points, startVal, weeks, unit);
+      const points = weeks.map(w => weekMap[w]);
+      liftHtml += buildSparkline(points, weeks, unit);
     }
 
     liftHtml += `</div>`;
@@ -1701,9 +1649,10 @@ function renderSessionList() {
       const uid = `${sid}_${ei}`;
       const bt = EX_BADGES[ex.name] || 'acc';
       const bl = bt === 'anchor' ? 'Anchor' : bt === 'upper' ? 'Upper' : bt === 'lower' ? 'Lower' : bt === 'core' ? 'Core' : 'Acc';
+      const ssTag = ex.superset_group ? `<span style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--green);background:rgba(26,219,78,0.1);padding:2px 6px;border-radius:10px;margin-left:6px">SS</span>` : '';
       detailHtml += `<div class="detail-ex-block">
         <div class="detail-ex-name">
-          <span class="ex-badge badge-${bt}">${bl}</span>${ex.name}
+          <span class="ex-badge badge-${bt}">${bl}</span>${ex.name}${ssTag}
         </div>`;
       // Convert legacy format to sets array for editing if needed
       const exForRender = Array.isArray(ex.sets) ? ex : legacyToSets(ex);
@@ -1877,25 +1826,48 @@ function buildDayBlock(day, label, focus, exs) {
     </div>
     <div class="program-day-body">`;
 
-  exs.forEach(ex => {
-    const badgeType  = ex.badge || EX_BADGES[ex.exercise] || 'acc';
-    const badgeMap   = { anchor: 'badge-anchor', upper: 'badge-upper', lower: 'badge-lower', core: 'badge-core', acc: 'badge-acc' };
-    const badgeLabel = badgeType === 'anchor' ? 'Anchor' : badgeType === 'upper' ? 'Upper' : badgeType === 'lower' ? 'Lower' : badgeType === 'core' ? 'Core' : 'Acc';
-    const desc = ex.description || '';
+  let pi = 0;
+  while (pi < exs.length) {
+    const ex = exs[pi];
+    const ssGroup = ex.superset_group || null;
 
-    html += `<div class="program-ex-row">
-      <div class="program-ex-left" style="flex-direction:column;align-items:flex-start;gap:3px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="ex-badge ${badgeMap[badgeType] || 'badge-acc'}">${badgeLabel}</span>
-          <span class="ex-name">${ex.exercise}</span>
-        </div>
-        ${desc ? `<div class="ex-desc" style="padding-left:0">${desc}</div>` : ''}
-      </div>
-    </div>`;
-  });
+    if (ssGroup) {
+      const groupExs = [];
+      let pj = pi;
+      while (pj < exs.length && exs[pj].superset_group === ssGroup) {
+        groupExs.push(exs[pj]);
+        pj++;
+      }
+      html += `<div class="ss-group" style="margin: 4px 0">
+        <div class="ss-bar"></div>
+        <div class="ss-label">Superset</div>`;
+      groupExs.forEach(gex => { html += buildProgramExRow(gex); });
+      html += `</div>`;
+      pi = pj;
+    } else {
+      html += buildProgramExRow(ex);
+      pi++;
+    }
+  }
 
   html += `</div></div>`;
   return html;
+}
+
+function buildProgramExRow(ex) {
+  const badgeType  = ex.badge || EX_BADGES[ex.exercise] || 'acc';
+  const badgeMap   = { anchor: 'badge-anchor', upper: 'badge-upper', lower: 'badge-lower', core: 'badge-core', acc: 'badge-acc' };
+  const badgeLabel = badgeType === 'anchor' ? 'Anchor' : badgeType === 'upper' ? 'Upper' : badgeType === 'lower' ? 'Lower' : badgeType === 'core' ? 'Core' : 'Acc';
+  const desc = ex.description || '';
+  return `<div class="program-ex-row">
+    <div class="program-ex-left" style="flex-direction:column;align-items:flex-start;gap:3px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="ex-badge ${badgeMap[badgeType] || 'badge-acc'}">${badgeLabel}</span>
+        <span class="ex-name">${ex.exercise}</span>
+      </div>
+      ${desc ? `<div class="ex-desc" style="padding-left:0">${desc}</div>` : ''}
+    </div>
+  </div>`;
 }
 
 function renderArchivedMonths(archivedMonths, rows) {
@@ -2053,6 +2025,65 @@ function timerReset(uid) {
   const toggle  = document.getElementById(`timer-toggle-${uid}`);
   if (display) { display.textContent = '0:00.0'; display.classList.remove('running'); }
   if (toggle)  toggle.textContent = 'Start';
+}
+
+// ─── SUPERSET GROUPING ───────────────────────────────────────────────────
+
+function renderExerciseList(exs, si) {
+  let html = '';
+  let i = 0;
+  while (i < exs.length) {
+    const ex = exs[i];
+    const ssGroup = ex.superset_group || null;
+
+    if (ssGroup) {
+      // Collect all consecutive exercises in this superset group
+      const groupExs = [];
+      let j = i;
+      while (j < exs.length && exs[j].superset_group === ssGroup) {
+        groupExs.push({ ex: exs[j], i: j });
+        j++;
+      }
+      html += `<div class="ss-group">
+        <div class="ss-bar"></div>
+        <div class="ss-label">Superset</div>`;
+      groupExs.forEach(({ ex, i: idx }) => {
+        html += buildExerciseBlock(ex, idx, si);
+      });
+      html += `</div>`;
+      i = j;
+    } else {
+      html += buildExerciseBlock(ex, i, si);
+      i++;
+    }
+  }
+  return html;
+}
+
+function buildExerciseBlock(ex, i, si) {
+  const exName     = ex.exercise || ex.name;
+  const exUnit     = ex.unit || 'kg';
+  const badgeType  = ex.badge || EX_BADGES[exName] || 'acc';
+  const badgeLabel = badgeType === 'anchor' ? 'Anchor' : badgeType === 'core' ? 'Core' : badgeType === 'upper' ? 'Upper' : badgeType === 'lower' ? 'Lower' : 'Acc';
+  const desc       = ex.coach_notes || '';
+  const uid        = `${si}_${i}`;
+
+  let html = `<div class="ex-block" id="ex-${uid}">
+    <div class="ex-block-header" onclick="toggleEx('ex-${uid}')">
+      <span class="ex-badge badge-${badgeType}">${badgeLabel}</span>
+      <span class="ex-name">${exName}</span>
+      <span class="ex-chevron">▼</span>
+    </div>
+    <div class="ex-body">`;
+
+  if (desc) html += `<div class="ex-desc">${desc}</div>`;
+  html += buildSetRows(uid, ex, exUnit);
+  html += `<div class="input-group">
+    <label class="input-label">Notes</label>
+    <input type="text" id="n_${uid}" placeholder="optional">
+  </div>`;
+  html += `</div></div>`;
+  return html;
 }
 
 // ─── SET-BY-SET HELPERS ──────────────────────────────────────────────────
