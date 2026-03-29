@@ -294,20 +294,21 @@ body {
 
 /* TIMER WIDGET */
 .timer-widget {
-  display: flex; align-items: center; gap: 14px;
+  display: flex; align-items: center; gap: 8px;
   background: var(--bg3); border: 1.5px solid var(--border2);
-  border-radius: var(--radius-xs); padding: 12px 14px; margin-bottom: 10px;
+  border-radius: var(--radius-xs); padding: 10px 12px; margin-bottom: 10px;
 }
 .timer-display {
-  font-family: var(--display); font-size: 32px; font-weight: 800;
+  font-family: var(--display); font-size: 22px; font-weight: 800;
   color: var(--text); letter-spacing: -0.02em; flex: 1; line-height: 1;
 }
 .timer-display.running { color: var(--green); }
 .timer-btn {
-  background: var(--text); color: #fff; border: none; border-radius: 8px;
-  padding: 10px 16px; font-family: var(--mono); font-size: 11px;
+  background: var(--text); color: #fff; border: none; border-radius: 6px;
+  padding: 8px 12px; font-family: var(--mono); font-size: 10px;
   font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  white-space: nowrap; flex-shrink: 0;
 }
 .timer-btn.reset { background: var(--bg4); color: var(--text); }
 
@@ -356,6 +357,7 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
 
 /* SUPERSET GROUPING */
 .ss-group { position: relative; margin: 4px 0; }
+.program-day-body .ss-group { margin-left: -16px; margin-right: -16px; padding-left: 16px; padding-right: 16px; }
 .ss-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--green); border-radius: 0 0 3px 3px; opacity: 0.6; }
 .ss-label { position: absolute; left: 8px; top: -9px; font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--green); background: var(--bg2); padding: 0 4px; }
 .ss-group .ex-block { margin-left: 10px; }
@@ -870,7 +872,8 @@ async function saveSession(session) {
     exercises: session.exercises,
     logged_at: session.logged,
     skipped: session.skipped || false,
-    program_session_key: session.program_session_key || null
+    program_session_key: session.program_session_key || null,
+    workout_time: session.workout_time || null
   });
 }
 
@@ -986,6 +989,7 @@ const ANCHORS = ['Barbell back squat','Deadlift','Barbell bench press','Pull-up'
 const ANCHOR_REPS = new Set(['Pull-up']);
 
 let currentDay = 'A';
+let selectedDayIdx = null; // null = not yet set, persists across tab switches
 
 // ─── EXERCISE HELPERS ─────────────────────────────────────────────────────
 // ─── STEPPER HELPER ──────────────────────────────────────────────────────
@@ -1204,7 +1208,6 @@ function buildDefaultQueue(sessions) {
 
 
 let weekQueue = [];
-let selectedDayIdx = 0;
 
 // ─── DRAFT STATE (localStorage, keyed by day+date) ───────────────────────
 function draftKey(session) {
@@ -1268,7 +1271,10 @@ async function renderTodayQueue() {
   // Default to today's scheduled day if found, else first
   const today = new Date().toISOString().split('T')[0];
   const todayIdx = weekQueue.findIndex(s => s.scheduledDate === today);
-  selectedDayIdx = todayIdx >= 0 ? todayIdx : 0;
+  // Only reset day selection on first load or if current index is now out of bounds
+  if (selectedDayIdx === null || selectedDayIdx === undefined || selectedDayIdx >= weekQueue.length) {
+    selectedDayIdx = todayIdx >= 0 ? todayIdx : 0;
+  }
 
   renderDaySelector();
   renderSelectedDay();
@@ -1324,6 +1330,10 @@ function renderSelectedDay() {
         <input type="date" class="date-picker-input" id="date-input-${si}"
           value="${session.scheduledDate}" style="display:none"
           onchange="updateDate(${si}, this.value)" onblur="closeDatePicker(${si})">
+        <input type="time" class="date-picker-input" id="time-input-${si}"
+          value="${new Date().toTimeString().slice(0,5)}"
+          style="margin-left:6px;width:auto"
+          title="Workout time">
       </div>
     </div>
     <div class="workout-card-body">
@@ -1490,8 +1500,9 @@ async function saveWorkoutFromQueue(si) {
   });
 
   try {
+    const workoutTime = document.getElementById(`time-input-${si}`)?.value || null;
     await saveSession({ date, day, notes, exercises, logged: new Date().toISOString(),
-      program_session_key: session.sessionKey || null });
+      program_session_key: session.sessionKey || null, workout_time: workoutTime });
     clearDraft(session);
     document.getElementById('header-sessions').textContent = (cachedSessions||[]).length;
     setStatus('✓ Workout saved to cloud!');
@@ -1687,7 +1698,7 @@ function renderSessionList() {
     histHtml += `<div class="log-entry" id="${sid}" onclick="toggleSession('${sid}')">
       <div class="log-entry-summary">
         <div>
-          <div class="log-entry-title">${formatSessionDate(s.date)} / ${DAY_LABEL[s.day]||s.day}</div>
+          <div class="log-entry-title">${formatSessionDate(s.date)}${s.workout_time ? ' · ' + s.workout_time : ''} / ${DAY_LABEL[s.day]||s.day}</div>
           <div class="log-entry-badges">${badgesHtml}</div>
         </div>
         <span class="log-entry-chevron">▼</span>
@@ -1695,10 +1706,14 @@ function renderSessionList() {
       <div class="log-entry-detail" onclick="event.stopPropagation()">
         ${detailHtml}
         <div class="input-group" style="margin-top:20px;margin-bottom:12px">
-          <label class="input-label">Date</label>
-          <span class="date-display" id="h_date_display_${sid}" onclick="openHistoryDatePicker('${sid}')">${formatDateDisplay(s.date)}</span>
-          <input type="date" class="date-picker-input" id="h_date_${sid}" value="${s.date||''}" style="display:none"
-            onchange="updateHistoryDate('${sid}', this.value)" onblur="closeHistoryDatePicker('${sid}')">
+          <label class="input-label">Date &amp; time</label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="date-display" id="h_date_display_${sid}" onclick="openHistoryDatePicker('${sid}')">${formatDateDisplay(s.date)}</span>
+            <input type="date" class="date-picker-input" id="h_date_${sid}" value="${s.date||''}" style="display:none"
+              onchange="updateHistoryDate('${sid}', this.value)" onblur="closeHistoryDatePicker('${sid}')">
+            <input type="time" class="date-picker-input" id="h_time_${sid}" value="${s.workout_time||''}"
+              style="width:auto" title="Workout time">
+          </div>
         </div>
         <div class="input-group" style="margin-bottom:0">
           <label class="input-label">Session notes</label>
@@ -1739,9 +1754,10 @@ async function saveSessionEdit(sid, sessionId, idx) {
 
   const notes = document.getElementById(`h_notes_${sid}`)?.value || '';
   const date  = document.getElementById(`h_date_${sid}`)?.value  || s.date;
+  const workout_time = document.getElementById(`h_time_${sid}`)?.value || null;
 
   try {
-    await sbPatch(TABLES.sessions, sessionId, { exercises, notes, date });
+    await sbPatch(TABLES.sessions, sessionId, { exercises, notes, date, workout_time });
     // Update cache
     cachedSessions = null;
     statusEl.textContent = '✓ Saved';
@@ -1858,7 +1874,7 @@ function buildDayBlock(day, label, focus, exs) {
         groupExs.push(exs[pj]);
         pj++;
       }
-      html += `<div class="ss-group" style="margin: 4px 0">
+      html += `<div class="ss-group">
         <div class="ss-bar"></div>
         <div class="ss-label">Superset</div>`;
       groupExs.forEach(gex => { html += buildProgramExRow(gex); });
@@ -2005,22 +2021,6 @@ function timerToggle(uid) {
     t.running = false;
     document.getElementById(`timer-toggle-${uid}`).textContent = 'Start';
     document.getElementById(`timer-display-${uid}`).classList.remove('running');
-    // Auto-fill first empty reps field in the set rows
-    const seconds = Math.round(t.elapsed / 1000);
-    const container = document.getElementById(`set-rows-${uid}`);
-    if (container) {
-      const rows = Array.from(container.children);
-      const j = rows.findIndex((_, idx) => {
-        const el = document.getElementById(`set_${uid}_${idx}_r`);
-        return el && (el.value === '' || el.value === '0');
-      });
-      const targetIdx = j >= 0 ? j : rows.length - 1;
-      const repsEl = document.getElementById(`set_${uid}_${targetIdx}_r`);
-      if (repsEl) {
-        repsEl.value = seconds;
-        repsEl.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-    }
   } else {
     t.startedAt = Date.now();
     t.running = true;
@@ -2193,7 +2193,7 @@ function buildSetRowHtml(uid, j, weight, reps, isTimed) {
     <div class="set-row-num">${j + 1}</div>
     <div>${stepperHtml(wId, weight, 0, 300, '', step)}</div>
     <div>${isTimed
-      ? `<input type="number" inputmode="numeric" pattern="[0-9]*" id="${rId}" value="${reps}" style="width:100%;background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--radius-xs);padding:11px 13px;font-size:16px;font-family:var(--sans);font-weight:500;color:var(--text);outline:none;-webkit-appearance:none;appearance:none;-moz-appearance:textfield">`
+      ? stepperHtml(rId, reps, 0, 9999, '', 1)
       : stepperHtml(rId, reps, 0, 99, '')
     }</div>
     <button class="set-remove-btn" onclick="removeSet('${uid}', ${j})">×</button>
