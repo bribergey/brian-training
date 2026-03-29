@@ -839,8 +839,8 @@ const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 const SB_HDRS = { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
 
 const TABLES = {
-  sessions: ENV === 'production' ? 'sessions' : 'sessions_staging',
-  program:  ENV === 'production' ? 'program'  : 'program_staging',
+  sessions: ENV === 'production' ? 'sessions'         : 'sessions_staging',
+  program:  ENV === 'production' ? 'program_full'     : 'program_staging_full',
 };
 
 // ─── SESSIONS: SUPABASE + localStorage CACHE ─────────────────────────────
@@ -958,28 +958,29 @@ let EXERCISES = JSON.parse(JSON.stringify(EXERCISES_DEFAULT));
 // Detect timed exercises from DB data — no hardcoding needed
 // Coach just uses "sec" in reps (e.g. "30–45 sec") or unit (e.g. "sec")
 function isTimedExercise(ex) {
+  // Prefer rep_type from exercises table (via view); fall back to text detection
+  if (ex.rep_type) return ex.rep_type === 'sec' || ex.rep_type === 'min';
   const reps = (ex.reps || '').toLowerCase();
   const unit = (ex.unit || '').toLowerCase();
   return reps.includes('sec') || unit.includes('sec');
 }
 
+// EX_BADGES: fallback only — badge is now authoritative in exercises table via views
+// Only used for sessions history where ex.badge may not be present
 const EX_BADGES = {
-  // Anchors
   'Barbell back squat':'anchor','Barbell bench press':'anchor','Assisted pull-up':'upper','Pull-up':'anchor',
   'Deadlift':'anchor','Barbell shoulder press':'anchor',
-  // Lower body
   'Bulgarian split squat':'lower','Lying leg curl':'lower','Leg extension (paused)':'lower',
   'Single-leg calf hops':'lower','Single-leg landmine RDL':'lower',
-  // Upper body
   'Incline cable fly (low-to-high)':'upper','Single-arm cable rear delt row':'upper',
-  'Cable overhead triceps extension':'upper','Lat pulldown':'upper',
-  'Lying cable biceps curl':'upper',
-  // Core / stability
+  'Cable overhead triceps extension':'upper','Lat pulldown':'upper','Lying cable biceps curl':'upper',
+  'Cable external rotation':'upper',
   'Lying cable crunch':'core','Reverse crunch':'core','Weighted plank':'core',
-  'Side plank (knees)':'core','Seated cable oblique crunch':'core',
-  'Single-leg cable knee raise':'core','Cable external rotation':'core',
+  'Side plank (knees)':'core','Seated cable oblique crunch':'core','Single-leg cable knee raise':'core',
 };
 
+// ANCHORS: exercises with badge='anchor' — hardcoded for sync access in analytics
+// Future: replace with async query to exercises table WHERE badge='anchor'
 const ANCHORS = ['Barbell back squat','Deadlift','Barbell bench press','Pull-up','Barbell shoulder press'];
 // Lifts tracked by reps instead of weight
 const ANCHOR_REPS = new Set(['Pull-up']);
@@ -1763,7 +1764,7 @@ let showingArchive = false;
 async function loadMonthlyProgram() {
   if (programCache) return programCache;
   try {
-    const tbl = ENV === 'production' ? 'monthly_program' : 'monthly_program_staging';
+    const tbl = ENV === 'production' ? 'monthly_program_full' : 'monthly_program_staging_full';
     const rows = await sbGet(tbl, 'select=*&order=month.desc,day.asc,order_index.asc');
     programCache = rows;
     return rows;
@@ -2110,6 +2111,7 @@ function buildExerciseBlock(ex, i, si) {
 // Detect whether an ex object uses timed reps
 // (reused from isTimedExercise but works on program rows AND session exercises)
 function isTimedEx(ex) {
+  if (ex.rep_type) return ex.rep_type === 'sec' || ex.rep_type === 'min';
   const reps = (ex.reps || '').toLowerCase();
   const unit = (ex.unit || '').toLowerCase();
   return reps.includes('sec') || unit.includes('sec');
