@@ -1325,16 +1325,7 @@ function renderSelectedDay() {
         <div class="workout-card-title">${title}</div>
         <div class="workout-card-focus">${weekLabel}${focus}</div>
       </div>
-      <div class="workout-card-date">
-        <span class="date-display" id="date-display-${si}" onclick="openDatePicker(${si},'${session.scheduledDate}')">${dateDisplay}</span>
-        <input type="date" class="date-picker-input" id="date-input-${si}"
-          value="${session.scheduledDate}" style="display:none"
-          onchange="updateDate(${si}, this.value)" onblur="closeDatePicker(${si})">
-        <input type="time" class="date-picker-input" id="time-input-${si}"
-          value="${new Date().toTimeString().slice(0,5)}"
-          style="margin-left:6px;width:auto"
-          title="Workout time">
-      </div>
+
     </div>
     <div class="workout-card-body">
       <div class="section-label" style="margin-top:16px">Exercises</div>
@@ -1347,6 +1338,22 @@ function renderSelectedDay() {
       <div class="workout-notes-row">
         <label class="input-label">Session notes</label>
         <input type="text" id="notes-${si}" placeholder="Energy, PRs, anything felt off...">
+      </div>
+      <div class="log-input-grid lig-2" style="margin-top:14px">
+        <div class="input-group">
+          <label class="input-label">Date</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="date-display" style="font-size:13px;padding:8px 10px" id="date-display2-${si}" onclick="openDatePicker2(${si})">${dateDisplay}</span>
+            <input type="date" class="date-picker-input" id="date-input2-${si}"
+              value="${session.scheduledDate}" style="display:none"
+              onchange="updateDate2(${si}, this.value)" onblur="closeDatePicker2(${si})">
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Time</label>
+          <input type="time" class="date-picker-input" id="time-input-${si}"
+            value="${new Date().toTimeString().slice(0,5)}" style="display:block;width:100%">
+        </div>
       </div>
     </div>
     <div class="workout-save-row">
@@ -1399,6 +1406,26 @@ function closeDatePicker(si) {
 function updateDate(si, newDate) {
   document.getElementById(`date-display-${si}`).textContent = formatDateDisplay(newDate);
   closeDatePicker(si);
+}
+function openDatePicker2(si) {
+  document.getElementById(`date-display2-${si}`).style.display = 'none';
+  const input = document.getElementById(`date-input2-${si}`);
+  input.style.display = 'block'; input.focus();
+}
+function closeDatePicker2(si) {
+  const input = document.getElementById(`date-input2-${si}`);
+  if (input) input.style.display = 'none';
+  const disp = document.getElementById(`date-display2-${si}`);
+  if (disp) disp.style.display = '';
+}
+function updateDate2(si, newDate) {
+  const disp2 = document.getElementById(`date-display2-${si}`);
+  const disp1 = document.getElementById(`date-display-${si}`);
+  const input1 = document.getElementById(`date-input-${si}`);
+  if (disp2) disp2.textContent = formatDateDisplay(newDate);
+  if (disp1) disp1.textContent = formatDateDisplay(newDate);
+  if (input1) input1.value = newDate;
+  closeDatePicker2(si);
 }
 
 function openHistoryDatePicker(sid) {
@@ -1481,8 +1508,8 @@ async function saveWorkoutFromQueue(si) {
   saveBtn.disabled = true;
 
   const day = session.day;
-  const date = document.getElementById(`date-input-${si}`).value ||
-               document.getElementById(`date-display-${si}`).dataset.iso ||
+  const date = document.getElementById(`date-input2-${si}`)?.value ||
+               document.getElementById(`date-input-${si}`)?.value ||
                session.scheduledDate;
   const notes = document.getElementById(`notes-${si}`).value;
   const exs = session.isDefault ? EXERCISES[day] : session.exercises;
@@ -1616,7 +1643,8 @@ async function renderHistory() {
     const unit       = isRepBased ? 'reps' : 'kg';
     const display    = curVal !== null ? curVal : '—';
 
-    liftHtml += `<div class="lift-card">
+    const liftId = l.replace(/[^a-z0-9]/gi,'_');
+    liftHtml += `<div class="lift-card" id="liftcard-${liftId}">
       <div class="lift-card-header">
         <span class="lift-name">${l}</span>
         <span><span class="lift-val">${display}</span><span class="lift-val-unit">${curVal !== null ? unit : ''}</span></span>
@@ -1629,9 +1657,14 @@ async function renderHistory() {
       liftHtml += buildSparkline(points, weeks, unit);
     }
 
+
+
     liftHtml += `</div>`;
   });
   liftHtml += '</div>';
+  liftHtml += `<div style="text-align:center;margin-top:8px">
+    <button id="share-lifts-btn" onclick="shareAllLifts()" style="background:#fff;border:1.5px solid #000;border-radius:8px;padding:8px 20px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#000;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation">↑ Share progress</button>
+  </div>`;
   document.getElementById('lift-tracker').innerHTML = liftHtml;
 
   // Store all sessions for filter rendering
@@ -2279,6 +2312,122 @@ function restoreSetRows(uid, ex, sets) {
   });
 }
 
+// ─── SHARE LIFT CARD ─────────────────────────────────────────────────────
+async function shareAllLifts() {
+  const cards = document.querySelectorAll('.lift-card');
+  if (!cards.length) { setStatus('No lift data yet', true); return; }
+
+  const btn = document.getElementById('share-lifts-btn');
+  if (btn) { btn.textContent = 'Generating…'; btn.disabled = true; }
+
+  try {
+    const scale   = 2;
+    const PAD     = 20;
+    const GAP     = 10;
+    const ROW_H   = 96;
+    const W       = 340;
+    const green   = '#1adb4e';
+    const bg      = '#111111';
+    const card_bg = '#1e1e1e';
+    const txt     = '#ffffff';
+    const totalH  = PAD + 24 + 8 + (cards.length * (ROW_H + GAP)) - GAP + PAD;
+
+    const canvas = document.createElement('canvas');
+    canvas.width  = W * scale;
+    canvas.height = totalH * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, totalH);
+
+    ctx.fillStyle = txt; ctx.globalAlpha = 0.35;
+    ctx.font = "700 9px monospace";
+    ctx.fillText("BRIAN'S TRAINING HUB  ·  ANCHOR LIFTS", PAD, PAD + 10);
+    ctx.globalAlpha = 1;
+
+    let y = PAD + 24 + 8;
+
+    for (const card of cards) {
+      // Card bg with manual rounded rect
+      const r = 8;
+      ctx.fillStyle = card_bg;
+      ctx.beginPath();
+      ctx.moveTo(PAD + r, y);
+      ctx.lineTo(W - PAD - r, y);
+      ctx.arcTo(W - PAD, y, W - PAD, y + r, r);
+      ctx.lineTo(W - PAD, y + ROW_H - r);
+      ctx.arcTo(W - PAD, y + ROW_H, W - PAD - r, y + ROW_H, r);
+      ctx.lineTo(PAD + r, y + ROW_H);
+      ctx.arcTo(PAD, y + ROW_H, PAD, y + ROW_H - r, r);
+      ctx.lineTo(PAD, y + r);
+      ctx.arcTo(PAD, y, PAD + r, y, r);
+      ctx.closePath();
+      ctx.fill();
+
+      const name = (card.querySelector('.lift-name')?.textContent || '').trim();
+      const val  = (card.querySelector('.lift-val')?.textContent  || '—').trim();
+      const unit = (card.querySelector('.lift-val-unit')?.textContent || '').trim();
+
+      ctx.globalAlpha = 0.45; ctx.fillStyle = txt;
+      ctx.font = "600 9px monospace";
+      ctx.fillText(name.toUpperCase(), PAD + 12, y + 16);
+      ctx.globalAlpha = 1;
+      ctx.font = "800 22px sans-serif";
+      ctx.fillText(val + (unit ? ' ' + unit : ''), PAD + 12, y + 42);
+
+      // Draw sparkline SVG
+      const svgEl = card.querySelector('svg.lift-sparkline');
+      if (svgEl) {
+        try {
+          let svgStr = new XMLSerializer().serializeToString(svgEl);
+          svgStr = svgStr
+            .replace(/var\(--green\)/g, green)
+            .replace(/var\(--bg2\)/g, card_bg)
+            .replace(/var\(--text\)/g, txt);
+          const svgW = W - PAD * 2 - 24;
+          const svgH = 48;
+          svgStr = svgStr.replace(/<svg /, `<svg width="${svgW}" height="${svgH}" `);
+          const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+          const url  = URL.createObjectURL(blob);
+          await new Promise(res => {
+            const img = new Image();
+            img.onload = () => { ctx.drawImage(img, PAD + 12, y + 46, svgW, svgH); URL.revokeObjectURL(url); res(); };
+            img.onerror = () => { URL.revokeObjectURL(url); res(); };
+            img.src = url;
+          });
+        } catch(e) { /* skip sparkline */ }
+      }
+
+      y += ROW_H + GAP;
+    }
+
+    // Convert to blob and share or download
+    canvas.toBlob(async (blob) => {
+      if (!blob) { setStatus('Image generation failed', true); return; }
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const file = new File([blob], 'training-progress.png', { type: 'image/png' });
+      if (isMobile && navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: 'Training progress' }); }
+        catch(e) { /* user cancelled */ }
+      } else {
+        // Desktop — download directly
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'training-progress.png';
+        document.body.appendChild(a); a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+      }
+      if (btn) { btn.textContent = '↑ Share progress'; btn.disabled = false; }
+    }, 'image/png');
+
+  } catch(e) {
+    console.error('Share error:', e);
+    setStatus('Error: ' + e.message, true);
+    if (btn) { btn.textContent = '↑ Share progress'; btn.disabled = false; }
+  }
+}
+
 // ─── ME TAB ───────────────────────────────────────────────────────────────
 
 const GOALS_OPTIONS = ['Build strength','Muscle gain','Fat loss','Body recomposition','Improve fitness / endurance','General health','Sport performance'];
@@ -2471,6 +2620,22 @@ async function renderMe() {
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:32px">
       <button class="btn btn-primary btn-full" id="me-save-btn" onclick="saveProfile()">Save profile</button>
       <span id="me-save-status" style="font-family:var(--mono);font-size:11px;color:var(--green);display:none;white-space:nowrap">✓ Saved</span>
+    </div>
+
+    <div class="card" style="margin-bottom:32px">
+      <div class="card-section-title">About Your Program</div>
+      <p style="font-size:15px;line-height:1.6;color:var(--text);opacity:0.8;margin:0 0 12px">
+        Your training runs on a monthly cycle. Each month has a set of exercises chosen for that phase of your development — the same movements repeat across 4 building weeks, with weight increasing each week as you get stronger.
+      </p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text);opacity:0.8;margin:0 0 12px">
+        Week 5 of each month is a deload — same exercises, lighter load, fewer sets. This is intentional recovery time and is an important part of long-term progression, not a step back.
+      </p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text);opacity:0.8;margin:0 0 12px">
+        After you log each workout, your coach reviews your performance and writes the next week's program — adjusting weights based on what you actually lifted. If you hit all your reps cleanly, weight goes up. If something was a struggle or you flagged discomfort, the coach will hold or adjust.
+      </p>
+      <p style="font-size:15px;line-height:1.6;color:var(--text);opacity:0.8;margin:0">
+        At the start of a new month, your coach designs a fresh program with new exercise selection to keep adaptation going. Your session notes matter — the more detail you log, the better the coaching.
+      </p>
     </div>
   `;
 }
