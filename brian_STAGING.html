@@ -1223,10 +1223,11 @@ function saveDraft(si) {
   const draft = { notes: document.getElementById(`notes-${si}`)?.value || '', exercises: {} };
   exs.forEach((ex, i) => {
     const uid = `${si}_${i}`;
-    // Collect however many set rows currently exist in the DOM
+    const exName = ex.exercise || ex.name;
     const sets = collectSetRows(uid);
-    draft.exercises[i] = {
-      sets: sets !== null ? sets : undefined, // undefined = never opened, don't override on restore
+    // Key by exercise name — immune to reordering and insertions
+    draft.exercises[exName] = {
+      sets: sets !== null ? sets : undefined,
       n: document.getElementById(`n_${uid}`)?.value || ''
     };
   });
@@ -1375,9 +1376,10 @@ function renderSelectedDay() {
     const exs2 = session.isDefault ? EXERCISES[session.day] : session.exercises;
     exs2.forEach((ex, i) => {
       const uid = `${si}_${i}`;
-      const d = draft.exercises[i];
+      const exName = ex.exercise || ex.name;
+      // Look up by exercise name — robust to reordering and insertions
+      const d = draft.exercises[exName];
       if (!d) return;
-      // Restore set rows from draft — only if sets was actually captured (not undefined)
       if (Array.isArray(d.sets)) {
         restoreSetRows(uid, ex, d.sets);
       }
