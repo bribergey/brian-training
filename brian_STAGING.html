@@ -976,7 +976,8 @@ const ENV = 'staging';
 const SB_URL  = 'https://mimvmaotzmacgiziovvi.supabase.co';
 const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pbXZtYW90em1hY2dpemlvdnZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNTMzNzYsImV4cCI6MjA4OTYyOTM3Nn0.dJMw37a4m9fBOmZQQOayZ8jKY28p10y_cSca4Sfoqe4';
 const SB_HDRS = { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
-const ANTHROPIC_KEY = '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'; // ← paste your sk-ant-... key here
+// Anthropic API calls route through Supabase Edge Function (key never in browser)
+const COACH_PROXY_URL = SB_URL + '/functions/v1/coach-proxy';
 
 const NUT_LOGS_TABLE     = ENV === 'production' ? 'nutrition_logs'        : 'nutrition_logs_staging';
 const NUT_PLANS_TABLE    = ENV === 'production' ? 'nutrition_plans'       : 'nutrition_plans_staging';
@@ -3084,9 +3085,9 @@ Use recentMeasurements for weight/BF trends. Use nutritionLogs to spot and name 
 CURRENT DATA:
 ${nutCoachContext}`;
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(COACH_PROXY_URL, {
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      headers:{ 'Content-Type':'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
       body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:2000, system:systemPrompt, messages:nutChatHistory })
     });
     const data = await res.json();
