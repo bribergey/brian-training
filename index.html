@@ -2921,6 +2921,7 @@ async function saveProfile() {
 let nutActiveSubTab = 'plan';
 let nutCoachContext = '';
 let nutChatHistory = [];
+let nutFreshConvo = false; // when true, skip DB history reload
 let nutCurrentLog = null;
 // nutCoachInitialized removed — context refreshes on every Coach tab visit
 
@@ -3048,8 +3049,10 @@ async function nutInitCoach() {
     };
     nutCoachContext = JSON.stringify({ today, coachProfile, recentMeasurements: measurements, weekCalendar, upcomingSessions, recentSessions, nutritionLogs: logs });
 
-    // Restore history — fetched desc, reverse to chronological
-    nutChatHistory = historyRows.reverse().map(r => ({ role: r.role, content: r.content }));
+    // Restore history — unless user explicitly started a fresh conversation
+    if (!nutFreshConvo) {
+      nutChatHistory = historyRows.reverse().map(r => ({ role: r.role, content: r.content }));
+    }
 
     // Render
     msgs.innerHTML = '';
@@ -3088,7 +3091,11 @@ function nutUsePrompt(btn) {
 async function nutNewConversation() {
   if (!confirm('Start a fresh conversation? Your history is always saved and the coach still has your full profile and logs.')) return;
   nutChatHistory = [];
+  nutFreshConvo = true; // prevent DB history from reloading on tab revisit
   const msgs = document.getElementById('nut-chat-messages');
+  // Show prompt chips again
+  const chips = document.getElementById('nut-coach-prompts');
+  if (chips) chips.style.display = '';
   msgs.innerHTML = `<div class="nut-msg nut-msg-coach">
     Starting fresh. I still have your full profile, upcoming sessions, and nutrition logs — what do you want to work on?
   </div>`;
@@ -3122,12 +3129,12 @@ MODE 1 — WEEKLY PLAN (when Brian asks for a plan or what to eat this week):
 The data contains a weekCalendar array with every day this week — each entry has the exact date, dayOfWeek, and type (training or rest). USE THESE VALUES EXACTLY. Never calculate or guess day names yourself.
 
 Give a short, scannable weekly brief. Format:
-## Training days — [list exact "dayOfWeek date" from weekCalendar where type=training]
+## Training days — [list each as "dayOfWeek Month DD" e.g. "Monday March 30" — copy directly from weekCalendar]
 **Targets:** protein Xg / carbs Xg / fat Xg / ~X kcal
 **Key foods to hit these:** [concise bullet list of 8-12 specific foods with rough portions]
 **Timing:** [2-3 lines on when to eat relative to fasting window and workout]
 
-## Rest days — [list exact "dayOfWeek date" from weekCalendar where type=rest]
+## Rest days — [list each as "dayOfWeek Month DD" — copy directly from weekCalendar]
 **Targets:** protein Xg / carbs Xg / fat Xg / ~X kcal
 **Key foods to hit these:** [concise bullet list]
 **Timing:** [1-2 lines]
@@ -3168,6 +3175,14 @@ ${nutCoachContext}`;
     nutChatHistory.push({ role:'assistant', content:reply });
     sbPost(COACH_CONVOS_TABLE, { role:'assistant', content:reply }).catch(()=>{});
     msgs.innerHTML += `<div class="nut-msg nut-msg-coach">${nutMd(display)}</div>`;
+    // If coach gave a plan but didn't auto-save it, prompt to save
+    const looksLikePlan = display.includes('Training days') || display.includes('Rest days');
+    const alreadySaved = !!planMatch;
+    if (looksLikePlan && !alreadySaved) {
+      msgs.innerHTML += `<div class="nut-msg nut-msg-coach" style="margin-top:8px">
+        Want me to save this as your weekly plan? Just say yes and I'll add it to the Plan tab.
+      </div>`;
+    }
   } catch(e) {
     document.getElementById(thinkId)?.remove();
     msgs.innerHTML += `<div class="nut-msg nut-msg-thinking">Error: ${e.message}</div>`;
@@ -3397,12 +3412,24 @@ function nutHistCard(log) {
     log.hunger_level ? `Hunger ${log.hunger_level}/5` : null,
     log.sleep_quality ? `Sleep ${log.sleep_quality}/5` : null
   ].filter(Boolean);
+
+  const ratingBlock = (field, label, val) => `
+    <div class="nut-rating-block" style="margin-bottom:12px">
+      <span class="nut-rating-label">${label}</span>
+      <div class="nut-rating-btns">
+        ${[1,2,3,4,5].map(n=>`<button class="nut-rating-btn${val===n?' active':''}" onclick="nutHistSetRating('${log.id}','${field}',${n},this)">${n}</button>`).join('')}
+      </div>
+    </div>`;
+
   const meals = log.meal_notes || [];
-  const mealsHtml = meals.length
-    ? meals.map(m=>`<div style="font-size:13px;line-height:1.5;padding:6px 0;border-bottom:1px solid var(--border)">${nutEsc(m)}</div>`).join('')
-    : `<div style="font-family:var(--mono);font-size:11px;color:var(--text);opacity:0.4">No meals logged</div>`;
-  return `<div class="nut-hist-entry" onclick="this.classList.contains('open')?this.classList.remove('open'):this.classList.add('open')">
-    <div class="nut-hist-header">
+  const mealsHtml = meals.map((m,i)=>`
+    <div class="nut-meal-entry" style="margin-bottom:6px">
+      <textarea rows="2" onchange="nutHistUpdateMeal('${log.id}',${i},this.value,this)">${nutEsc(m)}</textarea>
+      <button class="nut-meal-remove" onclick="nutHistRemoveMeal('${log.id}',${i})">×</button>
+    </div>`).join('');
+
+  return `<div class="nut-hist-entry" id="nhe-${log.id}">
+    <div class="nut-hist-header" onclick="nutHistToggle('${log.id}')">
       <div>
         <div class="nut-hist-date">${dateStr}</div>
         <div class="nut-hist-badges">
@@ -3414,13 +3441,123 @@ function nutHistCard(log) {
       <div class="nut-hist-chevron">▾</div>
     </div>
     <div class="nut-hist-detail">
-      ${log.break_fast_time?`<div style="font-family:var(--mono);font-size:10px;color:var(--green-dark);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">Broke fast at ${log.break_fast_time}</div>`:''}
-      <div class="card-label" style="margin-bottom:10px">Meals</div>
-      ${mealsHtml}
-      ${log.stool_notes?`<div style="margin-top:14px"><span class="card-label">Stool notes</span><div style="font-size:13px;line-height:1.6;margin-top:6px">${nutEsc(log.stool_notes)}</div></div>`:''}
-      ${log.general_notes?`<div style="margin-top:14px"><span class="card-label">Notes</span><div style="font-size:13px;line-height:1.6;margin-top:6px">${nutEsc(log.general_notes)}</div></div>`:''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div class="input-group">
+          <label class="input-label">Break fast time</label>
+          <input type="time" value="${log.break_fast_time||''}" onchange="nutHistField('${log.id}','break_fast_time',this.value)">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Hours fasted</label>
+          <input type="number" min="0" max="48" step="0.5" value="${log.hours_fasted??''}" onchange="nutHistField('${log.id}','hours_fasted',parseFloat(this.value)||null)">
+        </div>
+      </div>
+      ${ratingBlock('energy_level','Energy',log.energy_level)}
+      ${ratingBlock('hunger_level','Hunger',log.hunger_level)}
+      ${ratingBlock('sleep_quality','Sleep quality',log.sleep_quality)}
+      <div class="card-label" style="margin-top:4px;margin-bottom:10px">Meals</div>
+      <div id="nhe-meals-${log.id}">${mealsHtml}</div>
+      <button class="set-add-btn" onclick="nutHistAddMeal('${log.id}')">+ Add meal / snack</button>
+      <div class="input-group" style="margin-top:14px;margin-bottom:10px">
+        <label class="input-label">Stool notes</label>
+        <textarea rows="2" onchange="nutHistField('${log.id}','stool_notes',this.value)">${log.stool_notes||''}</textarea>
+      </div>
+      <div class="input-group" style="margin-bottom:16px">
+        <label class="input-label">General notes</label>
+        <textarea rows="2" onchange="nutHistField('${log.id}','general_notes',this.value)">${log.general_notes||''}</textarea>
+      </div>
+      <div class="detail-save-row">
+        <button class="btn btn-primary" id="nhe-save-${log.id}" onclick="nutHistSave('${log.id}')">Save</button>
+        <span class="detail-status" id="nhe-status-${log.id}" style="display:none">✓ Saved</span>
+      </div>
     </div>
   </div>`;
+}
+
+// Cache for in-progress edits to history logs
+const nutHistEdits = {};
+
+function nutHistToggle(id) {
+  const el = document.getElementById('nhe-' + id);
+  if (!el) return;
+  const isOpen = el.classList.contains('open');
+  // Close all others first
+  document.querySelectorAll('.nut-hist-entry.open').forEach(e => e.classList.remove('open'));
+  if (!isOpen) el.classList.add('open');
+}
+
+function nutHistField(id, field, value) {
+  if (!nutHistEdits[id]) nutHistEdits[id] = {};
+  nutHistEdits[id][field] = value;
+}
+
+function nutHistSetRating(id, field, val, btn) {
+  btn.closest('.nut-rating-btns').querySelectorAll('.nut-rating-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  nutHistField(id, field, val);
+}
+
+function nutHistUpdateMeal(id, idx, value) {
+  if (!nutHistEdits[id]) nutHistEdits[id] = {};
+  if (!nutHistEdits[id]._meals) {
+    // Initialise from current DOM
+    const container = document.getElementById('nhe-meals-' + id);
+    nutHistEdits[id]._meals = Array.from(container.querySelectorAll('textarea')).map(t => t.value);
+  }
+  nutHistEdits[id]._meals[idx] = value;
+}
+
+function nutHistAddMeal(id) {
+  if (!nutHistEdits[id]) nutHistEdits[id] = {};
+  const container = document.getElementById('nhe-meals-' + id);
+  const current = Array.from(container.querySelectorAll('textarea')).map(t => t.value);
+  nutHistEdits[id]._meals = [...current, ''];
+  // Re-render meals section
+  const newHtml = nutHistEdits[id]._meals.map((m,i)=>`
+    <div class="nut-meal-entry" style="margin-bottom:6px">
+      <textarea rows="2" onchange="nutHistUpdateMeal('${id}',${i},this.value)">${nutEsc(m)}</textarea>
+      <button class="nut-meal-remove" onclick="nutHistRemoveMeal('${id}',${i})">×</button>
+    </div>`).join('');
+  container.innerHTML = newHtml;
+  const tas = container.querySelectorAll('textarea');
+  if (tas.length) tas[tas.length-1].focus();
+}
+
+function nutHistRemoveMeal(id, idx) {
+  const container = document.getElementById('nhe-meals-' + id);
+  const current = Array.from(container.querySelectorAll('textarea')).map(t => t.value);
+  current.splice(idx, 1);
+  if (!nutHistEdits[id]) nutHistEdits[id] = {};
+  nutHistEdits[id]._meals = current;
+  const newHtml = current.map((m,i)=>`
+    <div class="nut-meal-entry" style="margin-bottom:6px">
+      <textarea rows="2" onchange="nutHistUpdateMeal('${id}',${i},this.value)">${nutEsc(m)}</textarea>
+      <button class="nut-meal-remove" onclick="nutHistRemoveMeal('${id}',${i})">×</button>
+    </div>`).join('');
+  container.innerHTML = newHtml;
+}
+
+async function nutHistSave(id) {
+  const saveBtn = document.getElementById('nhe-save-' + id);
+  const status  = document.getElementById('nhe-status-' + id);
+  saveBtn.textContent = 'Saving…'; saveBtn.disabled = true;
+  try {
+    const edits = nutHistEdits[id] || {};
+    const meals = edits._meals !== undefined ? edits._meals : null;
+    const body = {};
+    ['break_fast_time','hours_fasted','energy_level','hunger_level','sleep_quality','stool_notes','general_notes'].forEach(f => {
+      if (edits[f] !== undefined) body[f] = edits[f];
+    });
+    if (meals !== null) body.meal_notes = meals;
+    if (!Object.keys(body).length) { saveBtn.textContent = 'Save'; saveBtn.disabled = false; return; }
+    await sbPatch(NUT_LOGS_TABLE, id, body);
+    saveBtn.textContent = 'Save'; saveBtn.disabled = false;
+    status.textContent = '✓ Saved'; status.style.display = 'block';
+    setTimeout(() => { status.style.display = 'none'; }, 2500);
+    delete nutHistEdits[id];
+  } catch(e) {
+    saveBtn.textContent = 'Save'; saveBtn.disabled = false;
+    status.textContent = '⚠ ' + e.message; status.style.display = 'block';
+  }
 }
 
 function nutEsc(s) {
