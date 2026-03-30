@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Training Hub">
@@ -567,6 +567,20 @@ select {
 }
 .nut-chat-textarea:focus { border-color: var(--text); background: var(--bg2); }
 
+/* COACH PROMPT CHIPS */
+.nut-prompt-chips {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;
+}
+.nut-prompt-chip {
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  padding: 7px 12px; border-radius: 20px; cursor: pointer;
+  border: 1.5px solid var(--border2); background: var(--bg2);
+  color: var(--text); opacity: 0.6; letter-spacing: 0.03em;
+  transition: all 0.15s; touch-action: manipulation; text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+.nut-prompt-chip:active { opacity: 1; background: var(--bg3); }
+
 /* TODAY LOG */
 .nut-rating-block { margin-bottom: 14px; }
 .nut-rating-label {
@@ -871,6 +885,13 @@ select {
     <div class="nut-page" id="nut-coach" style="display:none">
       <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
         <button class="hist-filter-btn" onclick="nutNewConversation()" style="font-size:10px">+ New conversation</button>
+      </div>
+      <div id="nut-coach-prompts" class="nut-prompt-chips">
+        <button class="nut-prompt-chip" onclick="nutUsePrompt(this)">Give me my weekly plan</button>
+        <button class="nut-prompt-chip" onclick="nutUsePrompt(this)">How did I do today?</button>
+        <button class="nut-prompt-chip" onclick="nutUsePrompt(this)">What should I eat before training tomorrow?</button>
+        <button class="nut-prompt-chip" onclick="nutUsePrompt(this)">What patterns do you see in my logs?</button>
+        <button class="nut-prompt-chip" onclick="nutUsePrompt(this)">Where am I falling short on macros?</button>
       </div>
       <div id="nut-chat-messages"></div>
       <div class="nut-chat-input-row">
@@ -2994,7 +3015,28 @@ async function nutInitCoach() {
       if (!sessionMap[key]) sessionMap[key] = { date: key, day: row.day, label: row.session_label, exercises: [] };
       if (row.exercise && row.exercise !== 'Warm-up') sessionMap[key].exercises.push(row.exercise);
     }
-    const upcomingSessions = Object.values(sessionMap);
+    // Pre-compute day names so the coach never has to guess
+    const DOW = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const upcomingSessions = Object.values(sessionMap).map(s => {
+      const d = new Date(s.date + 'T12:00:00');
+      return { ...s, dayOfWeek: DOW[d.getDay()] };
+    });
+    // Build a complete 7-day calendar so coach knows which days are rest days too
+    const weekCalendar = [];
+    const trainingDates = new Set(upcomingSessions.map(s => s.date));
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today + 'T12:00:00');
+      d.setDate(d.getDate() + i);
+      const dateStr = d.toISOString().slice(0,10);
+      const training = upcomingSessions.find(s => s.date === dateStr);
+      weekCalendar.push({
+        date: dateStr,
+        dayOfWeek: DOW[d.getDay()],
+        type: training ? 'training' : 'rest',
+        trainingDay: training ? training.day : null,
+        exercises: training ? training.exercises : []
+      });
+    }
     const recentSessions = (cachedSessions || []).slice(-14);
     const profile = profileRows[0] || {};
     const coachProfile = {
@@ -3004,7 +3046,7 @@ async function nutInitCoach() {
       goals:           profile.goals,
       injuries:        profile.injuries,
     };
-    nutCoachContext = JSON.stringify({ today, coachProfile, recentMeasurements: measurements, upcomingSessions, recentSessions, nutritionLogs: logs });
+    nutCoachContext = JSON.stringify({ today, coachProfile, recentMeasurements: measurements, weekCalendar, upcomingSessions, recentSessions, nutritionLogs: logs });
 
     // Restore history — fetched desc, reverse to chronological
     nutChatHistory = historyRows.reverse().map(r => ({ role: r.role, content: r.content }));
@@ -3033,6 +3075,16 @@ async function nutInitCoach() {
   }
 }
 
+function nutUsePrompt(btn) {
+  const input = document.getElementById('nut-chat-input');
+  if (!input) return;
+  input.value = btn.textContent.trim();
+  input.focus();
+  // Hide chips once one is used
+  const chips = document.getElementById('nut-coach-prompts');
+  if (chips) chips.style.display = 'none';
+}
+
 async function nutNewConversation() {
   if (!confirm('Start a fresh conversation? Your history is always saved and the coach still has your full profile and logs.')) return;
   nutChatHistory = [];
@@ -3057,30 +3109,42 @@ async function nutSendMessage() {
   msgs.innerHTML += `<div class="nut-msg nut-msg-thinking" id="${thinkId}">Thinking…</div>`;
   msgs.scrollTop = msgs.scrollHeight;
   const parsedCtx = (() => { try { return JSON.parse(nutCoachContext); } catch(e) { return {}; } })();
-  const systemPrompt = `You are Brian's personal nutrition coach embedded in his training app.
+  const systemPrompt = `You are Brian's personal nutrition coach. You are a nutrition specialist — evidence-based, direct, no padding.
 
-STANDING BRIEFING — read this first, it is ground truth:
+STANDING BRIEFING — ground truth, always apply:
 Diet: ${parsedCtx.coachProfile?.diet_type || 'not set'}
 Fasting window: ${parsedCtx.coachProfile?.fasting_window || 'not set'}
 Notes: ${parsedCtx.coachProfile?.nutrition_notes || 'none'}
 
-WHEN GENERATING A WEEKLY PLAN — follow this format exactly:
-- Use the real dates from upcomingSessions in the data. Never invent or assume workout days.
-- For each calendar day this week, write a ## header with the full date and day type, e.g:
-  ## Monday March 30 — Training Day A (Lower Body)
-  ## Tuesday April 1 — Rest Day
-- For every day include:
-  ### Daily targets: protein Xg / carbs Xg / fat Xg / ~X kcal
-  Then each meal as ### Meal name (time) with bullet points for foods and a macro note per meal
-- Meal times must be anchored inside the fasting window. No food outside it.
-- Pre-workout meal: schedule it 60-90 min before training starts (assume early afternoon if unknown)
-- Training days: more carbs, especially around the workout. Same or higher protein vs rest days.
-- Rest/walk days: same protein, reduce carbs ~25%, moderate fat.
-- Be specific about foods and portions. No vague suggestions like "a protein source".
+YOU HAVE TWO MODES — read the request and use the right one:
 
-When Brian confirms he wants to save a plan, wrap the full plan in <SAVE_PLAN> tags.
+MODE 1 — WEEKLY PLAN (when Brian asks for a plan or what to eat this week):
+The data contains a weekCalendar array with every day this week — each entry has the exact date, dayOfWeek, and type (training or rest). USE THESE VALUES EXACTLY. Never calculate or guess day names yourself.
 
-Use recentMeasurements for weight/BF trends. Use nutritionLogs to spot and name any patterns in energy, hunger, sleep, or digestion. Use recentSessions for training load context.
+Give a short, scannable weekly brief. Format:
+## Training days — [list exact "dayOfWeek date" from weekCalendar where type=training]
+**Targets:** protein Xg / carbs Xg / fat Xg / ~X kcal
+**Key foods to hit these:** [concise bullet list of 8-12 specific foods with rough portions]
+**Timing:** [2-3 lines on when to eat relative to fasting window and workout]
+
+## Rest days — [list exact "dayOfWeek date" from weekCalendar where type=rest]
+**Targets:** protein Xg / carbs Xg / fat Xg / ~X kcal
+**Key foods to hit these:** [concise bullet list]
+**Timing:** [1-2 lines]
+
+## Notes for this week (1-3 lines — deload, recovery, patterns from logs)
+
+When Brian confirms he wants to save it, wrap the full plan in <SAVE_PLAN> tags.
+
+MODE 2 — LOG FEEDBACK (when Brian asks how he did, review his food, or asks about a specific day):
+- Estimate actual macros from what was logged (protein/carbs/fat in grams)
+- State targets for that day type (training vs rest)
+- Call out exactly what was over/under and by how much: "Protein: ~85g logged vs 150g target — 65g short"
+- Give 2-3 simple, specific fixes: real foods, real portions, zero vagueness
+- Flag any micronutrient gaps relevant to plant-based eating (B12, iron, omega-3, zinc)
+- Keep it tight — numbers first, commentary second
+
+FOR EVERYTHING ELSE: answer directly and specifically. Use training data as context for nutrition advice, not as the main topic. Use recentMeasurements for weight/BF trends. Use nutritionLogs to name patterns you see.
 
 CURRENT DATA:
 ${nutCoachContext}`;
@@ -3129,7 +3193,8 @@ async function nutLoadTodayLog() {
     const today = new Date().toISOString().slice(0,10);
     el.innerHTML = `<div style="font-family:var(--mono);font-size:11px;color:var(--text);opacity:0.4;padding:20px 0">Loading…</div>`;
     try {
-      const rows = await sbGet(NUT_LOGS_TABLE, `select=*&date=eq.${today}&limit=1`);
+      // Only load unsubmitted logs — submitted ones are done, start fresh
+      const rows = await sbGet(NUT_LOGS_TABLE, `select=*&date=eq.${today}&submitted=eq.false&order=created_at.desc&limit=1`);
       nutCurrentLog = rows[0] || { date: today, meal_notes: [] };
     } catch(e) {
       nutCurrentLog = { date: new Date().toISOString().slice(0,10), meal_notes: [] };
@@ -3180,7 +3245,7 @@ function nutRenderLogForm() {
     ${submitted ? `<div class="nut-log-submitted">✓ Submitted</div>` : ''}
     <div class="card" style="margin-bottom:14px">
       <div class="card-label">Date</div>
-      <input type="date" value="${date}" onchange="nutChangeLogDate(this.value)">
+      <input type="date" class="date-picker-input" style="display:block;width:100%" value="${date}" onchange="nutChangeLogDate(this.value)">
     </div>
     <div class="card" style="margin-bottom:14px">
       <div class="card-label">How are you feeling?</div>
@@ -3193,12 +3258,12 @@ function nutRenderLogForm() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="input-group">
           <label class="input-label">Break fast time</label>
-          <input type="text" placeholder="e.g. 12:30" value="${log.break_fast_time||''}"
+          <input type="time" value="${log.break_fast_time||''}"
             onchange="nutFieldChange('break_fast_time',this.value)">
         </div>
         <div class="input-group">
           <label class="input-label">Hours fasted</label>
-          <input type="number" min="0" max="48" step="0.5" placeholder="e.g. 16" value="${log.hours_fasted||''}"
+          <input type="number" min="0" max="48" step="0.5" value="${log.hours_fasted ?? 16}"
             onchange="nutFieldChange('hours_fasted',parseFloat(this.value)||null)">
         </div>
       </div>
@@ -3285,7 +3350,7 @@ async function nutSaveLog(submit, silent=false) {
     } else {
       const r = await fetch(`${SB_URL}/rest/v1/${NUT_LOGS_TABLE}`, {
         method:'POST',
-        headers:{ ...SB_HDRS, 'Prefer':'return=representation,resolution=merge-duplicates' },
+        headers:{ ...SB_HDRS, 'Prefer':'return=representation' },
         body: JSON.stringify(body)
       });
       if (!r.ok) throw new Error(await r.text());
@@ -3293,9 +3358,16 @@ async function nutSaveLog(submit, silent=false) {
       nutCurrentLog = rows[0];
     }
     if (!silent) {
-      if (submit) { nutRenderLogForm(); }
-      else { if(saveBtn){saveBtn.textContent='✓ Saved';saveBtn.disabled=false;setTimeout(()=>{if(saveBtn)saveBtn.textContent='Save';},2000);} if(submitBtn) submitBtn.disabled=false; }
-      if(status){ status.textContent = submit ? '✓ Log submitted' : '✓ Saved'; status.style.display='block'; setTimeout(()=>{ status.style.display='none'; },2500); }
+      if (submit) {
+        // After submit, reset to a blank form for a new entry on the same date
+        nutCurrentLog = { date: body.date, meal_notes: [] };
+        nutRenderLogForm();
+        if(status){ status.textContent = '✓ Submitted'; status.style.display='block'; setTimeout(()=>{ status.style.display='none'; },2500); }
+      } else {
+        if(saveBtn){saveBtn.textContent='✓ Saved';saveBtn.disabled=false;setTimeout(()=>{if(saveBtn)saveBtn.textContent='Save';},2000);}
+        if(submitBtn) submitBtn.disabled=false;
+        if(status){ status.textContent = '✓ Saved'; status.style.display='block'; setTimeout(()=>{ status.style.display='none'; },2500); }
+      }
     }
   } catch(e) {
     if (!silent) {
