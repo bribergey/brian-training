@@ -1211,7 +1211,9 @@ let weekQueue = [];
 
 // ─── DRAFT STATE (localStorage, keyed by day+date) ───────────────────────
 function draftKey(session) {
-  return `brian_draft_${ENV}_${session.day}_${session.scheduledDate}`;
+  // Include sessionKey so drafts are invalidated when program changes
+  const sk = session.sessionKey || session.scheduledDate;
+  return `brian_draft_${ENV}_${session.day}_${sk}`;
 }
 
 function saveDraft(si) {
