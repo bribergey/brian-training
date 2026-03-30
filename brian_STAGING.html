@@ -2120,6 +2120,7 @@ function buildExerciseBlock(ex, i, si) {
   const badgeLabel = badgeType === 'anchor' ? 'Anchor' : badgeType === 'core' ? 'Core' : badgeType === 'upper' ? 'Upper' : badgeType === 'lower' ? 'Lower' : 'Acc';
   const desc       = ex.coach_notes || '';
   const uid        = `${si}_${i}`;
+  const isInfo     = ex.rep_type === 'info';
 
   let html = `<div class="ex-block" id="ex-${uid}">
     <div class="ex-block-header" onclick="toggleEx('ex-${uid}')">
@@ -2130,11 +2131,15 @@ function buildExerciseBlock(ex, i, si) {
     <div class="ex-body">`;
 
   if (desc) html += `<div class="ex-desc">${desc}</div>`;
-  html += buildSetRows(uid, ex, exUnit);
-  html += `<div class="input-group">
+
+  if (!isInfo) {
+    html += buildSetRows(uid, ex, exUnit);
+    html += `<div class="input-group">
     <label class="input-label">Notes</label>
     <input type="text" id="n_${uid}" placeholder="optional">
   </div>`;
+  }
+
   html += `</div></div>`;
   return html;
 }
