@@ -485,6 +485,156 @@ select {
 
 
 
+/* NUTRITION SUB-TABS */
+.nut-subtab-bar {
+  display: flex; gap: 0; margin-bottom: 24px;
+  background: var(--bg3); border-radius: 10px; padding: 3px;
+}
+.nut-subtab {
+  flex: 1; font-family: var(--mono); font-size: 11px; font-weight: 600;
+  padding: 8px 4px; border-radius: 8px; cursor: pointer;
+  border: none; background: none; color: var(--text);
+  opacity: 0.5; letter-spacing: 0.04em; text-transform: uppercase;
+  transition: all 0.15s; touch-action: manipulation;
+}
+.nut-subtab.active {
+  background: var(--bg2); color: var(--text); opacity: 1;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+}
+.nut-page { display: block; }
+.nut-empty-state {
+  text-align: center; padding: 60px 0;
+  font-family: var(--mono); font-size: 11px; color: var(--text); opacity: 0.4;
+}
+
+/* NUTRITION PLAN */
+.nut-plan-meta {
+  font-family: var(--mono); font-size: 10px; color: var(--text);
+  opacity: 0.4; text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 20px;
+}
+.nut-plan-body { font-size: 14px; color: var(--text); line-height: 1.75; }
+.nut-plan-body h2 {
+  font-family: var(--display); font-size: 18px; font-weight: 800;
+  color: var(--text); letter-spacing: -0.02em;
+  margin-top: 28px; margin-bottom: 10px;
+}
+.nut-plan-body h3 {
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  color: var(--green-dark); text-transform: uppercase; letter-spacing: 0.1em;
+  margin-top: 20px; margin-bottom: 6px;
+}
+.nut-plan-body p { margin-bottom: 10px; }
+.nut-plan-body ul { padding-left: 18px; margin-bottom: 10px; }
+.nut-plan-body li { margin-bottom: 4px; }
+.nut-plan-body strong { font-weight: 700; }
+
+/* COACH CHAT */
+#nut-chat-messages {
+  display: flex; flex-direction: column; gap: 14px;
+  margin-bottom: 16px; min-height: 120px;
+}
+.nut-msg { max-width: 88%; font-size: 14px; line-height: 1.65; }
+.nut-msg-user {
+  align-self: flex-end; background: var(--text); color: #fff;
+  border-radius: 16px 16px 4px 16px; padding: 12px 16px; font-weight: 500;
+}
+.nut-msg-coach {
+  align-self: flex-start; background: var(--bg2);
+  border: 1px solid var(--border); border-radius: 4px 16px 16px 16px;
+  padding: 14px 16px; color: var(--text);
+}
+.nut-msg-coach p { margin-bottom: 8px; }
+.nut-msg-coach p:last-child { margin-bottom: 0; }
+.nut-msg-coach ul { padding-left: 16px; margin-bottom: 8px; }
+.nut-msg-coach li { margin-bottom: 3px; }
+.nut-msg-coach strong { font-weight: 700; }
+.nut-msg-thinking {
+  align-self: flex-start; font-family: var(--mono); font-size: 10px;
+  color: var(--text); opacity: 0.4; padding: 8px 0; letter-spacing: 0.05em;
+}
+.nut-chat-input-row {
+  display: flex; gap: 10px; align-items: flex-end;
+  position: sticky; bottom: 0; background: var(--bg);
+  padding: 12px 0 0; border-top: 1px solid var(--border); margin-top: 8px;
+}
+.nut-chat-textarea {
+  flex: 1; resize: none; min-height: 48px; max-height: 140px;
+  font-size: 15px; padding: 12px 14px; border-radius: var(--radius-sm);
+  background: var(--bg3); border: 1.5px solid var(--border2);
+  font-family: var(--sans); color: var(--text); outline: none;
+  transition: border-color 0.15s; overflow-y: auto;
+}
+.nut-chat-textarea:focus { border-color: var(--text); background: var(--bg2); }
+
+/* TODAY LOG */
+.nut-rating-block { margin-bottom: 14px; }
+.nut-rating-label {
+  font-family: var(--mono); font-size: 10px; color: var(--text);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 8px; display: block;
+}
+.nut-rating-btns { display: flex; gap: 6px; }
+.nut-rating-btn {
+  flex: 1; background: var(--bg3); border: 1.5px solid var(--border2);
+  border-radius: var(--radius-xs); padding: 10px 0;
+  font-family: var(--mono); font-size: 12px; font-weight: 700;
+  color: var(--text); opacity: 0.5; cursor: pointer;
+  transition: all 0.12s; touch-action: manipulation;
+}
+.nut-rating-btn.active {
+  background: var(--text); color: #fff; border-color: var(--text); opacity: 1;
+}
+.nut-meal-entry {
+  background: var(--bg3); border: 1.5px solid var(--border2);
+  border-radius: var(--radius-xs); padding: 10px 12px;
+  margin-bottom: 8px; display: flex; align-items: flex-start; gap: 8px;
+}
+.nut-meal-entry textarea {
+  flex: 1; background: transparent; border: none; resize: none;
+  font-size: 14px; font-family: var(--sans); color: var(--text);
+  padding: 0; min-height: 36px; outline: none; line-height: 1.5;
+}
+.nut-meal-remove {
+  background: none; border: none; color: var(--text); opacity: 0.25;
+  font-size: 16px; cursor: pointer; padding: 0; line-height: 1;
+  touch-action: manipulation; flex-shrink: 0; padding-top: 2px;
+}
+.nut-meal-remove:active { opacity: 0.7; }
+.nut-log-submitted {
+  font-family: var(--mono); font-size: 10px; color: var(--green-dark);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  display: flex; align-items: center; gap: 6px; margin-bottom: 16px;
+}
+
+/* LOG HISTORY */
+.nut-hist-entry {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 14px;
+  cursor: pointer; transition: border-color 0.15s;
+}
+.nut-hist-entry:hover { border-color: var(--border2); }
+.nut-hist-entry.open { border-color: var(--text); cursor: default; }
+.nut-hist-header { display: flex; justify-content: space-between; align-items: flex-start; }
+.nut-hist-date {
+  font-family: var(--display); font-size: 18px; font-weight: 800;
+  color: var(--text); letter-spacing: -0.02em;
+}
+.nut-hist-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.nut-hist-badge {
+  font-family: var(--mono); font-size: 9px; font-weight: 700;
+  padding: 3px 8px; border-radius: 20px; text-transform: uppercase;
+  letter-spacing: 0.06em; background: var(--bg3); color: var(--text); opacity: 0.6;
+}
+.nut-hist-badge.submitted {
+  background: var(--green-dim); color: var(--green-dark); opacity: 1;
+  border: 1px solid rgba(26,219,78,0.2);
+}
+.nut-hist-chevron { color: var(--text); opacity: 0.35; font-size: 11px; transition: transform 0.2s; }
+.nut-hist-entry.open .nut-hist-chevron { transform: rotate(180deg); opacity: 1; }
+.nut-hist-detail { display: none; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border); }
+.nut-hist-entry.open .nut-hist-detail { display: block; }
+
 /* SECTION HEADER IN CARDS */
 .card-label {
   font-family: var(--mono); font-size: 10px; font-weight: 500;
@@ -704,53 +854,40 @@ select {
 <!-- NUTRITION TAB -->
 <div class="panel" id="tab-nutrition">
   <div class="panel-inner">
-
-    <div class="card card-accent-green">
-      <div class="card-section-title">Daily targets — 75kg recomp</div>
-      <div class="stats-grid" style="margin-bottom:8px">
-        <div class="stat-card"><div class="stat-val" style="color:var(--blue)">150g</div><div class="stat-label">Protein</div></div>
-        <div class="stat-card"><div class="stat-val" style="color:var(--gold)">200g</div><div class="stat-label">Carbs</div></div>
-        <div class="stat-card"><div class="stat-val" style="color:var(--green)">65g</div><div class="stat-label">Fat</div></div>
-      </div>
-      <div style="font-size:12px;color:var(--text);font-family:var(--mono);text-align:center">≈ 2,000–2,100 kcal · slight deficit on rest days</div>
+    <!-- Sub-tab nav: full-width pill strip -->
+    <div class="nut-subtab-bar">
+      <button class="nut-subtab active" onclick="nutShowTab('plan',this)">Plan</button>
+      <button class="nut-subtab" onclick="nutShowTab('coach',this)">Coach</button>
+      <button class="nut-subtab" onclick="nutShowTab('log',this)">Today</button>
+      <button class="nut-subtab" onclick="nutShowTab('loghistory',this)">History</button>
     </div>
-
-    <div class="card">
-      <div class="card-label">IF window · 12:00–19:00</div>
-      <div class="nut-row">
-        <div class="nut-time">12:00 — break fast (pre-workout)</div>
-        <div class="nut-title">First meal + fuel</div>
-        <div class="nut-body">60–90 min before training. 40–50g protein + 60–80g carbs. Eggs + rice + chicken, or Greek yogurt + banana + protein shake. Most important meal of the day.</div>
-      </div>
-      <div class="nut-row">
-        <div class="nut-time">During (if over 60 min)</div>
-        <div class="nut-title">Intra-workout</div>
-        <div class="nut-body">500ml water + 5g creatine monohydrate (take daily regardless). Keep it simple.</div>
-      </div>
-      <div class="nut-row">
-        <div class="nut-time">Within 60 min of finishing</div>
-        <div class="nut-title">Post-workout</div>
-        <div class="nut-body">40–50g protein + 50–60g fast carbs. Shake + banana, or rice + lean protein. Must happen before 19:00.</div>
-      </div>
-      <div class="nut-row">
-        <div class="nut-time">15:00–18:00</div>
-        <div class="nut-title">Main meal</div>
-        <div class="nut-body">40g protein, complex carbs, veg, healthy fats. Salmon + sweet potato + greens, or beef + rice + salad.</div>
-      </div>
-      <div class="nut-row">
-        <div class="nut-time">Before 19:00</div>
-        <div class="nut-title">Optional snack</div>
-        <div class="nut-body">Cottage cheese, Greek yogurt, or casein shake. Slow protein before the fast window supports overnight repair.</div>
+    <!-- Plan -->
+    <div class="nut-page" id="nut-plan">
+      <div id="nut-plan-content">
+        <div class="nut-empty-state">Loading plan…</div>
       </div>
     </div>
-
-    <div class="card">
-      <div class="card-label">Key tips</div>
-      <div class="tip-row"><div class="tip-dot"></div><div>Creatine monohydrate 5g daily — most evidence-backed supplement for strength. Timing doesn't matter, consistency does.</div></div>
-      <div class="tip-row"><div class="tip-dot"></div><div>Protein first at every meal. If a meal doesn't have 30g+, it won't support your goals.</div></div>
-      <div class="tip-row"><div class="tip-dot"></div><div>2.5–3L water daily, +500ml on training days. Dehydration kills strength by up to 10%.</div></div>
-      <div class="tip-row"><div class="tip-dot"></div><div>Rest days: same protein, cut carbs ~30%. Don't restrict fat — it supports testosterone at 45.</div></div>
-      <div class="tip-row"><div class="tip-dot"></div><div>7–8 hours sleep. At 45, growth hormone release during sleep is your primary muscle-building window. Non-negotiable.</div></div>
+    <!-- Coach -->
+    <div class="nut-page" id="nut-coach" style="display:none">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+        <button class="hist-filter-btn" onclick="nutNewConversation()" style="font-size:10px">+ New conversation</button>
+      </div>
+      <div id="nut-chat-messages"></div>
+      <div class="nut-chat-input-row">
+        <textarea id="nut-chat-input" class="nut-chat-textarea" placeholder="Ask your coach anything…" rows="2"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();nutSendMessage();}"></textarea>
+        <button class="btn btn-primary" onclick="nutSendMessage()" id="nut-send-btn" style="flex-shrink:0;padding:13px 18px;">↑</button>
+      </div>
+    </div>
+    <!-- Today's Log -->
+    <div class="nut-page" id="nut-log" style="display:none">
+      <div id="nut-log-content"></div>
+    </div>
+    <!-- Log History -->
+    <div class="nut-page" id="nut-loghistory" style="display:none">
+      <div id="nut-loghistory-content">
+        <div class="nut-empty-state">Loading history…</div>
+      </div>
     </div>
   </div>
 </div>
@@ -839,6 +976,11 @@ const ENV = 'production';
 const SB_URL  = 'https://mimvmaotzmacgiziovvi.supabase.co';
 const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pbXZtYW90em1hY2dpemlvdnZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNTMzNzYsImV4cCI6MjA4OTYyOTM3Nn0.dJMw37a4m9fBOmZQQOayZ8jKY28p10y_cSca4Sfoqe4';
 const SB_HDRS = { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
+const ANTHROPIC_KEY = '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'; // ← paste your sk-ant-... key here
+
+const NUT_LOGS_TABLE     = ENV === 'production' ? 'nutrition_logs'        : 'nutrition_logs_staging';
+const NUT_PLANS_TABLE    = ENV === 'production' ? 'nutrition_plans'       : 'nutrition_plans_staging';
+const COACH_CONVOS_TABLE = ENV === 'production' ? 'coach_conversations'   : 'coach_conversations_staging';
 
 const TABLES = {
   sessions: ENV === 'production' ? 'sessions'         : 'sessions_staging',
@@ -1559,6 +1701,7 @@ function showTab(t, btn) {
   if (t === 'program') renderProgram();
   if (t === 'today') renderTodayQueue();
   if (t === 'me') renderMe();
+  if (t === 'nutrition') renderNutrition();
 }
 
 // ─── RENDER HISTORY ───────────────────────────────────────────────────────
@@ -2626,6 +2769,22 @@ async function renderMe() {
       </div>
     </div>
 
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-section-title">Nutrition coach</div>
+      <div class="input-group" style="margin-bottom:14px">
+        <label class="input-label">Diet type</label>
+        <input type="text" id="me-diet-type" value="${p.diet_type||''}" placeholder="e.g. Plant-based, no alcohol" onchange="meDirty()">
+      </div>
+      <div class="input-group" style="margin-bottom:14px">
+        <label class="input-label">Fasting window</label>
+        <input type="text" id="me-fasting-window" value="${p.fasting_window||''}" placeholder="e.g. 16:8, eating 12:00–20:00" onchange="meDirty()">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Coach notes</label>
+        <textarea rows="5" id="me-nutrition-notes" placeholder="Anything the coach should always know — goals, preferences, what works, what doesn't…" onchange="meDirty()">${p.nutrition_notes||''}</textarea>
+      </div>
+    </div>
+
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:32px">
       <button class="btn btn-primary btn-full" id="me-save-btn" onclick="saveProfile()">Save profile</button>
       <span id="me-save-status" style="font-family:var(--mono);font-size:11px;color:var(--green);display:none;white-space:nowrap">✓ Saved</span>
@@ -2708,6 +2867,9 @@ async function saveProfile() {
     training_window_end:     document.getElementById('me-window-end')?.value || null,
     goals:                   meGetChips('me-goals'),
     injuries:                document.getElementById('me-injuries')?.value || null,
+    diet_type:               document.getElementById('me-diet-type')?.value?.trim() || null,
+    fasting_window:          document.getElementById('me-fasting-window')?.value?.trim() || null,
+    nutrition_notes:         document.getElementById('me-nutrition-notes')?.value?.trim() || null,
     experience_level:        document.getElementById('me-experience')?.value || null,
     equipment:               meGetChips('me-equipment'),
     updated_at:              new Date().toISOString()
@@ -2731,6 +2893,465 @@ async function saveProfile() {
     btn.textContent = 'Save profile'; btn.disabled = false;
     status.textContent = '⚠ Error saving'; status.style.display = 'block';
   }
+}
+
+// ─── NUTRITION ──────────────────────────────────────────────────────────────
+let nutActiveSubTab = 'plan';
+let nutCoachContext = '';
+let nutChatHistory = [];
+let nutCurrentLog = null;
+// nutCoachInitialized removed — context refreshes on every Coach tab visit
+
+function nutShowTab(tab, btn) {
+  document.querySelectorAll('.nut-subtab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.nut-page').forEach(p => p.style.display = 'none');
+  document.getElementById('nut-' + tab).style.display = 'block';
+  nutActiveSubTab = tab;
+  if (tab === 'plan')       nutLoadPlan();
+  if (tab === 'coach')      nutInitCoach();
+  if (tab === 'log')        nutLoadTodayLog();
+  if (tab === 'loghistory') nutLoadLogHistory();
+}
+
+async function renderNutrition() {
+  // Restore last sub-tab
+  const activeBtn = document.querySelector('.nut-subtab.active');
+  const activeTab = nutActiveSubTab || 'plan';
+  document.querySelectorAll('.nut-page').forEach(p => p.style.display = 'none');
+  document.getElementById('nut-' + activeTab).style.display = 'block';
+  document.querySelectorAll('.nut-subtab').forEach(b => b.classList.remove('active'));
+  const btns = document.querySelectorAll('.nut-subtab');
+  const tabOrder = ['plan','coach','log','loghistory'];
+  const idx = tabOrder.indexOf(activeTab);
+  if (btns[idx]) btns[idx].classList.add('active');
+  if (activeTab === 'plan')       nutLoadPlan();
+  if (activeTab === 'coach')      nutInitCoach();
+  if (activeTab === 'log')        nutLoadTodayLog();
+  if (activeTab === 'loghistory') nutLoadLogHistory();
+}
+
+// ── Plan ─────────────────────────────────────────────────────────────────
+async function nutLoadPlan() {
+  const el = document.getElementById('nut-plan-content');
+  try {
+    const rows = await sbGet(NUT_PLANS_TABLE, 'select=*&order=generated_at.desc&limit=1');
+    if (!rows.length) {
+      el.innerHTML = `<div class="card" style="text-align:center;padding:36px 26px">
+        <div class="card-section-title" style="margin-bottom:10px">No plan yet</div>
+        <div style="font-size:14px;color:var(--text);opacity:0.55;line-height:1.65;margin-bottom:20px">
+          Head to the Coach tab and ask your nutrition coach to generate a weekly plan.
+        </div>
+        <button class="btn btn-full" onclick="nutShowTab('coach', document.querySelectorAll('.nut-subtab')[1]);document.querySelectorAll('.nut-subtab').forEach((b,i)=>{b.classList.toggle('active',i===1)})">Open Coach →</button>
+      </div>`;
+      return;
+    }
+    const plan = rows[0];
+    const d = new Date(plan.generated_at);
+    const dateStr = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+    el.innerHTML = `<div class="nut-plan-meta">Generated ${dateStr}</div>
+      <div class="nut-plan-body">${nutMd(plan.plan_content)}</div>`;
+  } catch(e) {
+    el.innerHTML = `<div style="font-family:var(--mono);font-size:11px;color:var(--red);padding:20px 0">Error: ${e.message}</div>`;
+  }
+}
+
+function nutMd(md) {
+  if (!md) return '';
+  md = md.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  const lines = md.split('\n');
+  const out = []; let inList = false;
+  for (const line of lines) {
+    if (/^## (.+)/.test(line))      { if(inList){out.push('</ul>');inList=false;} out.push('<h2>'+line.replace(/^## /,'')+'</h2>'); }
+    else if (/^### (.+)/.test(line)){ if(inList){out.push('</ul>');inList=false;} out.push('<h3>'+line.replace(/^### /,'')+'</h3>'); }
+    else if (/^- (.+)/.test(line))  { if(!inList){out.push('<ul>');inList=true;} out.push('<li>'+line.replace(/^- /,'')+'</li>'); }
+    else if (line.trim()==='')      { if(inList){out.push('</ul>');inList=false;} }
+    else                            { if(inList){out.push('</ul>');inList=false;} out.push('<p>'+line+'</p>'); }
+  }
+  if (inList) out.push('</ul>');
+  return out.join('\n');
+}
+
+// ── Coach ─────────────────────────────────────────────────────────────────
+async function nutInitCoach() {
+  const msgs = document.getElementById('nut-chat-messages');
+  msgs.innerHTML = `<div class="nut-msg-thinking">Loading…</div>`;
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const [upcomingRows, profileRows, logs, measurements, historyRows] = await Promise.all([
+      sbGet(ENV === 'production' ? 'program_full' : 'program_staging_full',
+        'select=scheduled_date,day,session_label,exercise,sets,reps&scheduled_date=gte.' + today + '&order=scheduled_date.asc,order_index.asc&limit=40'),
+      sbGet(ENV === 'production' ? 'user_profile' : 'user_profile_staging', 'select=*&limit=1'),
+      sbGet(NUT_LOGS_TABLE, 'select=*&order=date.desc&limit=14'),
+      sbGet(ENV === 'production' ? 'user_measurements' : 'user_measurements_staging', 'select=logged_at,weight_kg,body_fat_pct&order=logged_at.desc&limit=6'),
+      sbGet(COACH_CONVOS_TABLE, 'select=role,content,created_at&order=created_at.desc&limit=40')
+    ]);
+    // Group upcoming rows by date
+    const sessionMap = {};
+    for (const row of upcomingRows) {
+      const key = row.scheduled_date;
+      if (!sessionMap[key]) sessionMap[key] = { date: key, day: row.day, label: row.session_label, exercises: [] };
+      if (row.exercise && row.exercise !== 'Warm-up') sessionMap[key].exercises.push(row.exercise);
+    }
+    const upcomingSessions = Object.values(sessionMap);
+    const recentSessions = (cachedSessions || []).slice(-14);
+    const profile = profileRows[0] || {};
+    const coachProfile = {
+      diet_type:       profile.diet_type,
+      fasting_window:  profile.fasting_window,
+      nutrition_notes: profile.nutrition_notes,
+      goals:           profile.goals,
+      injuries:        profile.injuries,
+    };
+    nutCoachContext = JSON.stringify({ today, coachProfile, recentMeasurements: measurements, upcomingSessions, recentSessions, nutritionLogs: logs });
+
+    // Restore history — fetched desc, reverse to chronological
+    nutChatHistory = historyRows.reverse().map(r => ({ role: r.role, content: r.content }));
+
+    // Render
+    msgs.innerHTML = '';
+    if (!nutChatHistory.length) {
+      msgs.innerHTML = `<div class="nut-msg nut-msg-coach">
+        Hey Brian — I've got your training schedule, recent sessions, and profile loaded.<br><br>
+        Ask me anything: a full weekly nutrition plan, what to eat before tomorrow's session, why your energy felt off last week — whatever you need.
+      </div>`;
+    } else {
+      const visible = nutChatHistory.slice(-20);
+      if (nutChatHistory.length > 20) {
+        msgs.innerHTML = `<div class="nut-msg-thinking" style="text-align:center;padding-bottom:16px">↑ ${nutChatHistory.length - 20} earlier messages in history</div>`;
+      }
+      visible.forEach(m => {
+        msgs.innerHTML += m.role === 'user'
+          ? `<div class="nut-msg nut-msg-user">${nutEsc(m.content)}</div>`
+          : `<div class="nut-msg nut-msg-coach">${nutMd(m.content)}</div>`;
+      });
+    }
+    msgs.scrollTop = msgs.scrollHeight;
+  } catch(e) {
+    msgs.innerHTML = `<div class="nut-msg-thinking">Error: ${e.message}</div>`;
+  }
+}
+
+async function nutNewConversation() {
+  if (!confirm('Start a fresh conversation? Your history is always saved and the coach still has your full profile and logs.')) return;
+  nutChatHistory = [];
+  const msgs = document.getElementById('nut-chat-messages');
+  msgs.innerHTML = `<div class="nut-msg nut-msg-coach">
+    Starting fresh. I still have your full profile, upcoming sessions, and nutrition logs — what do you want to work on?
+  </div>`;
+}
+
+async function nutSendMessage() {
+  const input = document.getElementById('nut-chat-input');
+  const sendBtn = document.getElementById('nut-send-btn');
+  const text = input.value.trim();
+  if (!text || sendBtn.disabled) return;
+  const msgs = document.getElementById('nut-chat-messages');
+  nutChatHistory.push({ role:'user', content:text });
+  msgs.innerHTML += `<div class="nut-msg nut-msg-user">${nutEsc(text)}</div>`;
+  sbPost(COACH_CONVOS_TABLE, { role:'user', content:text }).catch(()=>{});
+  input.value = '';
+  sendBtn.disabled = true; sendBtn.textContent = '…';
+  const thinkId = 'nt' + Date.now();
+  msgs.innerHTML += `<div class="nut-msg nut-msg-thinking" id="${thinkId}">Thinking…</div>`;
+  msgs.scrollTop = msgs.scrollHeight;
+  const parsedCtx = (() => { try { return JSON.parse(nutCoachContext); } catch(e) { return {}; } })();
+  const systemPrompt = `You are Brian's personal nutrition coach embedded in his training app.
+
+STANDING BRIEFING — read this first, it is ground truth:
+Diet: ${parsedCtx.coachProfile?.diet_type || 'not set'}
+Fasting window: ${parsedCtx.coachProfile?.fasting_window || 'not set'}
+Notes: ${parsedCtx.coachProfile?.nutrition_notes || 'none'}
+
+WHEN GENERATING A WEEKLY PLAN — follow this format exactly:
+- Use the real dates from upcomingSessions in the data. Never invent or assume workout days.
+- For each calendar day this week, write a ## header with the full date and day type, e.g:
+  ## Monday March 30 — Training Day A (Lower Body)
+  ## Tuesday April 1 — Rest Day
+- For every day include:
+  ### Daily targets: protein Xg / carbs Xg / fat Xg / ~X kcal
+  Then each meal as ### Meal name (time) with bullet points for foods and a macro note per meal
+- Meal times must be anchored inside the fasting window. No food outside it.
+- Pre-workout meal: schedule it 60-90 min before training starts (assume early afternoon if unknown)
+- Training days: more carbs, especially around the workout. Same or higher protein vs rest days.
+- Rest/walk days: same protein, reduce carbs ~25%, moderate fat.
+- Be specific about foods and portions. No vague suggestions like "a protein source".
+
+When Brian confirms he wants to save a plan, wrap the full plan in <SAVE_PLAN> tags.
+
+Use recentMeasurements for weight/BF trends. Use nutritionLogs to spot and name any patterns in energy, hunger, sleep, or digestion. Use recentSessions for training load context.
+
+CURRENT DATA:
+${nutCoachContext}`;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:2000, system:systemPrompt, messages:nutChatHistory })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || res.status);
+    const reply = data.content?.[0]?.text || 'Sorry, no response.';
+    document.getElementById(thinkId)?.remove();
+    const planMatch = reply.match(/<SAVE_PLAN>([\s\S]*?)<\/SAVE_PLAN>/);
+    let display = reply;
+    if (planMatch) {
+      display = reply.replace(/<SAVE_PLAN>[\s\S]*?<\/SAVE_PLAN>/, '').trim();
+      await nutSavePlan(planMatch[1].trim());
+      display += '\n\n**Plan saved — check the Plan tab.**';
+    }
+    nutChatHistory.push({ role:'assistant', content:reply });
+    sbPost(COACH_CONVOS_TABLE, { role:'assistant', content:reply }).catch(()=>{});
+    msgs.innerHTML += `<div class="nut-msg nut-msg-coach">${nutMd(display)}</div>`;
+  } catch(e) {
+    document.getElementById(thinkId)?.remove();
+    msgs.innerHTML += `<div class="nut-msg nut-msg-thinking">Error: ${e.message}</div>`;
+  }
+  sendBtn.disabled = false; sendBtn.textContent = '↑';
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function nutSavePlan(content) {
+  await sbPost(NUT_PLANS_TABLE, {
+    plan_content: content,
+    week_label: new Date().toISOString().slice(0,10),
+    generated_at: new Date().toISOString(),
+    context_snapshot: { generated_from:'coach_chat', date: new Date().toISOString().slice(0,10) }
+  });
+}
+
+// ── Today's Log ───────────────────────────────────────────────────────────
+async function nutLoadTodayLog() {
+  const el = document.getElementById('nut-log-content');
+  // Default date is today; user can change it
+  if (!nutCurrentLog) {
+    const today = new Date().toISOString().slice(0,10);
+    el.innerHTML = `<div style="font-family:var(--mono);font-size:11px;color:var(--text);opacity:0.4;padding:20px 0">Loading…</div>`;
+    try {
+      const rows = await sbGet(NUT_LOGS_TABLE, `select=*&date=eq.${today}&limit=1`);
+      nutCurrentLog = rows[0] || { date: today, meal_notes: [] };
+    } catch(e) {
+      nutCurrentLog = { date: new Date().toISOString().slice(0,10), meal_notes: [] };
+    }
+  }
+  nutRenderLogForm();
+}
+
+async function nutChangeLogDate(val) {
+  if (!val) return;
+  // Save current state first if has id
+  if (nutCurrentLog?.id) {
+    await nutSaveLog(false, true); // silent save
+  }
+  // Load log for new date
+  const el = document.getElementById('nut-log-content');
+  try {
+    const rows = await sbGet(NUT_LOGS_TABLE, `select=*&date=eq.${val}&limit=1`);
+    nutCurrentLog = rows[0] || { date: val, meal_notes: [] };
+  } catch(e) {
+    nutCurrentLog = { date: val, meal_notes: [] };
+  }
+  nutRenderLogForm();
+}
+
+function nutRenderLogForm() {
+  const log = nutCurrentLog || {};
+  const date = log.date || new Date().toISOString().slice(0,10);
+  const meals = log.meal_notes || [];
+  const submitted = log.submitted || false;
+  const el = document.getElementById('nut-log-content');
+
+  const ratingBlock = (field, label, val) => `
+    <div class="nut-rating-block">
+      <span class="nut-rating-label">${label}</span>
+      <div class="nut-rating-btns">
+        ${[1,2,3,4,5].map(n=>`<button class="nut-rating-btn${val===n?' active':''}" onclick="nutSetRating('${field}',${n},this)">${n}</button>`).join('')}
+      </div>
+    </div>`;
+
+  const mealsHtml = meals.map((m,i)=>`
+    <div class="nut-meal-entry" id="nut-meal-${i}">
+      <textarea rows="2" placeholder="What did you eat?" onchange="nutUpdateMeal(${i},this.value)">${nutEsc(m)}</textarea>
+      <button class="nut-meal-remove" onclick="nutRemoveMeal(${i})">×</button>
+    </div>`).join('');
+
+  el.innerHTML = `
+    ${submitted ? `<div class="nut-log-submitted">✓ Submitted</div>` : ''}
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-label">Date</div>
+      <input type="date" value="${date}" onchange="nutChangeLogDate(this.value)">
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-label">How are you feeling?</div>
+      ${ratingBlock('energy_level','Energy',log.energy_level)}
+      ${ratingBlock('hunger_level','Hunger',log.hunger_level)}
+      ${ratingBlock('sleep_quality','Sleep quality',log.sleep_quality)}
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-label">Fasting</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="input-group">
+          <label class="input-label">Break fast time</label>
+          <input type="text" placeholder="e.g. 12:30" value="${log.break_fast_time||''}"
+            onchange="nutFieldChange('break_fast_time',this.value)">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Hours fasted</label>
+          <input type="number" min="0" max="48" step="0.5" placeholder="e.g. 16" value="${log.hours_fasted||''}"
+            onchange="nutFieldChange('hours_fasted',parseFloat(this.value)||null)">
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-label">Meals &amp; snacks</div>
+      <div id="nut-meals-list">${mealsHtml}</div>
+      <button class="set-add-btn" onclick="nutAddMeal()">+ Add meal / snack</button>
+    </div>
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-label">Notes</div>
+      <div class="input-group" style="margin-bottom:14px">
+        <label class="input-label">Stool notes</label>
+        <textarea rows="2" placeholder="Optional" onchange="nutFieldChange('stool_notes',this.value)">${log.stool_notes||''}</textarea>
+      </div>
+      <div class="input-group">
+        <label class="input-label">General notes</label>
+        <textarea rows="3" placeholder="How you're feeling, anything notable about today…" onchange="nutFieldChange('general_notes',this.value)">${log.general_notes||''}</textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:8px">
+      <button class="btn btn-full" id="nut-save-btn" onclick="nutSaveLog(false)">Save</button>
+      ${!submitted?`<button class="btn btn-primary btn-full" id="nut-submit-btn" onclick="nutSaveLog(true)">Submit</button>`:''}
+    </div>
+    <div id="nut-log-status" style="display:none;font-family:var(--mono);font-size:11px;color:var(--green-dark);text-align:center;margin-top:6px"></div>`;
+}
+
+function nutSetRating(field, val, btn) {
+  btn.closest('.nut-rating-btns').querySelectorAll('.nut-rating-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  nutFieldChange(field, val);
+}
+
+function nutFieldChange(field, value) {
+  if (!nutCurrentLog) nutCurrentLog = { date: new Date().toISOString().slice(0,10), meal_notes:[] };
+  nutCurrentLog[field] = value;
+}
+
+function nutUpdateMeal(idx, value) {
+  if (!nutCurrentLog) return;
+  const meals = [...(nutCurrentLog.meal_notes||[])];
+  meals[idx] = value; nutCurrentLog.meal_notes = meals;
+}
+
+function nutAddMeal() {
+  if (!nutCurrentLog) nutCurrentLog = { date: new Date().toISOString().slice(0,10), meal_notes:[] };
+  nutCurrentLog.meal_notes = [...(nutCurrentLog.meal_notes||[]), ''];
+  nutRenderLogForm();
+  setTimeout(()=>{
+    const list = document.getElementById('nut-meals-list');
+    const tas = list?.querySelectorAll('textarea');
+    if (tas?.length) tas[tas.length-1].focus();
+  }, 50);
+}
+
+function nutRemoveMeal(idx) {
+  if (!nutCurrentLog) return;
+  const meals = [...(nutCurrentLog.meal_notes||[])];
+  meals.splice(idx,1); nutCurrentLog.meal_notes = meals;
+  nutRenderLogForm();
+}
+
+async function nutSaveLog(submit, silent=false) {
+  const saveBtn   = document.getElementById('nut-save-btn');
+  const submitBtn = document.getElementById('nut-submit-btn');
+  const status    = document.getElementById('nut-log-status');
+  if (!silent) { if(saveBtn){saveBtn.textContent='Saving…';saveBtn.disabled=true;} if(submitBtn) submitBtn.disabled=true; }
+  try {
+    const body = {
+      date:           nutCurrentLog?.date || new Date().toISOString().slice(0,10),
+      energy_level:   nutCurrentLog?.energy_level  || null,
+      hunger_level:   nutCurrentLog?.hunger_level  || null,
+      sleep_quality:  nutCurrentLog?.sleep_quality || null,
+      break_fast_time:nutCurrentLog?.break_fast_time || null,
+      hours_fasted:   nutCurrentLog?.hours_fasted  || null,
+      stool_notes:    nutCurrentLog?.stool_notes   || null,
+      general_notes:  nutCurrentLog?.general_notes || null,
+      meal_notes:     nutCurrentLog?.meal_notes    || [],
+      submitted: submit ? true : (nutCurrentLog?.submitted || false)
+    };
+    if (nutCurrentLog?.id) {
+      await sbPatch(NUT_LOGS_TABLE, nutCurrentLog.id, body);
+      nutCurrentLog = { ...nutCurrentLog, ...body };
+    } else {
+      const r = await fetch(`${SB_URL}/rest/v1/${NUT_LOGS_TABLE}`, {
+        method:'POST',
+        headers:{ ...SB_HDRS, 'Prefer':'return=representation,resolution=merge-duplicates' },
+        body: JSON.stringify(body)
+      });
+      if (!r.ok) throw new Error(await r.text());
+      const rows = await r.json();
+      nutCurrentLog = rows[0];
+    }
+    if (!silent) {
+      if (submit) { nutRenderLogForm(); }
+      else { if(saveBtn){saveBtn.textContent='✓ Saved';saveBtn.disabled=false;setTimeout(()=>{if(saveBtn)saveBtn.textContent='Save';},2000);} if(submitBtn) submitBtn.disabled=false; }
+      if(status){ status.textContent = submit ? '✓ Log submitted' : '✓ Saved'; status.style.display='block'; setTimeout(()=>{ status.style.display='none'; },2500); }
+    }
+  } catch(e) {
+    if (!silent) {
+      if(saveBtn){saveBtn.textContent='Save';saveBtn.disabled=false;} if(submitBtn) submitBtn.disabled=false;
+      if(status){ status.textContent='⚠ Error: '+e.message; status.style.display='block'; }
+    }
+  }
+}
+
+// ── Log History ───────────────────────────────────────────────────────────
+async function nutLoadLogHistory() {
+  const el = document.getElementById('nut-loghistory-content');
+  try {
+    const rows = await sbGet(NUT_LOGS_TABLE, 'select=*&order=date.desc&limit=60');
+    if (!rows.length) { el.innerHTML = `<div class="nut-empty-state">No logs yet</div>`; return; }
+    el.innerHTML = rows.map(nutHistCard).join('');
+  } catch(e) {
+    el.innerHTML = `<div style="font-family:var(--mono);font-size:11px;color:var(--red)">Error: ${e.message}</div>`;
+  }
+}
+
+function nutHistCard(log) {
+  const d = new Date(log.date + 'T12:00:00');
+  const dateStr = d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const ratings = [
+    log.energy_level ? `Energy ${log.energy_level}/5` : null,
+    log.hunger_level ? `Hunger ${log.hunger_level}/5` : null,
+    log.sleep_quality ? `Sleep ${log.sleep_quality}/5` : null
+  ].filter(Boolean);
+  const meals = log.meal_notes || [];
+  const mealsHtml = meals.length
+    ? meals.map(m=>`<div style="font-size:13px;line-height:1.5;padding:6px 0;border-bottom:1px solid var(--border)">${nutEsc(m)}</div>`).join('')
+    : `<div style="font-family:var(--mono);font-size:11px;color:var(--text);opacity:0.4">No meals logged</div>`;
+  return `<div class="nut-hist-entry" onclick="this.classList.contains('open')?this.classList.remove('open'):this.classList.add('open')">
+    <div class="nut-hist-header">
+      <div>
+        <div class="nut-hist-date">${dateStr}</div>
+        <div class="nut-hist-badges">
+          ${log.submitted?'<span class="nut-hist-badge submitted">✓ Submitted</span>':'<span class="nut-hist-badge">Draft</span>'}
+          ${ratings.map(r=>`<span class="nut-hist-badge">${r}</span>`).join('')}
+          ${log.hours_fasted?`<span class="nut-hist-badge">${log.hours_fasted}h fasted</span>`:''}
+        </div>
+      </div>
+      <div class="nut-hist-chevron">▾</div>
+    </div>
+    <div class="nut-hist-detail">
+      ${log.break_fast_time?`<div style="font-family:var(--mono);font-size:10px;color:var(--green-dark);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px">Broke fast at ${log.break_fast_time}</div>`:''}
+      <div class="card-label" style="margin-bottom:10px">Meals</div>
+      ${mealsHtml}
+      ${log.stool_notes?`<div style="margin-top:14px"><span class="card-label">Stool notes</span><div style="font-size:13px;line-height:1.6;margin-top:6px">${nutEsc(log.stool_notes)}</div></div>`:''}
+      ${log.general_notes?`<div style="margin-top:14px"><span class="card-label">Notes</span><div style="font-size:13px;line-height:1.6;margin-top:6px">${nutEsc(log.general_notes)}</div></div>`:''}
+    </div>
+  </div>`;
+}
+
+function nutEsc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 init();
