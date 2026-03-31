@@ -1883,17 +1883,20 @@ function renderSessionList() {
       const bt = EX_BADGES[ex.name] || 'acc';
       const bl = bt === 'anchor' ? 'Anchor' : bt === 'upper' ? 'Upper' : bt === 'lower' ? 'Lower' : bt === 'core' ? 'Core' : 'Acc';
       const ssTag = ex.superset_group ? `<span style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--green);background:rgba(26,219,78,0.1);padding:2px 6px;border-radius:10px;margin-left:6px">SS</span>` : '';
+      const isWarmup = ex.name === 'Warm-up';
       detailHtml += `<div class="detail-ex-block">
         <div class="detail-ex-name">
           <span class="ex-badge badge-${bt}">${bl}</span>${ex.name}${ssTag}
         </div>`;
-      // Convert legacy format to sets array for editing if needed
-      const exForRender = Array.isArray(ex.sets) ? ex : legacyToSets(ex);
-      detailHtml += buildSetRows(uid, exForRender, ex.unit || 'kg');
-      detailHtml += `<div class="input-group">
+      if (!isWarmup) {
+        // Convert legacy format to sets array for editing if needed
+        const exForRender = Array.isArray(ex.sets) ? ex : legacyToSets(ex);
+        detailHtml += buildSetRows(uid, exForRender, ex.unit || 'kg');
+        detailHtml += `<div class="input-group">
         <label class="input-label">Notes</label>
         <input type="text" id="h_n_${uid}" value="${ex.notes||''}" placeholder="optional">
       </div>`;
+      }
       detailHtml += `</div>`;
     });
 
@@ -3259,37 +3262,41 @@ function nutRenderLogForm() {
   el.innerHTML = `
     ${submitted ? `<div class="nut-log-submitted">✓ Submitted</div>` : ''}
     <div class="card" style="margin-bottom:14px">
-      <div class="card-label">Date</div>
+      <div class="card-section-title">Date</div>
       <input type="date" class="date-picker-input" style="display:block;width:100%" value="${date}" onchange="nutChangeLogDate(this.value)">
     </div>
     <div class="card" style="margin-bottom:14px">
-      <div class="card-label">How are you feeling?</div>
+      <div class="card-section-title">How are you feeling?</div>
       ${ratingBlock('energy_level','Energy',log.energy_level)}
       ${ratingBlock('hunger_level','Hunger',log.hunger_level)}
       ${ratingBlock('sleep_quality','Sleep quality',log.sleep_quality)}
     </div>
     <div class="card" style="margin-bottom:14px">
-      <div class="card-label">Fasting</div>
+      <div class="card-section-title">Fasting</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="input-group">
           <label class="input-label">Break fast time</label>
-          <input type="time" value="${log.break_fast_time||''}"
+          <input type="time" class="date-picker-input" style="display:block;width:100%" value="${log.break_fast_time||''}"
             onchange="nutFieldChange('break_fast_time',this.value)">
         </div>
         <div class="input-group">
           <label class="input-label">Hours fasted</label>
-          <input type="number" min="0" max="48" step="0.5" value="${log.hours_fasted ?? 16}"
-            onchange="nutFieldChange('hours_fasted',parseFloat(this.value)||null)">
+          <div class="stepper">
+            <button type="button" class="stepper-btn" onclick="nutStepFasted(-1)">−</button>
+            <input type="number" inputmode="numeric" id="nut-hours-fasted" value="${log.hours_fasted ?? 16}" min="0" max="48" step="1"
+              onchange="nutFieldChange('hours_fasted',parseFloat(this.value)||null)">
+            <button type="button" class="stepper-btn" onclick="nutStepFasted(1)">+</button>
+          </div>
         </div>
       </div>
     </div>
     <div class="card" style="margin-bottom:14px">
-      <div class="card-label">Meals &amp; snacks</div>
+      <div class="card-section-title">Meals &amp; snacks</div>
       <div id="nut-meals-list">${mealsHtml}</div>
       <button class="set-add-btn" onclick="nutAddMeal()">+ Add meal / snack</button>
     </div>
     <div class="card" style="margin-bottom:20px">
-      <div class="card-label">Notes</div>
+      <div class="card-section-title">Notes</div>
       <div class="input-group" style="margin-bottom:14px">
         <label class="input-label">Stool notes</label>
         <textarea rows="2" placeholder="Optional" onchange="nutFieldChange('stool_notes',this.value)">${log.stool_notes||''}</textarea>
@@ -3444,17 +3451,22 @@ function nutHistCard(log) {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
         <div class="input-group">
           <label class="input-label">Break fast time</label>
-          <input type="time" value="${log.break_fast_time||''}" onchange="nutHistField('${log.id}','break_fast_time',this.value)">
+          <input type="time" class="date-picker-input" style="display:block;width:100%" value="${log.break_fast_time||''}" onchange="nutHistField('${log.id}','break_fast_time',this.value)">
         </div>
         <div class="input-group">
           <label class="input-label">Hours fasted</label>
-          <input type="number" min="0" max="48" step="0.5" value="${log.hours_fasted??''}" onchange="nutHistField('${log.id}','hours_fasted',parseFloat(this.value)||null)">
+          <div class="stepper">
+            <button type="button" class="stepper-btn" onclick="nutHistStepFasted('${log.id}',-1)">−</button>
+            <input type="number" inputmode="numeric" id="nhe-fasted-${log.id}" value="${log.hours_fasted??16}" min="0" max="48" step="1"
+              onchange="nutHistField('${log.id}','hours_fasted',parseFloat(this.value)||null)">
+            <button type="button" class="stepper-btn" onclick="nutHistStepFasted('${log.id}',1)">+</button>
+          </div>
         </div>
       </div>
       ${ratingBlock('energy_level','Energy',log.energy_level)}
       ${ratingBlock('hunger_level','Hunger',log.hunger_level)}
       ${ratingBlock('sleep_quality','Sleep quality',log.sleep_quality)}
-      <div class="card-label" style="margin-top:4px;margin-bottom:10px">Meals</div>
+      <div class="card-section-title" style="margin-top:4px;margin-bottom:14px">Meals</div>
       <div id="nhe-meals-${log.id}">${mealsHtml}</div>
       <button class="set-add-btn" onclick="nutHistAddMeal('${log.id}')">+ Add meal / snack</button>
       <div class="input-group" style="margin-top:14px;margin-bottom:10px">
@@ -3558,6 +3570,24 @@ async function nutHistSave(id) {
     saveBtn.textContent = 'Save'; saveBtn.disabled = false;
     status.textContent = '⚠ ' + e.message; status.style.display = 'block';
   }
+}
+
+function nutStepFasted(delta) {
+  const el = document.getElementById('nut-hours-fasted');
+  if (!el) return;
+  const cur = parseFloat(el.value) || 16;
+  const next = Math.min(48, Math.max(0, cur + delta));
+  el.value = next;
+  nutFieldChange('hours_fasted', next);
+}
+
+function nutHistStepFasted(id, delta) {
+  const el = document.getElementById('nhe-fasted-' + id);
+  if (!el) return;
+  const cur = parseFloat(el.value) || 16;
+  const next = Math.min(48, Math.max(0, cur + delta));
+  el.value = next;
+  nutHistField(id, 'hours_fasted', next);
 }
 
 function nutEsc(s) {
