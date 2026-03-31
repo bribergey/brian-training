@@ -567,6 +567,28 @@ select {
 }
 .nut-chat-textarea:focus { border-color: var(--text); background: var(--bg2); }
 
+/* ME GOAL CHIPS — card-style single select */
+.me-goal-chip {
+  background: var(--bg2); border: 1.5px solid var(--border2);
+  border-radius: var(--radius-sm); padding: 12px 16px;
+  text-align: left; cursor: pointer; width: 100%;
+  transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.me-goal-chip.active {
+  background: rgba(26,219,78,0.08); border-color: var(--green);
+}
+.me-goal-chip-title {
+  font-family: var(--sans); font-size: 15px; font-weight: 700;
+  color: var(--text); margin-bottom: 3px;
+}
+.me-goal-chip.active .me-goal-chip-title { color: var(--green-dark); }
+.me-goal-chip-desc {
+  font-family: var(--sans); font-size: 13px; color: var(--text);
+  opacity: 0.6; line-height: 1.45;
+}
+.me-goal-chip.active .me-goal-chip-desc { opacity: 0.8; }
+
 /* NUT TIME INPUT — match stepper height */
 .nut-time-input {
   width: 100%; background: var(--bg3); border: 1.5px solid var(--border2);
@@ -2846,7 +2868,7 @@ async function renderMe() {
           <div id="me-age-display" style="font-family:var(--display);font-size:20px;font-weight:800;color:var(--text);padding-top:6px">${ageStr || '—'}</div>
         </div>
       </div>
-      <div class="log-input-grid lig-2" style="margin-bottom:0">
+      <div class="log-input-grid lig-2" style="margin-bottom:14px">
         <div class="input-group">
           <label class="input-label">Height (cm)</label>
           <input type="number" inputmode="numeric" id="me-height" value="${p.height_cm||''}">
@@ -2856,6 +2878,12 @@ async function renderMe() {
           <select id="me-experience">
             ${EXPERIENCE_OPTIONS.map(o => `<option value="${o}"${p.experience_level===o?' selected':''}>${o}</option>`).join('')}
           </select>
+        </div>
+      </div>
+      <div class="input-group" style="margin-bottom:0">
+        <label class="input-label">Gender</label>
+        <div class="me-chips" id="me-gender">
+          ${['Male','Female'].map(o => `<button type="button" class="me-chip${p.gender===o?' active':''}" onclick="meToggleChip('me-gender','${o}',this)">${o}</button>`).join('')}
         </div>
       </div>
     </div>
@@ -2943,6 +2971,38 @@ async function renderMe() {
 
     <div class="card" style="margin-bottom:18px">
       <div class="card-section-title">Nutrition coach</div>
+
+      <div class="input-group" style="margin-bottom:20px">
+        <label class="input-label">Current goal</label>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px" id="me-nutrition-goal">
+          ${[
+            {v:'Recomp',     d:'Lose fat and build muscle simultaneously. Slower progress, but body composition improves on both fronts.'},
+            {v:'Lean bulk',  d:'Prioritise muscle gain. Accept a small, controlled fat increase in exchange for faster strength and size gains.'},
+            {v:'Cut',        d:'Prioritise fat loss while preserving muscle. Requires a calorie deficit and higher protein.'},
+            {v:'Maintain',   d:'Hold current weight and composition. Focus on fuelling training well and feeling good.'},
+            {v:'Performance',d:'Maximise energy, recovery, and training output. Body composition is secondary.'}
+          ].map(o => `<button type="button" class="me-goal-chip${p.nutrition_goal===o.v?' active':''}" onclick="meSetGoal('${o.v}',this)">
+            <div class="me-goal-chip-title">${o.v}</div>
+            <div class="me-goal-chip-desc">${o.d}</div>
+          </button>`).join('')}
+        </div>
+      </div>
+
+      <div class="input-group" style="margin-bottom:20px">
+        <label class="input-label">Activity outside the gym</label>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px" id="me-activity-level">
+          ${[
+            {v:'Low',       d:'Mostly sedentary. Desk job, under 5,000 steps/day, minimal walking.'},
+            {v:'Moderate',  d:'Some daily movement. 5,000–10,000 steps, light walking most days.'},
+            {v:'High',      d:'Consistently active outside the gym. 10,000+ steps, regular long walks or hikes.'},
+            {v:'Very high', d:'Physically demanding lifestyle. Manual labour, very high step count, or extensive daily cardio.'}
+          ].map(o => `<button type="button" class="me-goal-chip${p.activity_level===o.v?' active':''}" onclick="meSetActivity('${o.v}',this)">
+            <div class="me-goal-chip-title">${o.v}</div>
+            <div class="me-goal-chip-desc">${o.d}</div>
+          </button>`).join('')}
+        </div>
+      </div>
+
       <div class="input-group" style="margin-bottom:14px">
         <label class="input-label">Diet type</label>
         <input type="text" id="me-diet-type" value="${p.diet_type||''}" placeholder="e.g. Plant-based, no alcohol" onchange="meDirty()">
@@ -2978,6 +3038,21 @@ async function renderMe() {
       </p>
     </div>
   `;
+}
+
+function meSetGoal(val, btn) {
+  document.querySelectorAll('#me-nutrition-goal .me-goal-chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  meDirty();
+}
+function meSetActivity(val, btn) {
+  document.querySelectorAll('#me-activity-level .me-goal-chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  meDirty();
+}
+function meGetGoalChip(groupId) {
+  const active = document.querySelector('#' + groupId + ' .me-goal-chip.active');
+  return active ? active.querySelector('.me-goal-chip-title')?.textContent?.trim() || null : null;
 }
 
 function meUpdateAge(dob) {
@@ -3044,8 +3119,27 @@ async function saveProfile() {
     nutrition_notes:         document.getElementById('me-nutrition-notes')?.value?.trim() || null,
     experience_level:        document.getElementById('me-experience')?.value || null,
     equipment:               meGetChips('me-equipment'),
+    gender:                  meGetChips('me-gender')[0] || null,
+    nutrition_goal:          meGetGoalChip('me-nutrition-goal'),
+    activity_level:          meGetGoalChip('me-activity-level'),
     updated_at:              new Date().toISOString()
   };
+
+  // Only clear macro targets if goal or activity actually changed to a different value
+  // If neither field changed, leave macro_targets completely untouched (don't include in body)
+  const newGoal     = body.nutrition_goal;
+  const newActivity = body.activity_level;
+  const oldGoal     = meProfile?.nutrition_goal || null;
+  const oldActivity = meProfile?.activity_level || null;
+  const goalChanged     = newGoal     && newGoal     !== oldGoal;
+  const activityChanged = newActivity && newActivity !== oldActivity;
+  if (goalChanged || activityChanged) {
+    // Archive previous targets before clearing
+    if (meProfile?.macro_targets) {
+      body.macro_targets_previous = meProfile.macro_targets;
+    }
+    body.macro_targets = null;
+  }
 
   const btn = document.getElementById('me-save-btn');
   btn.textContent = 'Saving…'; btn.disabled = true;
@@ -3110,12 +3204,50 @@ async function renderNutrition() {
 }
 
 // ── Plan ─────────────────────────────────────────────────────────────────
+function nutMacroTargetsHtml(mt) {
+  if (!mt) return `<div class="card" style="margin-bottom:16px">
+    <div class="card-section-title" style="margin-bottom:6px">Macro targets</div>
+    <div style="font-family:var(--mono);font-size:12px;color:var(--text);opacity:0.45;line-height:1.6">Not set yet — ask your coach to calculate your targets.</div>
+  </div>`;
+  return `<div class="card" style="margin-bottom:16px">
+    <div class="card-section-title" style="margin-bottom:12px">Macro targets</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text);opacity:0.5;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Protein</div>
+        <div style="font-family:var(--display);font-size:22px;font-weight:800;color:var(--text)">${mt.protein_g}<span style="font-size:12px;font-weight:500;opacity:0.5;margin-left:2px">g</span></div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text);opacity:0.5;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Fat</div>
+        <div style="font-family:var(--display);font-size:22px;font-weight:800;color:var(--text)">${mt.fat_g}<span style="font-size:12px;font-weight:500;opacity:0.5;margin-left:2px">g</span></div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text);opacity:0.5;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Carbs · Training</div>
+        <div style="font-family:var(--display);font-size:22px;font-weight:800;color:var(--text)">${mt.training_carbs_g}<span style="font-size:12px;font-weight:500;opacity:0.5;margin-left:2px">g</span></div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text);opacity:0.4;margin-top:3px">~${mt.training_kcal} kcal</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text);opacity:0.5;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Carbs · Rest</div>
+        <div style="font-family:var(--display);font-size:22px;font-weight:800;color:var(--text)">${mt.rest_carbs_g}<span style="font-size:12px;font-weight:500;opacity:0.5;margin-left:2px">g</span></div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text);opacity:0.4;margin-top:3px">~${mt.rest_kcal} kcal</div>
+      </div>
+    </div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text);opacity:0.35">${[mt.goal, mt.based_on_weight_kg ? mt.based_on_weight_kg+'kg' : null, mt.set_at].filter(Boolean).join(' · ')}</div>
+  </div>`;
+}
+
 async function nutLoadPlan() {
   const el = document.getElementById('nut-plan-content');
   try {
-    const rows = await sbGet(NUT_PLANS_TABLE, 'select=*&order=generated_at.desc&limit=1');
+    const profileTable = ENV === 'production' ? 'user_profile' : 'user_profile_staging';
+    const [rows, profileRows] = await Promise.all([
+      sbGet(NUT_PLANS_TABLE, 'select=*&order=generated_at.desc&limit=1'),
+      sbGet(profileTable, 'select=macro_targets&limit=1')
+    ]);
+    const macroTargets = profileRows[0]?.macro_targets || null;
+    const macroHtml = nutMacroTargetsHtml(macroTargets);
+
     if (!rows.length) {
-      el.innerHTML = `<div class="card" style="text-align:center;padding:36px 26px">
+      el.innerHTML = macroHtml + `<div class="card" style="text-align:center;padding:36px 26px">
         <div class="card-section-title" style="margin-bottom:10px">No plan yet</div>
         <div style="font-size:14px;color:var(--text);opacity:0.55;line-height:1.65;margin-bottom:20px">
           Head to the Coach tab and ask your nutrition coach to generate a weekly plan.
@@ -3127,8 +3259,9 @@ async function nutLoadPlan() {
     const plan = rows[0];
     const d = new Date(plan.generated_at);
     const dateStr = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-    el.innerHTML = `<div class="nut-plan-meta">Generated ${dateStr}</div>
-      <div class="nut-plan-body">${nutMd(plan.plan_content)}</div>`;
+    el.innerHTML = macroHtml
+      + `<div class="nut-plan-meta">Generated ${dateStr}</div>`
+      + `<div class="nut-plan-body">${nutMd(plan.plan_content)}</div>`;
   } catch(e) {
     el.innerHTML = `<div style="font-family:var(--mono);font-size:11px;color:var(--red);padding:20px 0">Error: ${e.message}</div>`;
   }
@@ -3227,8 +3360,13 @@ async function nutInitCoach() {
       diet_type:       profile.diet_type,
       fasting_window:  profile.fasting_window,
       nutrition_notes: profile.nutrition_notes,
+      nutrition_goal:  profile.nutrition_goal,
+      activity_level:  profile.activity_level,
+      gender:          profile.gender,
       goals:           profile.goals,
       injuries:        profile.injuries,
+      macro_targets:          profile.macro_targets || null,
+      macro_targets_previous: profile.macro_targets_previous || null,
     };
     nutCoachContext = JSON.stringify({ today, coachProfile, recentMeasurements: measurements, weekCalendar, upcomingSessions, recentSessions, nutritionLogs: logs });
 
@@ -3352,31 +3490,43 @@ async function nutSendMessage() {
     if (today < new Date(today.getFullYear(), dob.getMonth(), dob.getDate())) currentAge--;
   }
 
-  // Dynamic macro calculation based on current stats
-  // Protein: 2g per kg bodyweight (strength athlete standard)
-  const proteinTarget = Math.round(currentWeight * 2);
-  // Training day carbs: 2.5-3g/kg; Rest day: 1.5-2g/kg
-  const carbsTraining = Math.round(currentWeight * 2.7);
-  const carbsRest     = Math.round(currentWeight * 1.7);
-  // Fat: 0.8-1g/kg both days
-  const fatTarget     = Math.round(currentWeight * 0.9);
-  // Calories (protein=4, carbs=4, fat=9)
-  const kcalTraining  = Math.round(proteinTarget*4 + carbsTraining*4 + fatTarget*9);
-  const kcalRest      = Math.round(proteinTarget*4 + carbsRest*4 + fatTarget*9);
+  // No hardcoded macro formulas — coach derives from goal + activity + stats
 
   const systemPrompt = [
     'You are Brian\'s personal nutrition coach. You are a nutrition specialist — evidence-based, direct, no padding.',
     '',
-    'CURRENT STATS (always use these — never invent or hardcode numbers):',
-    '- Weight: ' + currentWeight + 'kg' + (currentBF ? ' / Body fat: ' + currentBF + '%' : '') + (currentAge ? ' / Age: ' + currentAge : ''),
+    'CURRENT STATS:',
+    '- Weight: ' + currentWeight + 'kg' + (currentBF ? ' / Body fat: ' + currentBF + '%' : '') + (currentAge ? ' / Age: ' + currentAge : '') + (prof.gender ? ' / Gender: ' + prof.gender : ''),
+    '- Current goal: ' + (prof.nutrition_goal || 'not set'),
+    '- Activity level outside gym: ' + (prof.activity_level || 'not set'),
     '',
-    'MACRO TARGETS (calculated from current weight — always use these exact numbers):',
-    '- Protein: ' + proteinTarget + 'g/day (both training and rest days — ' + currentWeight + 'kg x 2g/kg)',
-    '- Training days: carbs ' + carbsTraining + 'g / fat ' + fatTarget + 'g / ~' + kcalTraining + ' kcal',
-    '- Rest days: carbs ' + carbsRest + 'g / fat ' + fatTarget + 'g / ~' + kcalRest + ' kcal',
-    'These targets update automatically if Brian\'s weight changes. Never hardcode different numbers.',
+    ...(prof.macro_targets ? [
+      'MACRO TARGETS (stored — use these exactly, do not recalculate unless asked):',
+      '- Protein: ' + prof.macro_targets.protein_g + 'g/day',
+      '- Training days: carbs ' + prof.macro_targets.training_carbs_g + 'g / fat ' + prof.macro_targets.fat_g + 'g / ~' + prof.macro_targets.training_kcal + ' kcal',
+      '- Rest days: carbs ' + prof.macro_targets.rest_carbs_g + 'g / fat ' + prof.macro_targets.fat_g + 'g / ~' + prof.macro_targets.rest_kcal + ' kcal',
+      '- Set: ' + (prof.macro_targets.set_at || 'unknown') + ' / goal: ' + (prof.macro_targets.goal || '?') + ' / based on: ' + (prof.macro_targets.based_on_weight_kg || '?') + 'kg',
+      'If current weight has changed by more than 2kg from stored weight, flag it and offer to recalculate.',
+      'If Brian asks to recalculate, do so and output new targets in <SAVE_TARGETS> tags.',
+      'Previous targets (before last goal change): ' + (prof.macro_targets_previous ? JSON.stringify(prof.macro_targets_previous) : 'none'),
+    ] : [
+      'MACRO TARGETS — none stored yet (goal or activity was recently changed). Derive new targets from current stats, show your working briefly, then output in <SAVE_TARGETS> tags.',
+      ...(prof.macro_targets_previous ? [
+        'For reference, previous targets were: ' + JSON.stringify(prof.macro_targets_previous) + '. Note any meaningful differences in your response.',
+      ] : []),
+      'Reference formulas by goal:',
+      '- Recomp:      protein 2.0g/kg, training carbs 2.5g/kg, rest carbs 1.5g/kg, fat 0.9g/kg',
+      '- Lean bulk:   protein 1.8g/kg, training carbs 3.5g/kg, rest carbs 2.5g/kg, fat 1.0g/kg',
+      '- Cut:         protein 2.2g/kg, training carbs 2.0g/kg, rest carbs 1.0g/kg, fat 0.7g/kg',
+      '- Maintain:    protein 1.6g/kg, training carbs 2.5g/kg, rest carbs 2.0g/kg, fat 0.9g/kg',
+      '- Performance: protein 1.8g/kg, training carbs 3.0g/kg, rest carbs 2.5g/kg, fat 1.0g/kg',
+      'Adjust: +10% for High activity, +20% for Very high. For women: -0.2g/kg protein, min fat 1.0g/kg.',
+      'CRITICAL: End your message with a <SAVE_TARGETS> block containing ONLY a valid JSON object — no bullet points, no labels, no markdown, no other text inside the tags. Example:',
+      '<SAVE_TARGETS>{"protein_g":150,"training_carbs_g":200,"rest_carbs_g":130,"fat_g":68,"training_kcal":2024,"rest_kcal":1680,"based_on_weight_kg":75,"goal":"Recomp","set_at":"2026-03-31"}</SAVE_TARGETS>',
+      'The block is parsed as JSON automatically — if you put anything other than a JSON object inside the tags, saving will fail silently.',
+    ]),
     '',
-    'PROFILE (read carefully — this is Brian\'s own description of his diet, preferences and goals):',
+    'PROFILE (read carefully — these are Brian\'s own preferences, always apply them):',
     '- Diet type: ' + (prof.diet_type || 'not set'),
     '- Fasting window: ' + (prof.fasting_window || 'not set'),
     '- Notes: ' + (prof.nutrition_notes || 'none'),
@@ -3388,12 +3538,12 @@ async function nutSendMessage() {
     '',
     'Give a short, scannable weekly brief. Format:',
     '## Training days — [list each as "dayOfWeek Month DD" — copy directly from weekCalendar]',
-    '**Targets:** protein ' + proteinTarget + 'g / carbs ' + carbsTraining + 'g / fat ' + fatTarget + 'g / ~' + kcalTraining + ' kcal',
+    '**Targets:** protein Xg / carbs Xg / fat Xg / ~X kcal  (use your derived targets for this goal)',
     '**Key foods to hit these:** [concise bullet list of 8-12 specific foods with rough portions — aligned with his diet profile]',
     '**Timing:** [2-3 lines anchored to the fasting window and workout timing]',
     '',
     '## Rest days — [list each as "dayOfWeek Month DD" — copy directly from weekCalendar]',
-    '**Targets:** protein ' + proteinTarget + 'g / carbs ' + carbsRest + 'g / fat ' + fatTarget + 'g / ~' + kcalRest + ' kcal',
+    '**Targets:** protein Xg / carbs Xg / fat Xg / ~X kcal  (use your derived rest day targets)',
     '**Key foods to hit these:** [concise bullet list]',
     '**Timing:** [1-2 lines]',
     '',
@@ -3404,7 +3554,7 @@ async function nutSendMessage() {
     'MODE 2 — LOG FEEDBACK (when Brian asks how he did, review his food, or asks about a specific day):',
     '- Estimate actual macros from what was logged (protein/carbs/fat in grams)',
     '- State the correct targets for that day type using the numbers above',
-    '- Call out exactly what was over/under: "Protein: ~85g logged vs ' + proteinTarget + 'g target"',
+    '- Call out exactly what was over/under vs your derived targets, e.g. "Protein: ~85g logged vs 150g target — 65g short"',
     '- Give 2-3 simple, specific fixes: real foods, real portions, aligned with his diet profile',
     '- Flag micronutrient gaps for plant-based eating (B12, iron, omega-3, zinc)',
     '- Keep it tight — numbers first, commentary second',
@@ -3425,30 +3575,53 @@ async function nutSendMessage() {
     if (!res.ok) throw new Error(data.error?.message || res.status);
     const reply = data.content?.[0]?.text || 'Sorry, no response.';
     document.getElementById(thinkId)?.remove();
-    const planMatch = reply.match(/<SAVE_PLAN>([\s\S]*?)<\/SAVE_PLAN>/);
+    const planMatch    = reply.match(/<SAVE_PLAN>([\s\S]*?)<\/SAVE_PLAN>/);
+    const targetsMatch = reply.match(/<SAVE_TARGETS>([\s\S]*?)<\/SAVE_TARGETS>/);
     let display = reply;
     if (planMatch) {
-      display = reply.replace(/<SAVE_PLAN>[\s\S]*?<\/SAVE_PLAN>/, '').trim();
+      display = display.replace(/<SAVE_PLAN>[\s\S]*?<\/SAVE_PLAN>/, '').trim();
       await nutSavePlan(planMatch[1].trim());
       display += '\n\n**Plan saved — check the Plan tab.**';
+    }
+    if (targetsMatch) {
+      // Strip the tag block
+      display = display.replace(/\n*<SAVE_TARGETS>[\s\S]*?<\/SAVE_TARGETS>\n*/g, '\n').trim();
+      // Also strip any bare JSON blob containing protein_g that leaked into visible text
+      display = display.replace(/\n*\{[^{}]*"protein_g"[^{}]*\}\n*/g, '\n').trim();
+      await nutSaveMacroTargets(targetsMatch[1].trim());
+      display += '\n\n**Macro targets saved.**';
     }
     nutChatHistory.push({ role:'assistant', content:reply });
     sbPost(COACH_CONVOS_TABLE, { role:'assistant', content:reply }).catch(()=>{});
     msgs.innerHTML += `<div class="nut-msg nut-msg-coach">${nutMd(display)}</div>`;
-    // If coach gave a plan but didn't auto-save it, prompt to save
-    const looksLikePlan = display.includes('Training days') || display.includes('Rest days');
-    const alreadySaved = !!planMatch;
-    if (looksLikePlan && !alreadySaved) {
-      msgs.innerHTML += `<div class="nut-msg nut-msg-coach" style="margin-top:8px">
-        Want me to save this as your weekly plan? Just say yes and I'll add it to the Plan tab.
-      </div>`;
-    }
+    // Plan saving is handled via SAVE_PLAN tags — no auto-prompt needed
   } catch(e) {
     document.getElementById(thinkId)?.remove();
     msgs.innerHTML += `<div class="nut-msg nut-msg-thinking">Error: ${e.message}</div>`;
   }
   sendBtn.disabled = false; sendBtn.textContent = '↑';
   msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function nutSaveMacroTargets(rawStr) {
+  try {
+    // Extract JSON object even if coach wrapped it in text or bullet points
+    const jsonMatch = rawStr.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) { console.warn('nutSaveMacroTargets: no JSON object found in:', rawStr); return; }
+    const targets = JSON.parse(jsonMatch[0]);
+    // Validate required fields are present
+    const required = ['protein_g','training_carbs_g','rest_carbs_g','fat_g','training_kcal','rest_kcal'];
+    const missing = required.filter(k => targets[k] === undefined);
+    if (missing.length) { console.warn('nutSaveMacroTargets: missing fields:', missing); return; }
+    const profileTable = ENV === 'production' ? 'user_profile' : 'user_profile_staging';
+    const rows = await sbGet(profileTable, 'select=id&limit=1');
+    if (!rows.length) return;
+    await sbPatch(profileTable, rows[0].id, { macro_targets: targets });
+    if (meProfile) meProfile.macro_targets = targets;
+    console.log('Macro targets saved:', targets);
+  } catch(e) {
+    console.warn('Failed to save macro targets:', e.message);
+  }
 }
 
 async function nutSavePlan(content) {
