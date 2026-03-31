@@ -580,17 +580,31 @@ select {
 
 /* COACH PROMPT CHIPS */
 .nut-prompt-chips {
-  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;
+  display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px;
 }
 .nut-prompt-chip {
-  font-family: var(--mono); font-size: 10px; font-weight: 500;
-  padding: 7px 12px; border-radius: 20px; cursor: pointer;
+  font-family: var(--sans); font-size: 14px; font-weight: 500;
+  padding: 10px 16px; border-radius: 20px; cursor: pointer;
   border: 1.5px solid var(--border2); background: var(--bg2);
-  color: var(--text); opacity: 0.6; letter-spacing: 0.03em;
+  color: var(--text); letter-spacing: 0; line-height: 1.3;
   transition: all 0.15s; touch-action: manipulation; text-align: left;
   -webkit-tap-highlight-color: transparent;
 }
-.nut-prompt-chip:active { opacity: 1; background: var(--bg3); }
+.nut-prompt-chip:active { background: var(--bg3); border-color: var(--text); }
+
+/* Coach action buttons — full-width pair */
+.nut-coach-actions {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;
+}
+.nut-coach-action-btn {
+  background: var(--bg2); border: 1.5px solid var(--border2);
+  border-radius: var(--radius-sm); padding: 14px 10px;
+  font-family: var(--sans); font-size: 13px; font-weight: 600;
+  color: var(--text); cursor: pointer; text-align: center; line-height: 1.3;
+  transition: all 0.15s; touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.nut-coach-action-btn:active { background: var(--bg3); border-color: var(--text); }
 
 /* TODAY LOG */
 .nut-rating-block { margin-bottom: 14px; }
@@ -655,8 +669,8 @@ select {
   background: var(--green-dim); color: var(--green-dark); opacity: 1;
   border: 1px solid rgba(26,219,78,0.2);
 }
-.nut-hist-chevron { color: var(--text); opacity: 0.35; font-size: 11px; transition: transform 0.2s; }
-.nut-hist-entry.open .nut-hist-chevron { transform: rotate(180deg); opacity: 1; }
+.nut-hist-chevron { color: var(--text); opacity: 0.4; font-size: 11px; transition: transform 0.2s; flex-shrink: 0; width: 16px; text-align: center; }
+.nut-hist-entry.open .nut-hist-chevron { transform: rotate(180deg); }
 .nut-hist-detail { display: none; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border); }
 .nut-hist-entry.open .nut-hist-detail { display: block; }
 
@@ -914,9 +928,9 @@ select {
     </div>
     <!-- Coach -->
     <div class="nut-page" id="nut-coach" style="display:none">
-      <div style="display:flex;gap:8px;margin-bottom:16px">
-        <button class="hist-filter-btn" id="nut-show-history-btn" onclick="nutShowHistory()" style="font-size:10px">Show last conversation</button>
-        <button class="hist-filter-btn" id="nut-new-convo-btn" onclick="nutNewConversation()" style="font-size:10px">+ New conversation</button>
+      <div class="nut-coach-actions">
+        <button class="nut-coach-action-btn" id="nut-show-history-btn" onclick="nutShowHistory()">↩ Last conversation</button>
+        <button class="nut-coach-action-btn" id="nut-new-convo-btn" onclick="nutNewConversation()">+ New conversation</button>
       </div>
       <div id="nut-coach-prompts" class="nut-prompt-chips">
         <button class="nut-prompt-chip" onclick="nutUsePrompt(this)">Give me my weekly plan</button>
@@ -3323,45 +3337,84 @@ async function nutSendMessage() {
   const memorySuffix = nutCoachMemory
     ? `\n\nLONG-TERM MEMORY (summary of older conversations — treat as established facts):\n${nutCoachMemory}`
     : '';
-  const systemPrompt = `You are Brian's personal nutrition coach. You are a nutrition specialist — evidence-based, direct, no padding.
+  // Derive dynamic stats from live profile data
+  const prof = parsedCtx.coachProfile || {};
+  const meas = (parsedCtx.recentMeasurements || [])[0] || {};
+  const currentWeight = meas.weight_kg || 75; // always use latest logged weight
+  const currentBF     = meas.body_fat_pct || null;
+  // Calculate age dynamically from DOB in profile
+  const dobStr = parsedCtx.coachProfile?.dob || '';
+  let currentAge = null;
+  if (dobStr) {
+    const dob = new Date(dobStr);
+    const today = new Date();
+    currentAge = today.getFullYear() - dob.getFullYear();
+    if (today < new Date(today.getFullYear(), dob.getMonth(), dob.getDate())) currentAge--;
+  }
 
-STANDING BRIEFING — ground truth, always apply:
-Diet: ${parsedCtx.coachProfile?.diet_type || 'not set'}
-Fasting window: ${parsedCtx.coachProfile?.fasting_window || 'not set'}
-Notes: ${parsedCtx.coachProfile?.nutrition_notes || 'none'}
+  // Dynamic macro calculation based on current stats
+  // Protein: 2g per kg bodyweight (strength athlete standard)
+  const proteinTarget = Math.round(currentWeight * 2);
+  // Training day carbs: 2.5-3g/kg; Rest day: 1.5-2g/kg
+  const carbsTraining = Math.round(currentWeight * 2.7);
+  const carbsRest     = Math.round(currentWeight * 1.7);
+  // Fat: 0.8-1g/kg both days
+  const fatTarget     = Math.round(currentWeight * 0.9);
+  // Calories (protein=4, carbs=4, fat=9)
+  const kcalTraining  = Math.round(proteinTarget*4 + carbsTraining*4 + fatTarget*9);
+  const kcalRest      = Math.round(proteinTarget*4 + carbsRest*4 + fatTarget*9);
 
-YOU HAVE TWO MODES — read the request and use the right one:
-
-MODE 1 — WEEKLY PLAN (when Brian asks for a plan or what to eat this week):
-The data contains a weekCalendar array with every day this week — each entry has the exact date, dayOfWeek, and type (training or rest). USE THESE VALUES EXACTLY. Never calculate or guess day names yourself.
-
-Give a short, scannable weekly brief. Format:
-## Training days — [list each as "dayOfWeek Month DD" e.g. "Monday March 30" — copy directly from weekCalendar]
-**Targets:** protein Xg / carbs Xg / fat Xg / ~X kcal
-**Key foods to hit these:** [concise bullet list of 8-12 specific foods with rough portions]
-**Timing:** [2-3 lines on when to eat relative to fasting window and workout]
-
-## Rest days — [list each as "dayOfWeek Month DD" — copy directly from weekCalendar]
-**Targets:** protein Xg / carbs Xg / fat Xg / ~X kcal
-**Key foods to hit these:** [concise bullet list]
-**Timing:** [1-2 lines]
-
-## Notes for this week (1-3 lines — deload, recovery, patterns from logs)
-
-When Brian confirms he wants to save it, wrap the full plan in <SAVE_PLAN> tags.
-
-MODE 2 — LOG FEEDBACK (when Brian asks how he did, review his food, or asks about a specific day):
-- Estimate actual macros from what was logged (protein/carbs/fat in grams)
-- State targets for that day type (training vs rest)
-- Call out exactly what was over/under and by how much: "Protein: ~85g logged vs 150g target — 65g short"
-- Give 2-3 simple, specific fixes: real foods, real portions, zero vagueness
-- Flag any micronutrient gaps relevant to plant-based eating (B12, iron, omega-3, zinc)
-- Keep it tight — numbers first, commentary second
-
-FOR EVERYTHING ELSE: answer directly and specifically. Use training data as context for nutrition advice, not as the main topic. Use recentMeasurements for weight/BF trends. Use nutritionLogs to name patterns you see.
-
-CURRENT DATA:
-${nutCoachContext}${memorySuffix}`;
+  const systemPrompt = [
+    'You are Brian\'s personal nutrition coach. You are a nutrition specialist — evidence-based, direct, no padding.',
+    '',
+    'CURRENT STATS (always use these — never invent or hardcode numbers):',
+    '- Weight: ' + currentWeight + 'kg' + (currentBF ? ' / Body fat: ' + currentBF + '%' : '') + (currentAge ? ' / Age: ' + currentAge : ''),
+    '',
+    'MACRO TARGETS (calculated from current weight — always use these exact numbers):',
+    '- Protein: ' + proteinTarget + 'g/day (both training and rest days — ' + currentWeight + 'kg x 2g/kg)',
+    '- Training days: carbs ' + carbsTraining + 'g / fat ' + fatTarget + 'g / ~' + kcalTraining + ' kcal',
+    '- Rest days: carbs ' + carbsRest + 'g / fat ' + fatTarget + 'g / ~' + kcalRest + ' kcal',
+    'These targets update automatically if Brian\'s weight changes. Never hardcode different numbers.',
+    '',
+    'PROFILE (read carefully — this is Brian\'s own description of his diet, preferences and goals):',
+    '- Diet type: ' + (prof.diet_type || 'not set'),
+    '- Fasting window: ' + (prof.fasting_window || 'not set'),
+    '- Notes: ' + (prof.nutrition_notes || 'none'),
+    '',
+    'YOU HAVE TWO MODES — read the request and use the right one:',
+    '',
+    'MODE 1 — WEEKLY PLAN (when Brian asks for a plan or what to eat this week):',
+    'The data contains a weekCalendar array with every day this week — each entry has the exact date, dayOfWeek, and type (training or rest). USE THESE VALUES EXACTLY. Never calculate or guess day names yourself.',
+    '',
+    'Give a short, scannable weekly brief. Format:',
+    '## Training days — [list each as "dayOfWeek Month DD" — copy directly from weekCalendar]',
+    '**Targets:** protein ' + proteinTarget + 'g / carbs ' + carbsTraining + 'g / fat ' + fatTarget + 'g / ~' + kcalTraining + ' kcal',
+    '**Key foods to hit these:** [concise bullet list of 8-12 specific foods with rough portions — aligned with his diet profile]',
+    '**Timing:** [2-3 lines anchored to the fasting window and workout timing]',
+    '',
+    '## Rest days — [list each as "dayOfWeek Month DD" — copy directly from weekCalendar]',
+    '**Targets:** protein ' + proteinTarget + 'g / carbs ' + carbsRest + 'g / fat ' + fatTarget + 'g / ~' + kcalRest + ' kcal',
+    '**Key foods to hit these:** [concise bullet list]',
+    '**Timing:** [1-2 lines]',
+    '',
+    '## Notes for this week (1-3 lines — deload, recovery, patterns from logs)',
+    '',
+    'When Brian confirms he wants to save it, wrap the full plan in <SAVE_PLAN> tags.',
+    '',
+    'MODE 2 — LOG FEEDBACK (when Brian asks how he did, review his food, or asks about a specific day):',
+    '- Estimate actual macros from what was logged (protein/carbs/fat in grams)',
+    '- State the correct targets for that day type using the numbers above',
+    '- Call out exactly what was over/under: "Protein: ~85g logged vs ' + proteinTarget + 'g target"',
+    '- Give 2-3 simple, specific fixes: real foods, real portions, aligned with his diet profile',
+    '- Flag micronutrient gaps for plant-based eating (B12, iron, omega-3, zinc)',
+    '- Keep it tight — numbers first, commentary second',
+    '',
+    'FOR EVERYTHING ELSE: answer directly and specifically. Use recentMeasurements for weight/BF trends. Use nutritionLogs to name patterns. Build familiarity with Brian\'s food preferences from his logs.',
+    '',
+    'CURRENT DATA:',
+    nutCoachContext,
+    memorySuffix
+  ].join('\n');
   try {
     const res = await fetch(COACH_PROXY_URL, {
       method:'POST',
@@ -3498,7 +3551,7 @@ function nutRenderLogForm() {
     </div>
     <div style="display:flex;gap:10px;margin-bottom:8px">
       <button class="btn btn-full" id="nut-save-btn" onclick="nutSaveLog(false)">Save</button>
-      ${!submitted?`<button class="btn btn-primary btn-full" id="nut-submit-btn" onclick="nutSaveLog(true)">Submit</button>`:''}
+      <button class="btn btn-primary btn-full" id="nut-submit-btn" onclick="nutSaveLog(true)">Submit</button>
     </div>
     <div id="nut-log-status" style="display:none;font-family:var(--mono);font-size:11px;color:var(--green-dark);text-align:center;margin-top:6px"></div>`;
 }
@@ -3675,7 +3728,7 @@ function nutHistCard(log) {
           ${log.hours_fasted?`<span class="nut-hist-badge">${log.hours_fasted}h fasted</span>`:''}
         </div>
       </div>
-      <div class="nut-hist-chevron">▾</div>
+      <div class="nut-hist-chevron">▼</div>
     </div>
     <div class="nut-hist-detail">
       <div class="input-group" style="margin-bottom:10px">
@@ -3706,7 +3759,8 @@ function nutHistCard(log) {
         <textarea rows="2" onchange="nutHistField('${log.id}','general_notes',this.value)">${log.general_notes||''}</textarea>
       </div>
       <div class="detail-save-row">
-        <button class="btn btn-primary" id="nhe-save-${log.id}" onclick="nutHistSave('${log.id}')">Save</button>
+        <button class="btn" id="nhe-save-${log.id}" onclick="nutHistSave('${log.id}', false)">Save</button>
+        ${!log.submitted ? `<button class="btn btn-primary" id="nhe-submit-${log.id}" onclick="nutHistSave('${log.id}', true)">Submit</button>` : ''}
         <span class="detail-status" id="nhe-status-${log.id}" style="display:none">✓ Saved</span>
       </div>
     </div>
@@ -3776,10 +3830,12 @@ function nutHistRemoveMeal(id, idx) {
   container.innerHTML = newHtml;
 }
 
-async function nutHistSave(id) {
-  const saveBtn = document.getElementById('nhe-save-' + id);
-  const status  = document.getElementById('nhe-status-' + id);
-  saveBtn.textContent = 'Saving…'; saveBtn.disabled = true;
+async function nutHistSave(id, submit) {
+  const saveBtn   = document.getElementById('nhe-save-' + id);
+  const submitBtn = document.getElementById('nhe-submit-' + id);
+  const status    = document.getElementById('nhe-status-' + id);
+  if (saveBtn) { saveBtn.textContent = 'Saving…'; saveBtn.disabled = true; }
+  if (submitBtn) submitBtn.disabled = true;
   try {
     const edits = nutHistEdits[id] || {};
     const meals = edits._meals !== undefined ? edits._meals : null;
@@ -3788,14 +3844,26 @@ async function nutHistSave(id) {
       if (edits[f] !== undefined) body[f] = edits[f];
     });
     if (meals !== null) body.meal_notes = meals;
-    if (!Object.keys(body).length) { saveBtn.textContent = 'Save'; saveBtn.disabled = false; return; }
+    if (submit) body.submitted = true;
+    if (!Object.keys(body).length) {
+      if (saveBtn) { saveBtn.textContent = 'Save'; saveBtn.disabled = false; }
+      if (submitBtn) submitBtn.disabled = false;
+      return;
+    }
     await sbPatch(NUT_LOGS_TABLE, id, body);
-    saveBtn.textContent = 'Save'; saveBtn.disabled = false;
-    status.textContent = '✓ Saved'; status.style.display = 'block';
-    setTimeout(() => { status.style.display = 'none'; }, 2500);
+    if (saveBtn) { saveBtn.textContent = 'Save'; saveBtn.disabled = false; }
+    if (submit) {
+      // Re-render card so Submit button disappears and badge updates
+      nutLoadLogHistory();
+    } else {
+      if (submitBtn) submitBtn.disabled = false;
+      status.textContent = '✓ Saved'; status.style.display = 'block';
+      setTimeout(() => { status.style.display = 'none'; }, 2500);
+    }
     delete nutHistEdits[id];
   } catch(e) {
-    saveBtn.textContent = 'Save'; saveBtn.disabled = false;
+    if (saveBtn) { saveBtn.textContent = 'Save'; saveBtn.disabled = false; }
+    if (submitBtn) submitBtn.disabled = false;
     status.textContent = '⚠ ' + e.message; status.style.display = 'block';
   }
 }
