@@ -574,6 +574,7 @@ select {
   font-size: 16px; font-family: var(--sans); font-weight: 500; color: var(--text);
   outline: none; transition: border-color 0.15s, background 0.15s;
   -webkit-appearance: none; appearance: none; display: block;
+  box-sizing: border-box; min-height: 48px; line-height: 1.2;
 }
 .nut-time-input:focus { border-color: var(--text); background: var(--bg2); }
 
@@ -840,9 +841,35 @@ select {
 <!-- THIS WEEK TAB -->
 <div class="panel active" id="tab-today">
   <div class="panel-inner">
-    <div class="success-banner" id="log-success">✓ Workout saved!</div>
-    <div id="day-selector-container"></div>
-    <div id="today-queue"></div>
+    <div class="nut-subtab-bar">
+      <button class="nut-subtab active" id="training-sub-thisweek" onclick="trainingShowTab('thisweek',this)">This Week</button>
+      <button class="nut-subtab" id="training-sub-program" onclick="trainingShowTab('program',this)">Program</button>
+      <button class="nut-subtab" id="training-sub-history" onclick="trainingShowTab('history',this)">History</button>
+    </div>
+    <!-- This Week sub-page -->
+    <div id="training-page-thisweek">
+      <div class="success-banner" id="log-success">✓ Workout saved!</div>
+      <div id="day-selector-container"></div>
+      <div id="today-queue"></div>
+    </div>
+    <!-- Monthly Program sub-page -->
+    <div id="training-page-program" style="display:none">
+      <div id="program-month-header"></div>
+      <div id="program-content">
+        <div style="color:var(--text);font-size:14px;padding:8px 0">Loading program…</div>
+      </div>
+    </div>
+    <!-- Session History sub-page -->
+    <div id="training-page-history" style="display:none">
+      <div class="hist-filters">
+        <button class="hist-filter-btn" onclick="setHistFilter('week',this)">This week</button>
+        <button class="hist-filter-btn active" onclick="setHistFilter('30',this)">Last 30 days</button>
+        <button class="hist-filter-btn" onclick="setHistFilter('90',this)">Last 90 days</button>
+        <button class="hist-filter-btn" onclick="setHistFilter('year',this)">This year</button>
+        <button class="hist-filter-btn" onclick="setHistFilter('lastyear',this)">Last year</button>
+      </div>
+      <div id="session-history"><div style="color:var(--text);font-size:14px">No sessions yet. Head to This Week to get started.</div></div>
+    </div>
   </div>
 </div>
 <!-- HISTORY TAB -->
@@ -860,17 +887,12 @@ select {
       <div id="lift-tracker"><div style="color:var(--text);font-size:14px">No sessions yet.</div></div>
     </div>
 
-    <div class="card">
-      <div class="card-section-title">Session history</div>
-      <div class="hist-filters">
-        <button class="hist-filter-btn" onclick="setHistFilter('week',this)">This week</button>
-        <button class="hist-filter-btn active" onclick="setHistFilter('30',this)">Last 30 days</button>
-        <button class="hist-filter-btn" onclick="setHistFilter('90',this)">Last 90 days</button>
-        <button class="hist-filter-btn" onclick="setHistFilter('year',this)">This year</button>
-        <button class="hist-filter-btn" onclick="setHistFilter('lastyear',this)">Last year</button>
-      </div>
-      <div id="session-history"><div style="color:var(--text);font-size:14px">No sessions yet. Head to Today to get started.</div></div>
+    <div class="card card-accent-green" style="margin-bottom:12px">
+      <div class="card-section-title">Body composition</div>
+      <div id="body-comp-tracker"><div style="color:var(--text);font-size:14px;opacity:0.5">Loading…</div></div>
     </div>
+
+
 
   </div>
 </div>
@@ -882,8 +904,7 @@ select {
     <div class="nut-subtab-bar">
       <button class="nut-subtab active" onclick="nutShowTab('plan',this)">Plan</button>
       <button class="nut-subtab" onclick="nutShowTab('coach',this)">Coach</button>
-      <button class="nut-subtab" onclick="nutShowTab('log',this)">Today</button>
-      <button class="nut-subtab" onclick="nutShowTab('loghistory',this)">History</button>
+      <button class="nut-subtab" onclick="nutShowTab('log',this)">Log</button>
     </div>
     <!-- Plan -->
     <div class="nut-page" id="nut-plan">
@@ -911,14 +932,27 @@ select {
         <button class="btn btn-primary" onclick="nutSendMessage()" id="nut-send-btn" style="flex-shrink:0;padding:13px 18px;">↑</button>
       </div>
     </div>
-    <!-- Today's Log -->
+    <!-- Log: combined new entry + history with filters -->
     <div class="nut-page" id="nut-log" style="display:none">
-      <div id="nut-log-content"></div>
-    </div>
-    <!-- Log History -->
-    <div class="nut-page" id="nut-loghistory" style="display:none">
+      <!-- New log form (hidden by default, shown when + Log New Day is tapped) -->
+      <div id="nut-new-log-area" style="display:none">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:4px">
+          <button class="hist-filter-btn" onclick="nutCancelNewLog()" style="font-size:10px">✕ Cancel</button>
+        </div>
+        <div id="nut-log-content"></div>
+        <div style="height:1px;background:var(--border);margin:24px 0"></div>
+      </div>
+      <!-- Log history -->
+      <button class="btn btn-full" id="nut-new-log-btn" onclick="nutOpenNewLog()" style="margin-bottom:20px">+ Log New Day</button>
+      <div class="hist-filters" id="nut-log-filters">
+        <button class="hist-filter-btn" onclick="nutSetLogFilter('week',this)">This week</button>
+        <button class="hist-filter-btn active" onclick="nutSetLogFilter('30',this)">Last 30 days</button>
+        <button class="hist-filter-btn" onclick="nutSetLogFilter('90',this)">Last 90 days</button>
+        <button class="hist-filter-btn" onclick="nutSetLogFilter('year',this)">This year</button>
+        <button class="hist-filter-btn" onclick="nutSetLogFilter('all',this)">All</button>
+      </div>
       <div id="nut-loghistory-content">
-        <div class="nut-empty-state">Loading history…</div>
+        <div class="nut-empty-state">Loading…</div>
       </div>
     </div>
   </div>
@@ -926,15 +960,6 @@ select {
 
 <!-- GUIDE TAB -->
 <!-- PROGRAM TAB -->
-<div class="panel" id="tab-program">
-  <div class="panel-inner">
-    <div id="program-month-header"></div>
-    <div id="program-content">
-      <div style="color:var(--text);font-size:14px;padding:8px 0">Loading program…</div>
-    </div>
-  </div>
-</div>
-
 <div class="panel" id="tab-me">
   <div class="panel-inner" id="me-inner">
     <div style="color:var(--text);font-size:14px;opacity:0.5;padding:8px 0">Loading...</div>
@@ -948,50 +973,41 @@ select {
   <button class="nav-btn active" onclick="showTab('today',this)">
     <div class="nav-icon">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        <path d="M12.409 13.017A5 5 0 0 1 22 15c0 3.866-4 7-9 7-4.077 0-8.153-.82-10.371-2.462-.426-.316-.631-.832-.62-1.362C2.118 12.723 2.627 2 10 2a3 3 0 0 1 3 3 2 2 0 0 1-2 2c-1.105 0-1.64-.444-2-1"/>
+        <path d="M15 14a5 5 0 0 0-7.584 2"/>
+        <path d="M9.964 6.825C8.019 7.977 9.5 13 8 15"/>
       </svg>
     </div>
-    This Week
-  </button>
-  <button class="nav-btn" onclick="showTab('program',this)">
-    <div class="nav-icon">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-        <line x1="8" y1="13" x2="16" y2="13"/>
-        <line x1="8" y1="17" x2="16" y2="17"/>
-      </svg>
-    </div>
-    Current Program
-  </button>
-  <button class="nav-btn" onclick="showTab('history',this)">
-    <div class="nav-icon">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-        <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
-        <line x1="3" y1="10" x2="21" y2="10"/>
-      </svg>
-    </div>
-    History
+    Training
   </button>
   <button class="nav-btn" onclick="showTab('nutrition',this)">
     <div class="nav-icon">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-        <g transform="rotate(-120, 12, 12)">
-          <path d="M12 3 L2 21 L22 21 Z"/>
-          <path d="M4.5 19 Q12 15.5 19.5 19" fill="none"/>
-          <circle cx="12" cy="13" r="1.2" fill="currentColor" stroke="none"/>
-          <circle cx="8.5" cy="17" r="1" fill="currentColor" stroke="none"/>
-          <circle cx="15.5" cy="17" r="1" fill="currentColor" stroke="none"/>
-        </g>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 16H4a2 2 0 1 1 0-4h16a2 2 0 1 1 0 4h-4.25"/>
+        <path d="M5 12a2 2 0 0 1-2-2 9 7 0 0 1 18 0 2 2 0 0 1-2 2"/>
+        <path d="M5 16a2 2 0 0 0-2 2 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 2 2 0 0 0-2-2q0 0 0 0"/>
+        <path d="m6.67 12 6.13 4.6a2 2 0 0 0 2.8-.4l3.15-4.2"/>
       </svg>
     </div>
     Nutrition
   </button>
+  <button class="nav-btn" onclick="showTab('history',this)">
+    <div class="nav-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 16v5"/>
+        <path d="M16 14v7"/>
+        <path d="M20 10v11"/>
+        <path d="m22 3-8.646 8.646a.5.5 0 0 1-.708 0L9.354 8.354a.5.5 0 0 0-.707 0L2 15"/>
+        <path d="M4 18v3"/>
+        <path d="M8 14v7"/>
+      </svg>
+    </div>
+    Analytics
+  </button>
   <button class="nav-btn" onclick="showTab('me',this)">
     <div class="nav-icon">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
         <circle cx="12" cy="7" r="4"/>
       </svg>
     </div>
@@ -1726,15 +1742,46 @@ async function saveWorkoutFromQueue(si) {
 // Keep legacy saveWorkout as alias (used nowhere now but safe to keep)
 async function saveWorkout() { await saveWorkoutFromQueue(0); }
 
+let trainingActiveSubTab = 'thisweek';
+
+function trainingShowTab(sub, btn) {
+  document.querySelectorAll('#tab-today .nut-subtab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('training-page-thisweek').style.display = sub === 'thisweek' ? '' : 'none';
+  document.getElementById('training-page-program').style.display  = sub === 'program'  ? '' : 'none';
+  document.getElementById('training-page-history').style.display  = sub === 'history'  ? '' : 'none';
+  trainingActiveSubTab = sub;
+  if (sub === 'thisweek') renderTodayQueue();
+  if (sub === 'program')  renderProgram();
+  if (sub === 'history') {
+    // Ensure session data is loaded before rendering list
+    if (!window._historySessions) { renderHistory(); }
+    else renderSessionList();
+  }
+}
+
 function showTab(t, btn) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   (btn || document.querySelector('.nav-btn')).classList.add('active');
   document.getElementById('tab-'+t).classList.add('active');
-  if (t === 'history') renderHistory();
-  if (t === 'program') renderProgram();
-  if (t === 'today') renderTodayQueue();
-  if (t === 'me') renderMe();
+  if (t === 'history')   renderHistory();
+  if (t === 'today') {
+    // Restore last active sub-tab without re-rendering if already loaded
+    document.getElementById('training-page-thisweek').style.display = trainingActiveSubTab === 'thisweek' ? '' : 'none';
+    document.getElementById('training-page-program').style.display  = trainingActiveSubTab === 'program'  ? '' : 'none';
+    document.getElementById('training-page-history').style.display  = trainingActiveSubTab === 'history'  ? '' : 'none';
+    document.querySelectorAll('#tab-today .nut-subtab').forEach((b,i) => {
+      b.classList.toggle('active',
+        (i === 0 && trainingActiveSubTab === 'thisweek') ||
+        (i === 1 && trainingActiveSubTab === 'program') ||
+        (i === 2 && trainingActiveSubTab === 'history'));
+    });
+    if (trainingActiveSubTab === 'thisweek') renderTodayQueue();
+    if (trainingActiveSubTab === 'program')  renderProgram();
+    if (trainingActiveSubTab === 'history')  renderSessionList();
+  }
+  if (t === 'me')        renderMe();
   if (t === 'nutrition') renderNutrition();
 }
 
@@ -1776,7 +1823,12 @@ async function renderHistory() {
   document.getElementById('session-history').innerHTML =
     '<div style="color:var(--text);font-size:14px;padding:8px 0">Loading…</div>';
 
-  const sessions = await loadSessions();
+  // Fetch measurements alongside sessions for body comp charts
+  const [sessions, measurements] = await Promise.all([
+    loadSessions(),
+    sbGet(ENV === 'production' ? 'user_measurements' : 'user_measurements_staging',
+      'select=logged_at,weight_kg,body_fat_pct&order=logged_at.asc').catch(() => [])
+  ]);
   const realSessions = sessions.filter(s => !s.skipped);
 
   document.getElementById('stat-sessions').textContent = realSessions.length;
@@ -1847,6 +1899,73 @@ async function renderHistory() {
     <button id="share-lifts-btn" onclick="shareAllLifts()" style="background:#fff;border:1.5px solid #000;border-radius:8px;padding:8px 20px;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#000;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation">↑ Share progress</button>
   </div>`;
   document.getElementById('lift-tracker').innerHTML = liftHtml;
+
+  // Body composition sparklines
+  const weightPoints = [...measurements].filter(m => m.weight_kg)
+    .map(m => ({ v: parseFloat(m.weight_kg), date: m.logged_at }));
+  const bfPoints = [...measurements].filter(m => m.body_fat_pct)
+    .map(m => ({ v: parseFloat(m.body_fat_pct), date: m.logged_at }));
+
+  function fmtMeasDate(d) {
+    if (!d) return '';
+    var dt = new Date(d.includes('T') ? d : d + 'T12:00:00');
+    return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  function bodySparkline(vals, unit, label, chartId) {
+    var curVal = vals.length ? vals[vals.length - 1].v : null;
+    var sparkHtml = '';
+    if (vals.length === 0) {
+      sparkHtml = '<div class="lift-no-data">No data yet — log a measurement to start tracking</div>';
+    } else if (vals.length === 1) {
+      sparkHtml = '<div class="lift-no-data">1 entry · ' + fmtMeasDate(vals[0].date) + '</div>';
+    } else {
+      var W = 300, H = 64, PAD_X = 4, PAD_TOP = 22, PAD_BOT = 10;
+      var vs = vals.map(function(p) { return p.v; });
+      var minV = Math.min.apply(null, vs), maxV = Math.max.apply(null, vs), range = maxV - minV || 1;
+      var toX = function(i) { return PAD_X + (i / (vs.length - 1)) * (W - PAD_X * 2); };
+      var toY = function(v) { return PAD_TOP + (1 - (v - minV) / range) * (H - PAD_TOP - PAD_BOT); };
+      var pathD = vs.map(function(v, i) { return (i === 0 ? 'M' : 'L') + toX(i).toFixed(1) + ',' + toY(v).toFixed(1); }).join(' ');
+      // Value labels above each dot
+      var valLabels = vals.map(function(pt, i) {
+        return '<text x="' + toX(i).toFixed(1) + '" y="' + (toY(pt.v) - 8).toFixed(1) + '" text-anchor="middle" font-size="9" fill="var(--text)" opacity="0.4" font-family="monospace">' + pt.v + unit + '</text>';
+      }).join('');
+      // Clickable dots — tap shows tooltip with date
+      var dots = vals.map(function(pt, i) {
+        var isLast = i === vs.length - 1;
+        var tipId = chartId + '_t' + i;
+        var dateLabel = fmtMeasDate(pt.date);
+        return '<g class="bcsdot" data-tip="' + tipId + '" data-val="' + pt.v + unit + ' \u00b7 ' + dateLabel + '" style="cursor:pointer;-webkit-tap-highlight-color:transparent">'
+          + '<circle cx="' + toX(i).toFixed(1) + '" cy="' + toY(pt.v).toFixed(1) + '" r="' + (isLast ? 5 : 4) + '" fill="' + (isLast ? 'var(--green)' : 'var(--bg2)') + '" stroke="var(--green)" stroke-width="1.5"/>'
+          + '<circle cx="' + toX(i).toFixed(1) + '" cy="' + toY(pt.v).toFixed(1) + '" r="14" fill="transparent"/>'
+          + '</g>';
+      }).join('');
+      // Tooltip (hidden, appears on dot tap)
+      var tipEl = '<text id="' + chartId + '_tooltip" x="150" y="10" text-anchor="middle" font-size="10" font-weight="700" fill="var(--text)" font-family="monospace" opacity="0" style="pointer-events:none"></text>';
+      // Bottom row: first date left, last date right
+      var firstDate = '<span class="lift-spark-label">' + fmtMeasDate(vals[0].date) + '</span>';
+      var lastDate  = '<span class="lift-spark-label">' + fmtMeasDate(vals[vals.length - 1].date) + '</span>';
+      sparkHtml = '<svg class="lift-sparkline" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="overflow:visible">'
+        + '<path d="' + pathD + '" fill="none" stroke="var(--green)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" opacity="0.6"/>'
+        + valLabels + dots + tipEl
+        + '</svg>'
+        + '<div class="lift-spark-labels">' + firstDate + lastDate + '</div>';
+    }
+    return '<div class="lift-card">'
+      + '<div class="lift-card-header">'
+      + '<span class="lift-name">' + label + '</span>'
+      + '<span><span class="lift-val">' + (curVal !== null ? curVal : '—') + '</span>'
+      + '<span class="lift-val-unit">' + (curVal !== null ? unit : '') + '</span></span>'
+      + '</div>'
+      + sparkHtml
+      + '</div>';
+  }
+
+  var bodyCompHtml = '<div class="lift-cards">'
+    + bodySparkline(weightPoints, 'kg', 'Weight', 'bcs_weight')
+    + bodySparkline(bfPoints, '%', 'Body Fat', 'bcs_bf')
+    + '</div>';
+  document.getElementById('body-comp-tracker').innerHTML = bodyCompHtml;
 
   // Store all sessions for filter rendering
   window._historySessions = [...realSessions].reverse();
@@ -2728,19 +2847,21 @@ async function renderMe() {
     </div>
 
     <div class="card" style="margin-bottom:18px">
-      <div class="card-section-title">Weight</div>
-      <div style="font-family:var(--display);font-size:28px;font-weight:800;color:var(--text);margin-bottom:18px">${latestWeight ? latestWeight + 'kg' : '—'}</div>
-      ${miniSparkline(weightPoints.map(m => ({v: parseFloat(m.weight_kg), date: m.logged_at})), 'kg')}
+      <div class="card-section-title">Body Composition</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text);opacity:0.5;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Weight</div>
+          <div style="font-family:var(--display);font-size:28px;font-weight:800;color:var(--text);letter-spacing:-0.02em">${latestWeight ? latestWeight + 'kg' : '—'}</div>
+        </div>
+        <div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text);opacity:0.5;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Body Fat</div>
+          <div style="font-family:var(--display);font-size:28px;font-weight:800;color:var(--text);letter-spacing:-0.02em">${latestBf ? latestBf + '%' : '—'}</div>
+        </div>
+      </div>
     </div>
 
     <div class="card" style="margin-bottom:18px">
-      <div class="card-section-title">Body Fat</div>
-      <div style="font-family:var(--display);font-size:28px;font-weight:800;color:var(--text);margin-bottom:18px">${latestBf ? latestBf + '%' : '—'}</div>
-      ${miniSparkline(bfPoints.map(m => ({v: parseFloat(m.body_fat_pct), date: m.logged_at})), '%')}
-    </div>
-
-    <div class="card" style="margin-bottom:18px">
-      <div class="card-section-title">Log measurement</div>
+      <div class="card-section-title">Update Measurements</div>
       <div class="input-group" style="margin-bottom:10px">
         <label class="input-label">Date</label>
         <input type="date" id="me-new-date" value="${new Date().toISOString().split('T')[0]}" class="date-picker-input" style="display:block;width:100%">
@@ -2760,7 +2881,7 @@ async function renderMe() {
         <input type="text" id="me-new-notes" placeholder="e.g. morning, fasted">
       </div>
       <div style="display:flex;align-items:center;gap:12px">
-        <button class="btn btn-primary" style="flex:1" id="me-log-btn" onclick="logMeasurement()">Log measurement</button>
+        <button class="btn btn-primary" style="flex:1" id="me-log-btn" onclick="logMeasurement()">Save</button>
         <span id="me-log-status" style="font-family:var(--mono);font-size:11px;color:var(--green);display:none">✓ Logged</span>
       </div>
     </div>
@@ -2947,32 +3068,31 @@ let nutCurrentLog = null;
 // nutCoachInitialized removed — context refreshes on every Coach tab visit
 
 function nutShowTab(tab, btn) {
-  document.querySelectorAll('.nut-subtab').forEach(b => b.classList.remove('active'));
+  const nutBar = document.querySelector('#tab-nutrition .nut-subtab-bar');
+  nutBar.querySelectorAll('.nut-subtab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   document.querySelectorAll('.nut-page').forEach(p => p.style.display = 'none');
   document.getElementById('nut-' + tab).style.display = 'block';
   nutActiveSubTab = tab;
-  if (tab === 'plan')       nutLoadPlan();
-  if (tab === 'coach')      nutInitCoach();
-  if (tab === 'log')        nutLoadTodayLog();
-  if (tab === 'loghistory') nutLoadLogHistory();
+  if (tab === 'plan')  nutLoadPlan();
+  if (tab === 'coach') nutInitCoach();
+  if (tab === 'log')   nutLoadLogHistory();
 }
 
 async function renderNutrition() {
-  // Restore last sub-tab
-  const activeBtn = document.querySelector('.nut-subtab.active');
+  // Scope selectors to #tab-nutrition to avoid colliding with training sub-tabs
+  const nutBar = document.querySelector('#tab-nutrition .nut-subtab-bar');
   const activeTab = nutActiveSubTab || 'plan';
   document.querySelectorAll('.nut-page').forEach(p => p.style.display = 'none');
   document.getElementById('nut-' + activeTab).style.display = 'block';
-  document.querySelectorAll('.nut-subtab').forEach(b => b.classList.remove('active'));
-  const btns = document.querySelectorAll('.nut-subtab');
-  const tabOrder = ['plan','coach','log','loghistory'];
+  nutBar.querySelectorAll('.nut-subtab').forEach(b => b.classList.remove('active'));
+  const tabOrder = ['plan','coach','log'];
   const idx = tabOrder.indexOf(activeTab);
+  const btns = nutBar.querySelectorAll('.nut-subtab');
   if (btns[idx]) btns[idx].classList.add('active');
-  if (activeTab === 'plan')       nutLoadPlan();
-  if (activeTab === 'coach')      nutInitCoach();
-  if (activeTab === 'log')        nutLoadTodayLog();
-  if (activeTab === 'loghistory') nutLoadLogHistory();
+  if (activeTab === 'plan')  nutLoadPlan();
+  if (activeTab === 'coach') nutInitCoach();
+  if (activeTab === 'log')   nutLoadLogHistory();
 }
 
 // ── Plan ─────────────────────────────────────────────────────────────────
@@ -3289,32 +3409,20 @@ async function nutSavePlan(content) {
 
 // ── Today's Log ───────────────────────────────────────────────────────────
 async function nutLoadTodayLog() {
-  const el = document.getElementById('nut-log-content');
-  // Default date is today; user can change it
-  if (!nutCurrentLog) {
-    const today = new Date().toISOString().slice(0,10);
-    el.innerHTML = `<div style="font-family:var(--mono);font-size:11px;color:var(--text);opacity:0.4;padding:20px 0">Loading…</div>`;
-    try {
-      // Only load unsubmitted logs — submitted ones are done, start fresh
-      const rows = await sbGet(NUT_LOGS_TABLE, `select=*&date=eq.${today}&submitted=eq.false&order=created_at.desc&limit=1`);
-      nutCurrentLog = rows[0] || { date: today, meal_notes: [] };
-    } catch(e) {
-      nutCurrentLog = { date: new Date().toISOString().slice(0,10), meal_notes: [] };
-    }
-  }
+  // Called from nutOpenNewLog — nutCurrentLog is already set fresh there
+  // Just render the form
   nutRenderLogForm();
 }
 
 async function nutChangeLogDate(val) {
   if (!val) return;
-  // Save current state first if has id
+  // Silent-save current state first if already in DB
   if (nutCurrentLog?.id) {
-    await nutSaveLog(false, true); // silent save
+    await nutSaveLog(false, true);
   }
-  // Load log for new date
-  const el = document.getElementById('nut-log-content');
+  // Check if there's an unsubmitted log for this date
   try {
-    const rows = await sbGet(NUT_LOGS_TABLE, `select=*&date=eq.${val}&limit=1`);
+    const rows = await sbGet(NUT_LOGS_TABLE, `select=*&date=eq.${val}&submitted=eq.false&order=created_at.desc&limit=1`);
     nutCurrentLog = rows[0] || { date: val, meal_notes: [] };
   } catch(e) {
     nutCurrentLog = { date: val, meal_notes: [] };
@@ -3357,20 +3465,18 @@ function nutRenderLogForm() {
     </div>
     <div class="card" style="margin-bottom:14px">
       <div class="card-section-title">Fasting</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="input-group">
-          <label class="input-label">Break fast time</label>
-          <input type="time" class="nut-time-input" value="${log.break_fast_time||''}"
-            onchange="nutFieldChange('break_fast_time',this.value)">
-        </div>
-        <div class="input-group">
-          <label class="input-label">Hours fasted</label>
-          <div class="stepper">
-            <button type="button" class="stepper-btn" onclick="nutStepFasted(-1)">−</button>
-            <input type="number" inputmode="numeric" id="nut-hours-fasted" value="${log.hours_fasted ?? 16}" min="0" max="48" step="1"
-              onchange="nutFieldChange('hours_fasted',parseFloat(this.value)||null)">
-            <button type="button" class="stepper-btn" onclick="nutStepFasted(1)">+</button>
-          </div>
+      <div class="input-group" style="margin-bottom:10px">
+        <label class="input-label">Break fast time</label>
+        <input type="time" class="nut-time-input" value="${log.break_fast_time||''}"
+          onchange="nutFieldChange('break_fast_time',this.value)">
+      </div>
+      <div class="input-group">
+        <label class="input-label">Hours fasted</label>
+        <div class="stepper">
+          <button type="button" class="stepper-btn" onclick="nutStepFasted(-1)">−</button>
+          <input type="number" inputmode="numeric" id="nut-hours-fasted" value="${log.hours_fasted ?? 16}" min="0" max="48" step="1"
+            onchange="nutFieldChange('hours_fasted',parseFloat(this.value)||null)">
+          <button type="button" class="stepper-btn" onclick="nutStepFasted(1)">+</button>
         </div>
       </div>
     </div>
@@ -3465,9 +3571,13 @@ async function nutSaveLog(submit, silent=false) {
     }
     if (!silent) {
       if (submit) {
-        // After submit, reset to a blank form for a new entry on the same date
-        nutCurrentLog = { date: body.date, meal_notes: [] };
-        nutRenderLogForm();
+        // After submit, hide the form and reload the history list
+        nutCurrentLog = null;
+        const area = document.getElementById('nut-new-log-area');
+        const btn  = document.getElementById('nut-new-log-btn');
+        if (area) area.style.display = 'none';
+        if (btn)  btn.style.display = '';
+        nutLoadLogHistory();
         if(status){ status.textContent = '✓ Submitted'; status.style.display='block'; setTimeout(()=>{ status.style.display='none'; },2500); }
       } else {
         if(saveBtn){saveBtn.textContent='✓ Saved';saveBtn.disabled=false;setTimeout(()=>{if(saveBtn)saveBtn.textContent='Save';},2000);}
@@ -3484,11 +3594,47 @@ async function nutSaveLog(submit, silent=false) {
 }
 
 // ── Log History ───────────────────────────────────────────────────────────
+let nutLogFilter = '30';
+
+function nutSetLogFilter(f, btn) {
+  nutLogFilter = f;
+  document.querySelectorAll('#nut-log-filters .hist-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  nutLoadLogHistory();
+}
+
+function nutOpenNewLog() {
+  const area = document.getElementById('nut-new-log-area');
+  const btn  = document.getElementById('nut-new-log-btn');
+  if (!area || !btn) return;
+  nutCurrentLog = { date: new Date().toISOString().slice(0,10), meal_notes: [] };
+  area.style.display = 'block';
+  btn.style.display = 'none';
+  nutRenderLogForm();
+  area.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function nutCancelNewLog() {
+  const area = document.getElementById('nut-new-log-area');
+  const btn  = document.getElementById('nut-new-log-btn');
+  if (!area || !btn) return;
+  area.style.display = 'none';
+  btn.style.display = '';
+  nutCurrentLog = null;
+}
+
 async function nutLoadLogHistory() {
   const el = document.getElementById('nut-loghistory-content');
+  if (!el) return;
+  el.innerHTML = '<div class="nut-empty-state">Loading…</div>';
   try {
-    const rows = await sbGet(NUT_LOGS_TABLE, 'select=*&order=date.desc&limit=60');
-    if (!rows.length) { el.innerHTML = `<div class="nut-empty-state">No logs yet</div>`; return; }
+    // Build date filter using same getFilterRange logic as workout history
+    const { from, to } = getFilterRange(nutLogFilter);
+    let query = 'select=*&order=date.desc&limit=200';
+    if (from) query += '&date=gte.' + from.toISOString().slice(0,10);
+    if (to)   query += '&date=lte.' + to.toISOString().slice(0,10);
+    const rows = await sbGet(NUT_LOGS_TABLE, query);
+    if (!rows.length) { el.innerHTML = '<div class="nut-empty-state">No logs in this period</div>'; return; }
     el.innerHTML = rows.map(nutHistCard).join('');
   } catch(e) {
     el.innerHTML = `<div style="font-family:var(--mono);font-size:11px;color:var(--red)">Error: ${e.message}</div>`;
@@ -3532,19 +3678,17 @@ function nutHistCard(log) {
       <div class="nut-hist-chevron">▾</div>
     </div>
     <div class="nut-hist-detail">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-        <div class="input-group">
-          <label class="input-label">Break fast time</label>
-          <input type="time" class="nut-time-input" value="${log.break_fast_time||''}" onchange="nutHistField('${log.id}','break_fast_time',this.value)">
-        </div>
-        <div class="input-group">
-          <label class="input-label">Hours fasted</label>
-          <div class="stepper">
-            <button type="button" class="stepper-btn" onclick="nutHistStepFasted('${log.id}',-1)">−</button>
-            <input type="number" inputmode="numeric" id="nhe-fasted-${log.id}" value="${log.hours_fasted??16}" min="0" max="48" step="1"
-              onchange="nutHistField('${log.id}','hours_fasted',parseFloat(this.value)||null)">
-            <button type="button" class="stepper-btn" onclick="nutHistStepFasted('${log.id}',1)">+</button>
-          </div>
+      <div class="input-group" style="margin-bottom:10px">
+        <label class="input-label">Break fast time</label>
+        <input type="time" class="nut-time-input" value="${log.break_fast_time||''}" onchange="nutHistField('${log.id}','break_fast_time',this.value)">
+      </div>
+      <div class="input-group" style="margin-bottom:14px">
+        <label class="input-label">Hours fasted</label>
+        <div class="stepper">
+          <button type="button" class="stepper-btn" onclick="nutHistStepFasted('${log.id}',-1)">−</button>
+          <input type="number" inputmode="numeric" id="nhe-fasted-${log.id}" value="${log.hours_fasted??16}" min="0" max="48" step="1"
+            onchange="nutHistField('${log.id}','hours_fasted',parseFloat(this.value)||null)">
+          <button type="button" class="stepper-btn" onclick="nutHistStepFasted('${log.id}',1)">+</button>
         </div>
       </div>
       ${ratingBlock('energy_level','Energy',log.energy_level)}
@@ -3673,6 +3817,28 @@ function nutHistStepFasted(id, delta) {
   el.value = next;
   nutHistField(id, 'hours_fasted', next);
 }
+
+function bodyDotClick(evt) {
+  var g = evt.target.closest('.bcsdot');
+  if (!g) return;
+  var tipId = g.getAttribute('data-tip');
+  var text  = g.getAttribute('data-val');
+  if (!tipId || !text) return;
+  var el = document.getElementById(tipId);
+  if (!el) return;
+  el.textContent = text;
+  el.setAttribute('opacity', '1');
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(function() {
+    el.setAttribute('opacity', '0');
+    el.textContent = '';
+  }, 2200);
+}
+
+// Delegate body comp dot clicks at document level
+document.addEventListener('click', function(evt) {
+  if (evt.target.closest && evt.target.closest('.bcsdot')) bodyDotClick(evt);
+});
 
 function nutEsc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
