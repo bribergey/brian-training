@@ -1229,7 +1229,7 @@ function stepperHtml(id, value, min, max, placeholder, step) {
   const st      = step || 1;
   return `<div class="stepper">
     <button type="button" class="stepper-btn" onclick="stepField('${id}',-${st},${min??0},${max??999},${st})">−</button>
-    <input type="number" inputmode="numeric" pattern="[0-9]*" id="${id}" value="${val}" ${minAttr} ${maxAttr} ${phAttr} step="${st}">
+    <input type="number" inputmode="decimal" id="${id}" value="${val}" ${minAttr} ${maxAttr} ${phAttr} step="${st}">
     <button type="button" class="stepper-btn" onclick="stepField('${id}',${st},${min??0},${max??999},${st})">+</button>
   </div>`;
 }
@@ -1730,14 +1730,17 @@ async function confirmSkip(si) {
 }
 
 async function saveWorkoutFromQueue(si) {
+  // Show immediate feedback before any async work
+  const saveBtn = document.getElementById(`savebtn-${si}`);
+  if (saveBtn) { saveBtn.textContent = 'Saving…'; saveBtn.disabled = true; }
+
+  // Yield to let the UI repaint before heavy work
+  await new Promise(r => setTimeout(r, 0));
+
   // Reconstruct queue to get session info
   const queue = await loadQueue();
   const session = queue[si];
   if (!session) return;
-
-  const saveBtn = document.getElementById(`savebtn-${si}`);
-  saveBtn.textContent = 'Saving…';
-  saveBtn.disabled = true;
 
   const day = session.day;
   const date = document.getElementById(`date-input2-${si}`)?.value ||
@@ -1766,6 +1769,8 @@ async function saveWorkoutFromQueue(si) {
     document.getElementById('header-sessions').textContent = (cachedSessions||[]).length;
     setStatus('✓ Workout saved to cloud!');
     document.getElementById('tab-today').scrollTop = 0;
+    // Invalidate history cache so History tab shows the new session immediately
+    window._historySessions = null;
     // Refresh queue to remove saved workout
     await renderTodayQueue();
   } catch(e) {
@@ -2568,7 +2573,7 @@ function buildSetRowHtml(uid, j, weight, reps, isTimed) {
   const step = 0.5;
   return `<div class="set-row" id="set-row-${uid}-${j}">
     <div class="set-row-num">${j + 1}</div>
-    <div>${stepperHtml(wId, weight, 0, 300, '', step)}</div>
+    <div>${stepperHtml(wId, weight, -999, 300, '', step)}</div>
     <div>${isTimed
       ? stepperHtml(rId, reps, 0, 9999, '', 1)
       : stepperHtml(rId, reps, 0, 99, '')
@@ -2621,8 +2626,8 @@ function renumberSetRows(uid) {
     // Update stepper buttons
     const btns = row.querySelectorAll('.stepper-btn');
     if (btns.length >= 2) {
-      btns[0].setAttribute('onclick', `stepField('set_${uid}_${j}_w',-0.5,0,300,0.5)`);
-      btns[1].setAttribute('onclick', `stepField('set_${uid}_${j}_w',0.5,0,300,0.5)`);
+      btns[0].setAttribute('onclick', `stepField('set_${uid}_${j}_w',-0.5,-999,300,0.5)`);
+      btns[1].setAttribute('onclick', `stepField('set_${uid}_${j}_w',0.5,-999,300,0.5)`);
     }
     if (btns.length >= 4) {
       btns[2].setAttribute('onclick', `stepField('set_${uid}_${j}_r',-1,0,99,1)`);
