@@ -489,6 +489,7 @@ select {
 .nut-subtab-bar {
   display: flex; gap: 0; margin-bottom: 24px;
   background: var(--bg3); border-radius: 10px; padding: 3px;
+  position: sticky; top: 0; z-index: 10;
 }
 .nut-subtab {
   flex: 1; font-family: var(--mono); font-size: 11px; font-weight: 600;
@@ -3554,7 +3555,7 @@ async function nutSendMessage() {
     '',
     '## Notes for this week (1-3 lines — deload, recovery, patterns from logs)',
     '',
-    'When Brian confirms he wants to save it, wrap the full plan in <SAVE_PLAN> tags.',
+    'Always wrap the complete plan in <SAVE_PLAN> tags immediately — do not wait to be asked. The tags save it silently and Brian sees the plan text normally.',
     '',
     'MODE 2 — LOG FEEDBACK (when Brian asks how he did, review his food, or asks about a specific day):',
     '- Estimate actual macros from what was logged (protein/carbs/fat in grams)',
@@ -3563,6 +3564,12 @@ async function nutSendMessage() {
     '- Give 2-3 simple, specific fixes: real foods, real portions, aligned with his diet profile',
     '- Flag micronutrient gaps for plant-based eating (B12, iron, omega-3, zinc)',
     '- Keep it tight — numbers first, commentary second',
+    '',
+    'CRITICAL BEHAVIOUR RULES (always apply):',
+    '- Never repeat content you already gave in this conversation. If you gave a plan, do not restate it — reference it briefly if needed.',
+    '- Do not re-explain macro calculations already covered earlier in the conversation.',
+    '- If Brian asks to save or post something you already provided, just confirm it is saved — do not reprint the full content.',
+    '- If you already set macro targets earlier in this conversation, do not output another SAVE_TARGETS block unless explicitly asked to recalculate.',
     '',
     'FOR EVERYTHING ELSE: answer directly and specifically. Use recentMeasurements for weight/BF trends. Use nutritionLogs to name patterns. Build familiarity with Brian\'s food preferences from his logs.',
     '',
