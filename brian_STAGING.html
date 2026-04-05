@@ -625,6 +625,19 @@ select {
   text-transform: uppercase; cursor: pointer; border-top: 1px solid var(--border);
   touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
+.ex-block-swipe-wrap { position: relative; overflow: hidden; }
+.ex-block-delete-btn {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 80px;
+  background: #e53e3e; color: #fff; border: none;
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transform: translateX(100%); transition: transform 0.2s;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.ex-block-swipe-wrap.swiped .ex-block-delete-btn { transform: translateX(0); }
+.ex-block-swipe-wrap.swiped .ex-block { transform: translateX(-80px); transition: transform 0.2s; }
+.ex-block-swipe-wrap .ex-block { transition: transform 0.2s; }
 /* NUT TIME INPUT — match stepper height */
 .nut-time-input {
   width: 100%; background: var(--bg3); border: 1.5px solid var(--border2);
@@ -1524,6 +1537,7 @@ async function showAddExSearch(si) {
     + '</div>';
   renderAddExResults(si, exercises);
   setTimeout(function() { var el = document.getElementById('add-ex-input-' + si); if (el) el.focus(); }, 50);
+  attachAddExOutsideClose(si);
 }
 
 function filterAddEx(si, query) {
@@ -1560,18 +1574,19 @@ function cancelAddEx(si) {
 async function selectAddedExercise(si, exName) {
   var exercises = await getExerciseCache();
   var exMeta = exercises.find(function(e) { return e.name === exName; }) || { name: exName, badge: 'acc', unit: 'kg', rep_type: 'reps' };
-  var coachNotes = await buildAddedExNotes(exName, exMeta);
+  var history = getLastLoggedEx(exName, exMeta);
+  var defaultSets = history.sets || [{weight:'',reps:''},{weight:'',reps:''},{weight:'',reps:''}];
   var addedEx = {
     name: exName, unit: exMeta.unit || 'kg', badge: exMeta.badge || 'acc',
     rep_type: exMeta.rep_type || 'reps',
-    sets: [{weight:'',reps:''},{weight:'',reps:''},{weight:'',reps:''}],
-    notes: '', coach_notes: coachNotes, added_by: 'brian'
+    sets: defaultSets,
+    notes: '', coach_notes: history.notes, added_by: 'brian'
   };
   if (!_addedExercises[si]) _addedExercises[si] = [];
   var addedIdx = _addedExercises[si].length;
   _addedExercises[si].push(addedEx);
   var uid = si + '_added_' + addedIdx;
-  var exHtml = buildAddedExBlock(addedEx, uid, si);
+  var exHtml = buildAddedExBlock(addedEx, uid, si, addedIdx);
   var area = document.getElementById('add-ex-area-' + si);
   var wrapper = document.createElement('div');
   wrapper.innerHTML = exHtml;
@@ -1579,10 +1594,11 @@ async function selectAddedExercise(si, exName) {
   area.innerHTML = '<button class="add-ex-btn" onclick="showAddExSearch(' + si + ')">+ Add exercise</button>';
   var exEl = document.getElementById('ex-' + uid);
   if (exEl) { exEl.classList.add('open'); var body = exEl.querySelector('.ex-body'); if (body) body.style.display = ''; }
+  initSwipeDelete('swipe-' + uid);
   saveDraft(si);
 }
 
-async function buildAddedExNotes(exName, exMeta) {
+function getLastLoggedEx(exName, exMeta) {
   try {
     var sessions = cachedSessions || [];
     for (var i = sessions.length - 1; i >= 0; i--) {
@@ -1591,33 +1607,38 @@ async function buildAddedExNotes(exName, exMeta) {
       if (!match) continue;
       var dateStr = s.date ? new Date(s.date + 'T12:00:00').toLocaleDateString('en-US', {month:'short',day:'numeric'}) : '';
       var isTimed = exMeta.rep_type === 'sec' || exMeta.rep_type === 'min';
-      var sets = Array.isArray(match.sets) ? match.sets : [];
-      var numSets = sets.length;
+      var sets = Array.isArray(match.sets) && match.sets.length ? match.sets : [];
       var topSetDesc = '';
-      if (isTimed) {
-        var best = Math.max.apply(null, sets.map(function(s) { return parseFloat(s.reps || 0); }).filter(function(v) { return v > 0; }));
-        if (best > 0) topSetDesc = 'top set ' + best + (exMeta.rep_type === 'min' ? 'min' : 'sec');
-      } else if (exMeta.unit === 'BW') {
-        var best = Math.max.apply(null, sets.map(function(s) { return parseFloat(s.reps || 0); }).filter(function(v) { return v > 0; }));
-        if (best > 0) topSetDesc = 'top set ' + best + ' reps';
-      } else {
-        var bestW = 0, bestR = '';
-        sets.forEach(function(s) {
-          var w = Math.abs(parseFloat(s.weight || 0));
-          if (w > bestW) { bestW = w; bestR = s.reps; }
-        });
-        if (bestW > 0) topSetDesc = 'top set ' + bestW + (exMeta.unit || 'kg') + ' × ' + bestR;
+      if (sets.length) {
+        if (isTimed) {
+          var best = Math.max.apply(null, sets.map(function(s) { return parseFloat(s.reps || 0); }).filter(function(v) { return v > 0; }));
+          if (best > 0) topSetDesc = 'top set ' + best + (exMeta.rep_type === 'min' ? 'min' : 'sec');
+        } else if (exMeta.unit === 'BW') {
+          var best = Math.max.apply(null, sets.map(function(s) { return parseFloat(s.reps || 0); }).filter(function(v) { return v > 0; }));
+          if (best > 0) topSetDesc = 'top set ' + best + ' reps';
+        } else {
+          var bestW = 0, bestR = '';
+          sets.forEach(function(s) {
+            var w = Math.abs(parseFloat(s.weight || 0));
+            if (w > bestW) { bestW = w; bestR = s.reps; }
+          });
+          if (bestW > 0) topSetDesc = 'top set ' + bestW + (exMeta.unit || 'kg') + ' × ' + bestR;
+        }
       }
       var parts = [dateStr ? 'Last logged ' + dateStr : 'Previously logged'];
-      if (numSets > 0) parts.push(numSets + ' sets');
+      if (sets.length) parts.push(sets.length + ' sets');
       if (topSetDesc) parts.push(topSetDesc);
-      return parts.join(' · ');
+      return { notes: parts.join(' · '), sets: sets.length ? sets : null };
     }
   } catch(e) {}
-  return 'Added by Brian — first time logging this exercise';
+  return { notes: 'Added by Brian — first time logging this exercise', sets: null };
 }
 
-function buildAddedExBlock(ex, uid, si) {
+async function buildAddedExNotes(exName, exMeta) {
+  return getLastLoggedEx(exName, exMeta).notes;
+}
+
+function buildAddedExBlock(ex, uid, si, addedIdx) {
   var b = ex.badge || 'acc';
   var bl = b === 'anchor' ? 'Anchor' : b === 'core' ? 'Core' : b === 'upper' ? 'Upper' : b === 'lower' ? 'Lower' : 'Acc';
   var isTimed = ex.rep_type === 'sec' || ex.rep_type === 'min';
@@ -1632,7 +1653,9 @@ function buildAddedExBlock(ex, uid, si) {
   if (isTimed) setRowsHtml += '<div style="margin-bottom:10px"><label class="input-label">Timer</label>' + timerHtml(uid) + '</div>';
   setRowsHtml += '<button class="set-add-btn" onclick="addSet(\'' + uid + '\',\'' + unit + '\',' + isTimed + ')">+ Add set</button>';
   var toggleCall = 'toggleEx(\'ex-' + uid + '\')';
-  return '<div class="ex-block" id="ex-' + uid + '">'
+  var deleteCall = 'deleteAddedEx(' + si + ',' + addedIdx + ')';
+  return '<div class="ex-block-swipe-wrap" id="swipe-' + uid + '">'
+    + '<div class="ex-block" id="ex-' + uid + '">'
     + '<div class="ex-block-header" onclick="' + toggleCall + '">'
     + '<span class="ex-badge badge-' + b + '">' + bl + '</span>'
     + '<span class="ex-name">' + ex.name + '</span>'
@@ -1642,7 +1665,49 @@ function buildAddedExBlock(ex, uid, si) {
     + setRowsHtml
     + '<div class="input-group"><label class="input-label">Notes</label>'
     + '<input type="text" id="n_' + uid + '" placeholder="optional"></div>'
-    + '</div></div>';
+    + '</div></div>'
+    + '<button class="ex-block-delete-btn" onclick="' + deleteCall + '">Delete</button>'
+    + '</div>';
+}
+
+function initSwipeDelete(wrapId) {
+  var wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+  var startX = 0, startY = 0, dragging = false;
+  wrap.addEventListener('touchstart', function(e) {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    dragging = true;
+  }, { passive: true });
+  wrap.addEventListener('touchmove', function(e) {
+    if (!dragging) return;
+    var dx = e.touches[0].clientX - startX;
+    var dy = e.touches[0].clientY - startY;
+    if (Math.abs(dy) > Math.abs(dx)) { dragging = false; return; }
+    if (dx < -30) { wrap.classList.add('swiped'); }
+    else if (dx > 10) { wrap.classList.remove('swiped'); }
+  }, { passive: true });
+  wrap.addEventListener('touchend', function() { dragging = false; });
+}
+
+function deleteAddedEx(si, idx) {
+  var uid = si + '_added_' + idx;
+  var wrap = document.getElementById('swipe-' + uid);
+  if (wrap) wrap.remove();
+  if (_addedExercises[si]) _addedExercises[si].splice(idx, 1);
+  saveDraft(si);
+}
+
+function attachAddExOutsideClose(si) {
+  function handler(e) {
+    var wrap = document.getElementById('add-ex-search-' + si);
+    if (!wrap) { document.removeEventListener('click', handler, true); return; }
+    if (!wrap.contains(e.target)) {
+      cancelAddEx(si);
+      document.removeEventListener('click', handler, true);
+    }
+  }
+  setTimeout(function() { document.addEventListener('click', handler, true); }, 200);
 }
 
 function draftKey(session) {
@@ -1843,7 +1908,7 @@ function renderSelectedDay() {
       draft.added.forEach((ex, idx) => {
         _addedExercises[si].push(ex);
         const uid = `${si}_added_${idx}`;
-        const exHtml = buildAddedExBlock(ex, uid, si);
+        const exHtml = buildAddedExBlock(ex, uid, si, idx);
         const wrapper = document.createElement('div');
         wrapper.innerHTML = exHtml;
         if (area) area.parentNode.insertBefore(wrapper.firstChild, area);
@@ -1857,6 +1922,7 @@ function renderSelectedDay() {
           });
         }
         if (ex.notes) { const nEl = document.getElementById(`n_${uid}`); if (nEl) nEl.value = ex.notes; }
+        initSwipeDelete('swipe-' + uid);
       });
     }
   }
