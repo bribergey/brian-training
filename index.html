@@ -246,6 +246,10 @@ body {
   background: var(--blue-dim); color: var(--blue);
   border: 1px solid rgba(37,99,235,0.2);
 }
+.badge-cardio {
+  background: rgba(20,184,166,0.12); color: #0d9488;
+  border: 1px solid rgba(20,184,166,0.3);
+}
 .badge-acc {
   background: var(--bg3); color: var(--text);
   border: 1px solid var(--border2);
@@ -350,6 +354,8 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
 .set-row-num { font-family: var(--mono); font-size: 9px; font-weight: 700; color: var(--text); opacity: 0.35; text-align: center; padding-top: 2px; }
 .set-row-label { font-family: var(--mono); font-size: 9px; color: var(--text); opacity: 0.45; text-transform: uppercase; letter-spacing: 0.06em; text-align: center; margin-bottom: 3px; }
 .set-row-headers { display: grid; grid-template-columns: 20px 1fr 1fr 36px; gap: 4px; margin-bottom: 2px; }
+.set-row.no-weight,
+.set-row-headers.no-weight { grid-template-columns: 20px 1fr 36px; }
 .set-remove-btn { background: none; border: none; color: var(--text); opacity: 0.25; font-size: 16px; cursor: pointer; padding: 0; padding-right: 10px; text-align: right; line-height: 1; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 .set-remove-btn:active { opacity: 0.7; }
 .set-add-btn { width: auto; display: block; margin: 0 auto 10px; background: none; border: 1.5px dashed var(--border2); border-radius: var(--radius-xs); padding: 8px 24px; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); opacity: 0.4; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
@@ -590,6 +596,65 @@ select {
 }
 .me-goal-chip.active .me-goal-chip-desc { opacity: 0.8; }
 
+.log-extra-btn {
+  background: none; border: 1.5px solid var(--border2);
+  border-radius: 8px; padding: 7px 14px;
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  color: var(--text); opacity: 0.6; letter-spacing: 0.05em;
+  text-transform: uppercase; cursor: pointer;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  margin-top: 10px; margin-bottom: 26px; transition: opacity 0.15s;
+}
+.log-extra-btn:active { opacity: 1; }
+
+.add-ex-btn {
+  width: 100%; margin: 14px 0 6px;
+  background: none; border: 1.5px dashed var(--border2);
+  border-radius: 10px; padding: 10px; font-family: var(--mono);
+  font-size: 11px; font-weight: 700; color: var(--text); opacity: 0.5;
+  letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+  text-align: center; touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent; transition: opacity 0.15s;
+}
+.add-ex-btn:active { opacity: 1; }
+.add-ex-search-wrap {
+  margin: 14px 0 6px; border: 1.5px solid var(--border2);
+  border-radius: 10px; overflow: hidden; background: var(--bg2);
+}
+.add-ex-search-input {
+  width: 100%; box-sizing: border-box;
+  padding: 11px 14px; border: none; background: transparent;
+  font-family: var(--sans); font-size: 14px; color: var(--text); outline: none;
+}
+.add-ex-search-results { max-height: 220px; overflow-y: auto; border-top: 1px solid var(--border); }
+.add-ex-result {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px; cursor: pointer; border-bottom: 1px solid var(--border);
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.add-ex-result:last-child { border-bottom: none; }
+.add-ex-result:active { background: var(--bg3); }
+.add-ex-result-name { font-size: 14px; font-weight: 500; color: var(--text); flex: 1; }
+.add-ex-cancel {
+  width: 100%; padding: 9px; border: none; background: none;
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  color: var(--text); opacity: 0.4; letter-spacing: 0.05em;
+  text-transform: uppercase; cursor: pointer; border-top: 1px solid var(--border);
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.ex-block-swipe-wrap { position: relative; overflow: hidden; }
+.ex-block-delete-btn {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 80px;
+  background: #e53e3e; color: #fff; border: none;
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transform: translateX(100%); transition: transform 0.2s;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.ex-block-swipe-wrap.swiped .ex-block-delete-btn { transform: translateX(0); }
+.ex-block-swipe-wrap.swiped .ex-block { transform: translateX(-80px); transition: transform 0.2s; }
+.ex-block-swipe-wrap .ex-block { transition: transform 0.2s; }
 /* NUT TIME INPUT — match stepper height */
 .nut-time-input {
   width: 100%; background: var(--bg3); border: 1.5px solid var(--border2);
@@ -887,6 +952,7 @@ select {
     <div id="training-page-thisweek">
       <div class="success-banner" id="log-success">✓ Workout saved!</div>
       <div id="day-selector-container"></div>
+      <div id="extra-cards-container"></div>
       <div id="today-queue"></div>
     </div>
     <!-- Monthly Program sub-page -->
@@ -1211,11 +1277,48 @@ const EX_BADGES = {
   'Side plank (knees)':'core','Seated cable oblique crunch':'core','Single-leg cable knee raise':'core',
 };
 
-// ANCHORS: exercises with badge='anchor' — hardcoded for sync access in analytics
-// Future: replace with async query to exercises table WHERE badge='anchor'
+// ANCHOR_GROUPS: populated at runtime from exercises table
+// Each group tracks best lift across all exercises sharing that anchor_group
+let ANCHOR_GROUPS = {};
+let anchorGroupsLoaded = false;
+
+async function loadAnchorGroups() {
+  if (anchorGroupsLoaded) return;
+  try {
+    const rows = await sbGet('exercises', 'select=name,anchor_group,rep_type&badge=eq.anchor&anchor_group=not.is.null');
+    ANCHOR_GROUPS = {};
+    rows.forEach(ex => {
+      const g = ex.anchor_group;
+      if (!ANCHOR_GROUPS[g]) ANCHOR_GROUPS[g] = { names: new Set(), isRepBased: false };
+      ANCHOR_GROUPS[g].names.add(ex.name);
+      if (g === 'Pull-up') ANCHOR_GROUPS[g].isRepBased = true;
+    });
+    anchorGroupsLoaded = true;
+  } catch(e) {
+    // Fallback to hardcoded if fetch fails
+    ANCHOR_GROUPS = {
+      'Barbell squat':  { names: new Set(['Barbell back squat','Barbell squat (paused)']), isRepBased: false },
+      'Deadlift':       { names: new Set(['Deadlift']),                                    isRepBased: false },
+      'Bench press':    { names: new Set(['Barbell bench press']),                         isRepBased: false },
+      'Pull-up':        { names: new Set(['Pull-up']),                                      isRepBased: true  },
+      'Shoulder press': { names: new Set(['Barbell shoulder press']),                      isRepBased: false },
+    };
+    anchorGroupsLoaded = true;
+  }
+}
+
+// Legacy — kept for any references in shareAllLifts etc.
 const ANCHORS = ['Barbell back squat','Deadlift','Barbell bench press','Pull-up','Barbell shoulder press'];
-// Lifts tracked by reps instead of weight
 const ANCHOR_REPS = new Set(['Pull-up']);
+
+const _addedExercises = {}; // { si: [exerciseObjects] }
+let _exerciseCache = null;
+async function getExerciseCache() {
+  if (_exerciseCache) return _exerciseCache;
+  try { _exerciseCache = await sbGet('exercises', 'select=name,badge,unit,rep_type&order=name.asc'); }
+  catch(e) { _exerciseCache = []; }
+  return _exerciseCache;
+}
 
 let currentDay = 'A';
 let selectedDayIdx = null; // null = not yet set, persists across tab switches
@@ -1427,7 +1530,7 @@ function buildDefaultQueue(sessions) {
       label: day,
       scheduledDate: getScheduledDate(day),
       weekNumber: null,
-      exercises: exs.map((ex, idx) => ({...ex, exercise: ex.name, order_index: idx})),
+      exercises: exs.map((ex, idx) => ({ name: ex.name, exercise: ex.name, badge: ex.badge, unit: ex.unit, rep_type: ex.rep_type, sets: ex.sets, reps: ex.reps, weight: ex.weight, suggested_sets: ex.suggested_sets, coach_notes: ex.coach_notes, superset_group: ex.superset_group, order_index: idx })),
       logged: false,
       isDefault: true
     });
@@ -1437,8 +1540,232 @@ function buildDefaultQueue(sessions) {
 
 
 let weekQueue = [];
+// Extra workouts added by Brian this week (persisted in localStorage)
+// Format: [{ extraNum: 1, date: 'YYYY-MM-DD', notes: '', exercises: [], added: [] }]
+const EXTRA_DRAFT_KEY = () => `brian_extras_${ENV}_${getWeekStart()}`;
+function getWeekStart() {
+  const d = new Date();
+  d.setDate(d.getDate() - d.getDay() + 1); // Monday
+  return d.toISOString().slice(0, 10);
+}
+function loadExtraDrafts() {
+  try {
+    const data = JSON.parse(localStorage.getItem(EXTRA_DRAFT_KEY())) || [];
+    // Clear stale keys from previous weeks
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('brian_extras_') && k !== EXTRA_DRAFT_KEY()) {
+        localStorage.removeItem(k);
+        i--;
+      }
+    }
+    return data;
+  } catch { return []; }
+}
+function saveExtraDrafts() {
+  localStorage.setItem(EXTRA_DRAFT_KEY(), JSON.stringify(extraWorkouts));
+}
+let extraWorkouts = loadExtraDrafts(); // loaded on page init
 
 // ─── DRAFT STATE (localStorage, keyed by day+date) ───────────────────────
+// ─── ADD EXERCISE ─────────────────────────────────────────────────────────
+
+async function showAddExSearch(si) {
+  const area = document.getElementById('add-ex-area-' + si);
+  if (!area) return;
+  const exercises = await getExerciseCache();
+  // siQ: safely quoted for use inside HTML onclick/oninput attributes
+  const siQ = typeof si === 'string' ? "'" + si + "'" : si;
+  area.innerHTML = '<div class="add-ex-search-wrap" id="add-ex-search-' + si + '">'
+    + '<input class="add-ex-search-input" id="add-ex-input-' + si + '" placeholder="Search exercises…" autocomplete="off" autocorrect="off" oninput="filterAddEx(' + siQ + ', this.value)">'
+    + '<div class="add-ex-search-results" id="add-ex-results-' + si + '"></div>'
+    + '<button class="add-ex-cancel" onclick="cancelAddEx(' + siQ + ')">✕ Cancel</button>'
+    + '</div>';
+  renderAddExResults(si, exercises);
+  setTimeout(function() { var el = document.getElementById('add-ex-input-' + si); if (el) el.focus(); }, 50);
+  attachAddExOutsideClose(si);
+}
+
+function filterAddEx(si, query) {
+  getExerciseCache().then(function(exercises) {
+    var q = query.trim().toLowerCase();
+    var filtered = q ? exercises.filter(function(e) { return e.name.toLowerCase().includes(q); }) : exercises;
+    renderAddExResults(si, filtered);
+  });
+}
+
+function renderAddExResults(si, exercises) {
+  var el = document.getElementById('add-ex-results-' + si);
+  if (!el) return;
+  if (!exercises.length) {
+    el.innerHTML = '<div style="padding:12px 14px;font-family:var(--mono);font-size:11px;opacity:0.4">No matches</div>';
+    return;
+  }
+  el.innerHTML = exercises.map(function(ex) {
+    var b = ex.badge || 'acc';
+    var bl = b === 'anchor' ? 'Anchor' : b === 'core' ? 'Core' : b === 'upper' ? 'Upper' : b === 'lower' ? 'Lower' : b === 'cardio' ? 'Cardio' : 'Acc';
+    var safeName = ex.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    var siQ2 = typeof si === 'string' ? "'" + si + "'" : si;
+    return '<div class="add-ex-result" onclick="selectAddedExercise(' + siQ2 + ', \'' + safeName + '\')">'
+      + '<span class="ex-badge badge-' + b + '" style="flex-shrink:0">' + bl + '</span>'
+      + '<span class="add-ex-result-name">' + ex.name + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+function cancelAddEx(si) {
+  var area = document.getElementById('add-ex-area-' + si);
+  var siQ3 = typeof si === 'string' ? "'" + si + "'" : si;
+  if (area) area.innerHTML = '<button class="add-ex-btn" onclick="showAddExSearch(' + siQ3 + ')">+ Add exercise</button>';
+}
+
+async function selectAddedExercise(si, exName) {
+  var exercises = await getExerciseCache();
+  var exMeta = exercises.find(function(e) { return e.name === exName; }) || { name: exName, badge: 'acc', unit: 'kg', rep_type: 'reps' };
+  var history = getLastLoggedEx(exName, exMeta);
+  // Cardio exercises: 1 set, no weight field needed
+  var isCardio = exMeta.badge === 'cardio';
+  var defaultSets = history.sets || (isCardio ? [{weight:'',reps:''}] : [{weight:'',reps:''},{weight:'',reps:''},{weight:'',reps:''}]);
+  var addedEx = {
+    name: exName, unit: exMeta.unit || 'kg', badge: exMeta.badge || 'acc',
+    rep_type: exMeta.rep_type || 'reps',
+    sets: defaultSets,
+    notes: '', coach_notes: history.notes, added_by: 'brian'
+  };
+  if (!_addedExercises[si]) _addedExercises[si] = [];
+  var addedIdx = _addedExercises[si].length;
+  _addedExercises[si].push(addedEx);
+  var uid = si + '_added_' + addedIdx;
+  var exHtml = buildAddedExBlock(addedEx, uid, si, addedIdx);
+  var area = document.getElementById('add-ex-area-' + si);
+  var wrapper = document.createElement('div');
+  wrapper.innerHTML = exHtml;
+  area.parentNode.insertBefore(wrapper.firstChild, area);
+  var siQr = typeof si === 'string' ? "'" + si + "'" : si;
+  area.innerHTML = '<button class="add-ex-btn" onclick="showAddExSearch(' + siQr + ')">+ Add exercise</button>';
+  var exEl = document.getElementById('ex-' + uid);
+  if (exEl) { exEl.classList.add('open'); var body = exEl.querySelector('.ex-body'); if (body) body.style.display = ''; }
+  initSwipeDelete('swipe-' + uid);
+  saveDraft(si);
+}
+
+function getLastLoggedEx(exName, exMeta) {
+  try {
+    var sessions = cachedSessions || [];
+    for (var i = sessions.length - 1; i >= 0; i--) {
+      var s = sessions[i];
+      var match = (s.exercises || []).find(function(e) { return (e.name || e.exercise) === exName; });
+      if (!match) continue;
+      var dateStr = s.date ? new Date(s.date + 'T12:00:00').toLocaleDateString('en-US', {month:'short',day:'numeric'}) : '';
+      var isTimed = exMeta.rep_type === 'sec' || exMeta.rep_type === 'min';
+      var sets = Array.isArray(match.sets) && match.sets.length ? match.sets : [];
+      var topSetDesc = '';
+      if (sets.length) {
+        if (isTimed) {
+          var best = Math.max.apply(null, sets.map(function(s) { return parseFloat(s.reps || 0); }).filter(function(v) { return v > 0; }));
+          if (best > 0) topSetDesc = 'top set ' + best + (exMeta.rep_type === 'min' ? 'min' : 'sec');
+        } else if (exMeta.rep_type === 'km') {
+        var best = Math.max.apply(null, sets.map(function(s) { return parseFloat(s.reps || 0); }).filter(function(v) { return v > 0; }));
+        if (best > 0) topSetDesc = 'top set ' + best + 'km';
+      } else if (exMeta.unit === 'BW') {
+          var best = Math.max.apply(null, sets.map(function(s) { return parseFloat(s.reps || 0); }).filter(function(v) { return v > 0; }));
+          if (best > 0) topSetDesc = 'top set ' + best + ' reps';
+        } else {
+          var bestW = 0, bestR = '';
+          sets.forEach(function(s) {
+            var w = Math.abs(parseFloat(s.weight || 0));
+            if (w > bestW) { bestW = w; bestR = s.reps; }
+          });
+          if (bestW > 0) topSetDesc = 'top set ' + bestW + (exMeta.unit || 'kg') + ' × ' + bestR;
+        }
+      }
+      var parts = [dateStr ? 'Last logged ' + dateStr : 'Previously logged'];
+      if (sets.length) parts.push(sets.length + ' sets');
+      if (topSetDesc) parts.push(topSetDesc);
+      return { notes: parts.join(' · '), sets: sets.length ? sets : null };
+    }
+  } catch(e) {}
+  return { notes: 'Added by Brian — first time logging this exercise', sets: null };
+}
+
+async function buildAddedExNotes(exName, exMeta) {
+  return getLastLoggedEx(exName, exMeta).notes;
+}
+
+function buildAddedExBlock(ex, uid, si, addedIdx) {
+  var b = ex.badge || 'acc';
+  var bl = b === 'anchor' ? 'Anchor' : b === 'core' ? 'Core' : b === 'upper' ? 'Upper' : b === 'lower' ? 'Lower' : b === 'cardio' ? 'Cardio' : 'Acc';
+  var isTimed = ex.rep_type === 'sec' || ex.rep_type === 'min';
+  var unit = ex.unit || 'kg';
+  var repLabel = ex.rep_type === 'km' ? 'Distance (km)' : ex.rep_type === 'min' ? 'Time (min)' : isTimed ? 'Time (s)' : 'Reps';
+  var noWeight = ex.badge === 'cardio';
+  var setRowsHtml = '<div class="' + (noWeight ? 'set-row-headers no-weight' : 'set-row-headers') + '"><div></div>'
+    + (noWeight ? '' : '<div class="set-row-label">Weight (' + unit + ')</div>')
+    + '<div class="set-row-label">' + repLabel + '</div><div></div></div>'
+    + '<div class="' + (noWeight ? 'set-rows no-weight' : 'set-rows') + '" id="set-rows-' + uid + '">';
+  ex.sets.forEach(function(s, j) { setRowsHtml += buildSetRowHtml(uid, j, s.weight || '', s.reps || '', isTimed, noWeight); });
+  setRowsHtml += '</div>';
+  if (isTimed) setRowsHtml += '<div style="margin-bottom:10px"><label class="input-label">Timer</label>' + timerHtml(uid) + '</div>';
+  setRowsHtml += '<button class="set-add-btn" onclick="addSet(\'' + uid + '\',\'' + unit + '\',' + isTimed + ')">+ Add set</button>';
+  var toggleCall = 'toggleEx(\'ex-' + uid + '\')';
+  var siQd = typeof si === 'string' ? "'" + si + "'" : si;
+  var deleteCall = 'deleteAddedEx(' + siQd + ',' + addedIdx + ')';
+  return '<div class="ex-block-swipe-wrap" id="swipe-' + uid + '">'
+    + '<div class="ex-block" id="ex-' + uid + '">'
+    + '<div class="ex-block-header" onclick="' + toggleCall + '">'
+    + '<span class="ex-badge badge-' + b + '">' + bl + '</span>'
+    + '<span class="ex-name">' + ex.name + '</span>'
+    + '<span class="ex-chevron">▼</span></div>'
+    + '<div class="ex-body">'
+    + (ex.coach_notes ? '<div class="ex-desc">' + ex.coach_notes + '</div>' : '')
+    + setRowsHtml
+    + '<div class="input-group"><label class="input-label">Notes</label>'
+    + '<input type="text" id="n_' + uid + '" placeholder="optional"></div>'
+    + '</div></div>'
+    + '<button class="ex-block-delete-btn" onclick="' + deleteCall + '">Delete</button>'
+    + '</div>';
+}
+
+function initSwipeDelete(wrapId) {
+  var wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+  var startX = 0, startY = 0, dragging = false;
+  wrap.addEventListener('touchstart', function(e) {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    dragging = true;
+  }, { passive: true });
+  wrap.addEventListener('touchmove', function(e) {
+    if (!dragging) return;
+    var dx = e.touches[0].clientX - startX;
+    var dy = e.touches[0].clientY - startY;
+    if (Math.abs(dy) > Math.abs(dx)) { dragging = false; return; }
+    if (dx < -30) { wrap.classList.add('swiped'); }
+    else if (dx > 10) { wrap.classList.remove('swiped'); }
+  }, { passive: true });
+  wrap.addEventListener('touchend', function() { dragging = false; });
+}
+
+function deleteAddedEx(si, idx) {
+  var uid = si + '_added_' + idx;
+  var wrap = document.getElementById('swipe-' + uid);
+  if (wrap) wrap.remove();
+  if (_addedExercises[si]) _addedExercises[si].splice(idx, 1);
+  saveDraft(si);
+}
+
+function attachAddExOutsideClose(si) {
+  function handler(e) {
+    var wrap = document.getElementById('add-ex-search-' + si);
+    if (!wrap) { document.removeEventListener('click', handler, true); return; }
+    if (!wrap.contains(e.target)) {
+      cancelAddEx(si);
+      document.removeEventListener('click', handler, true);
+    }
+  }
+  setTimeout(function() { document.addEventListener('click', handler, true); }, 200);
+}
+
 function draftKey(session) {
   // Include sessionKey so drafts are invalidated when program changes
   const sk = session.sessionKey || session.scheduledDate;
@@ -1449,16 +1776,29 @@ function saveDraft(si) {
   const session = weekQueue[si];
   if (!session) return;
   const exs = session.isDefault ? EXERCISES[session.day] : session.exercises;
-  const draft = { notes: document.getElementById(`notes-${si}`)?.value || '', exercises: {} };
+  const draft = { notes: document.getElementById(`notes-${si}`)?.value || '', exercises: {}, added: [] };
   exs.forEach((ex, i) => {
     const uid = `${si}_${i}`;
     const exName = ex.exercise || ex.name;
     const sets = collectSetRows(uid);
-    // Key by exercise name — immune to reordering and insertions
     draft.exercises[exName] = {
       sets: sets !== null ? sets : undefined,
       n: document.getElementById(`n_${uid}`)?.value || ''
     };
+  });
+  // Save user-added exercises
+  (_addedExercises[si] || []).forEach((ex, idx) => {
+    const uid = `${si}_added_${idx}`;
+    draft.added.push({
+      name:        ex.name,
+      unit:        ex.unit,
+      badge:       ex.badge,
+      rep_type:    ex.rep_type,
+      added_by:    ex.added_by,
+      coach_notes: ex.coach_notes,
+      sets:        collectSetRows(uid) || ex.sets,
+      notes:       document.getElementById(`n_${uid}`)?.value || ex.notes || ''
+    });
   });
   localStorage.setItem(draftKey(session), JSON.stringify(draft));
 }
@@ -1485,6 +1825,11 @@ function attachDraftListeners(si) {
 const DAY_DOW   = { A: 'Mon', B: 'Wed', C: 'Fri' };
 const DAY_FOCUS = { A: 'Lower + Core', B: 'Upper Push/Pull', C: 'Deadlift + Shoulders' };
 const DAY_FULL  = { A: 'Day 1', B: 'Day 2', C: 'Day 3' };
+function getDayLabel(day) {
+  if (DAY_FULL[day]) return DAY_FULL[day];
+  if (day && day.startsWith('extra') || day === 'extra') return 'Extra Workout';
+  return day || 'Workout';
+}
 
 async function renderTodayQueue() {
   weekQueue = await loadQueue();
@@ -1510,6 +1855,7 @@ async function renderTodayQueue() {
 
   renderDaySelector();
   renderSelectedDay();
+  // Note: restoreExtraWorkouts() is called by callers via .then() after this resolves
 }
 
 function renderDaySelector() {
@@ -1529,7 +1875,202 @@ function renderDaySelector() {
     </button>`;
   });
   html += '</div>';
+  // Add "Log extra workout" button below day pills
+  html += '<button class="log-extra-btn" onclick="addExtraWorkout()">+ Log extra workout</button>';
   selectorEl.innerHTML = html;
+}
+
+// ─── EXTRA WORKOUTS ──────────────────────────────────────────────────────────
+
+function addExtraWorkout() {
+  const today = new Date().toISOString().slice(0, 10);
+  const extra = { date: today, notes: '', exercises: [], added: [] };
+  extraWorkouts.push(extra);
+  saveExtraDrafts();
+  const ei = extraWorkouts.length - 1;
+  renderExtraWorkoutCard(ei);
+  setTimeout(() => {
+    const card = document.getElementById('extra-wcard-' + ei);
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+function renderExtraWorkoutCard(ei, force) {
+  const extra = extraWorkouts[ei];
+  if (!extra) return;
+  const title = 'Extra Workout';
+  const dateDisplay = formatDateDisplay(extra.date);
+
+  const container = document.getElementById('extra-cards-container');
+  if (!container) return;
+
+  // If card already exists and not forcing re-render, skip
+  const existing = document.getElementById('extra-wcard-' + ei);
+  if (existing && !force) return;
+  if (existing) existing.remove();
+
+  const card = document.createElement('div');
+  card.id = 'extra-wcard-' + ei;
+  card.className = 'workout-card';
+  card.style.marginTop = '16px';
+  card.innerHTML = `
+    <div class="workout-card-header">
+      <div>
+        <div class="workout-card-title">${title}</div>
+        <div class="workout-card-focus">Added by you</div>
+      </div>
+    </div>
+    <div class="workout-card-body">
+      <div class="section-label" style="margin-top:16px">Exercises</div>
+      <div id="extra-exercises-${ei}"></div>
+      <div id="add-ex-area-extra_${ei}">
+        <button class="add-ex-btn" onclick="showAddExSearch('extra_${ei}')">+ Add exercise</button>
+      </div>
+      <div class="workout-notes-row">
+        <label class="input-label">Session notes</label>
+        <input type="text" id="extra-notes-${ei}" placeholder="What did you do? How did it feel?"
+          oninput="saveExtraCardDraft(${ei})">
+      </div>
+      <div class="log-input-grid lig-2" style="margin-top:14px">
+        <div class="input-group">
+          <label class="input-label">Date</label>
+          <input type="date" class="date-picker-input" id="extra-date-${ei}"
+            value="${extra.date}" style="display:block;width:100%"
+            onchange="extraWorkouts[${ei}].date=this.value; saveExtraDrafts()">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Time</label>
+          <input type="time" class="date-picker-input" id="extra-time-${ei}"
+            value="${new Date().toTimeString().slice(0,5)}" style="display:block;width:100%">
+        </div>
+      </div>
+    </div>
+    <div class="workout-save-row">
+      <button class="btn btn-primary btn-full" id="extra-savebtn-${ei}"
+        onclick="saveExtraWorkout(${ei})">Save ${title}</button>
+      <button class="btn-skip" onclick="discardExtraWorkout(${ei})">Discard workout</button>
+    </div>`;
+
+  container.appendChild(card);
+
+  // Restore any added exercises from draft
+  if (!_addedExercises['extra_' + ei]) _addedExercises['extra_' + ei] = [];
+  if (Array.isArray(extra.added) && extra.added.length) {
+    _addedExercises['extra_' + ei] = [];
+    const area = document.getElementById('add-ex-area-extra_' + ei);
+    extra.added.forEach((ex, idx) => {
+      _addedExercises['extra_' + ei].push(ex);
+      const uid = 'extra_' + ei + '_added_' + idx;
+      const exHtml = buildAddedExBlock(ex, uid, 'extra_' + ei, idx);
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = exHtml;
+      if (area) area.parentNode.insertBefore(wrapper.firstChild, area);
+      if (Array.isArray(ex.sets)) {
+        ex.sets.forEach((s, j) => {
+          const wEl = document.getElementById('set_' + uid + '_' + j + '_w');
+          const rEl = document.getElementById('set_' + uid + '_' + j + '_r');
+          if (wEl) wEl.value = s.weight ?? '';
+          if (rEl) rEl.value = s.reps ?? '';
+        });
+      }
+      if (ex.notes) { const nEl = document.getElementById('n_' + uid); if (nEl) nEl.value = ex.notes; }
+      initSwipeDelete('swipe-' + uid);
+    });
+  }
+
+  if (extra.notes) {
+    const nEl = document.getElementById('extra-notes-' + ei);
+    if (nEl) nEl.value = extra.notes;
+  }
+
+  // Input listener to auto-save draft
+  card.addEventListener('input', () => saveExtraCardDraft(ei));
+}
+
+function saveExtraCardDraft(ei) {
+  if (!extraWorkouts[ei]) return;
+  const added = (_addedExercises['extra_' + ei] || []).map((ex, idx) => {
+    const uid = 'extra_' + ei + '_added_' + idx;
+    return {
+      name: ex.name, unit: ex.unit, badge: ex.badge,
+      rep_type: ex.rep_type, added_by: ex.added_by, coach_notes: ex.coach_notes,
+      sets: collectSetRows(uid) || ex.sets,
+      notes: document.getElementById('n_' + uid)?.value || ex.notes || ''
+    };
+  });
+  extraWorkouts[ei].notes = document.getElementById('extra-notes-' + ei)?.value || '';
+  extraWorkouts[ei].added = added;
+  saveExtraDrafts();
+}
+
+async function saveExtraWorkout(ei) {
+  const extra = extraWorkouts[ei];
+  if (!extra) return;
+  const saveBtn = document.getElementById('extra-savebtn-' + ei);
+  if (saveBtn) { saveBtn.textContent = 'Saving…'; saveBtn.disabled = true; }
+  await new Promise(r => setTimeout(r, 0));
+
+  const exercises = (_addedExercises['extra_' + ei] || []).map((ex, idx) => {
+    const uid = 'extra_' + ei + '_added_' + idx;
+    return {
+      name:        ex.name,
+      unit:        ex.unit || 'kg',
+      sets:        collectSetRows(uid) || ex.sets || [],
+      notes:       document.getElementById('n_' + uid)?.value || ex.notes || '',
+      coach_notes: ex.coach_notes || '',
+      added_by:    'brian'
+    };
+  });
+
+  const date = document.getElementById('extra-date-' + ei)?.value || extra.date;
+  const notes = document.getElementById('extra-notes-' + ei)?.value || '';
+  const workoutTime = document.getElementById('extra-time-' + ei)?.value || null;
+  const dayKey = 'extra';
+
+  try {
+    await saveSession({ date, day: dayKey, notes, exercises,
+      logged: new Date().toISOString(),
+      program_session_key: null, workout_time: workoutTime });
+    // Remove from draft store
+    extraWorkouts.splice(ei, 1);
+    saveExtraDrafts();
+    delete _addedExercises['extra_' + ei];
+    window._historySessions = null;
+    // Remove card from DOM
+    document.getElementById('extra-wcard-' + ei)?.remove();
+    setStatus('✓ Extra workout saved!');
+  } catch(e) {
+    if (saveBtn) { saveBtn.textContent = 'Save Extra Workout'; saveBtn.disabled = false; }
+    setStatus('⚠ Could not save — try again.', true);
+  }
+}
+
+function discardExtraWorkout(ei) {
+  // Remove from DOM first to stop any pending input events from re-saving
+  const card = document.getElementById('extra-wcard-' + ei);
+  if (card) card.remove();
+  extraWorkouts.splice(ei, 1);
+  saveExtraDrafts();
+  delete _addedExercises['extra_' + ei];
+}
+
+function restoreExtraWorkouts() {
+  // No-op: extra-cards-container is a static div that never gets wiped
+  // Cards are created in addExtraWorkout() and removed in discard/save
+}
+
+function reloadExtraDraftsIfNeeded() {
+  // Called after renderTodayQueue — reload from localStorage and render
+  // any cards not already in the DOM (e.g. after page reload)
+  const stored = loadExtraDrafts();
+  stored.forEach((extra, ei) => {
+    if (!document.getElementById('extra-wcard-' + ei)) {
+      extraWorkouts[ei] = extra;
+      renderExtraWorkoutCard(ei);
+    }
+  });
+  // Sync in-memory array length
+  if (extraWorkouts.length < stored.length) extraWorkouts = stored;
 }
 
 function selectDay(idx) {
@@ -1567,6 +2108,9 @@ function renderSelectedDay() {
   html += renderExerciseList(exs, si);
 
   html += `</div>
+      <div id="add-ex-area-${si}">
+        <button class="add-ex-btn" onclick="showAddExSearch(${si})">+ Add exercise</button>
+      </div>
       <div class="workout-notes-row">
         <label class="input-label">Session notes</label>
         <input type="text" id="notes-${si}" placeholder="Energy, PRs, anything felt off...">
@@ -1614,6 +2158,30 @@ function renderSelectedDay() {
       }
       if (d.n) { const el = document.getElementById(`n_${uid}`); if (el) el.value = d.n; }
     });
+    // Restore user-added exercises from draft
+    if (Array.isArray(draft.added) && draft.added.length) {
+      _addedExercises[si] = [];
+      const area = document.getElementById(`add-ex-area-${si}`);
+      draft.added.forEach((ex, idx) => {
+        _addedExercises[si].push(ex);
+        const uid = `${si}_added_${idx}`;
+        const exHtml = buildAddedExBlock(ex, uid, si, idx);
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = exHtml;
+        if (area) area.parentNode.insertBefore(wrapper.firstChild, area);
+        // Restore set values
+        if (Array.isArray(ex.sets)) {
+          ex.sets.forEach((s, j) => {
+            const wEl = document.getElementById(`set_${uid}_${j}_w`);
+            const rEl = document.getElementById(`set_${uid}_${j}_r`);
+            if (wEl) wEl.value = s.weight ?? '';
+            if (rEl) rEl.value = s.reps ?? '';
+          });
+        }
+        if (ex.notes) { const nEl = document.getElementById(`n_${uid}`); if (nEl) nEl.value = ex.notes; }
+        initSwipeDelete('swipe-' + uid);
+      });
+    }
   }
 
   // Restore open exercises from session state
@@ -1755,11 +2323,26 @@ async function saveWorkoutFromQueue(si) {
     const exUnit = ex.unit || 'kg';
     const uid = `${si}_${i}`;
     return {
-      name: exName,
-      unit: exUnit,
-      sets: collectSetRows(uid),
-      notes: document.getElementById(`n_${uid}`)?.value || ''
+      name:     exName,
+      unit:     exUnit,
+      badge:    ex.badge || EX_BADGES[exName] || null,
+      sets:     collectSetRows(uid),
+      notes:    document.getElementById(`n_${uid}`)?.value || '',
+      added_by: 'coach'
     };
+  });
+
+  // Append user-added exercises
+  (_addedExercises[si] || []).forEach((ex, idx) => {
+    const uid = `${si}_added_${idx}`;
+    exercises.push({
+      name:        ex.name,
+      unit:        ex.unit || 'kg',
+      sets:        collectSetRows(uid) || ex.sets || [],
+      notes:       document.getElementById(`n_${uid}`)?.value || ex.notes || '',
+      coach_notes: ex.coach_notes || '',
+      added_by:    'brian'
+    });
   });
 
   try {
@@ -1767,6 +2350,7 @@ async function saveWorkoutFromQueue(si) {
     await saveSession({ date, day, notes, exercises, logged: new Date().toISOString(),
       program_session_key: session.sessionKey || null, workout_time: workoutTime });
     clearDraft(session);
+    delete _addedExercises[si];
     document.getElementById('header-sessions').textContent = (cachedSessions||[]).length;
     setStatus('✓ Workout saved to cloud!');
     document.getElementById('tab-today').scrollTop = 0;
@@ -1793,7 +2377,7 @@ function trainingShowTab(sub, btn) {
   document.getElementById('training-page-program').style.display  = sub === 'program'  ? '' : 'none';
   document.getElementById('training-page-history').style.display  = sub === 'history'  ? '' : 'none';
   trainingActiveSubTab = sub;
-  if (sub === 'thisweek') renderTodayQueue();
+  if (sub === 'thisweek') renderTodayQueue().then(reloadExtraDraftsIfNeeded);
   if (sub === 'program')  renderProgram();
   if (sub === 'history') {
     // Ensure session data is loaded before rendering list
@@ -1819,7 +2403,7 @@ function showTab(t, btn) {
         (i === 1 && trainingActiveSubTab === 'program') ||
         (i === 2 && trainingActiveSubTab === 'history'));
     });
-    if (trainingActiveSubTab === 'thisweek') renderTodayQueue();
+    if (trainingActiveSubTab === 'thisweek') { renderTodayQueue().then(reloadExtraDraftsIfNeeded); }
     if (trainingActiveSubTab === 'program')  renderProgram();
     if (trainingActiveSubTab === 'history')  renderSessionList();
   }
@@ -1878,51 +2462,56 @@ async function renderHistory() {
   document.getElementById('stat-streak').textContent   = realSessions.length > 0 ? Math.ceil(realSessions.length / 3) : 0;
   document.getElementById('header-sessions').textContent = realSessions.length;
 
-  // Lift tracker — build weekly top weights (or reps) per anchor lift
+  // Lift tracker — build weekly bests per anchor GROUP
+  await loadAnchorGroups();
+
+  // Reverse map: exercise name → group label
+  const nameToGroup = {};
+  Object.entries(ANCHOR_GROUPS).forEach(([group, cfg]) => {
+    cfg.names.forEach(n => { nameToGroup[n] = group; });
+  });
+
   const weeklyBests = {};
-  ANCHORS.forEach(l => weeklyBests[l] = {});
+  Object.keys(ANCHOR_GROUPS).forEach(g => { weeklyBests[g] = {}; });
 
   realSessions.forEach(s => {
     const weekKey = getWeekKey(s.date);
     (s.exercises||[]).forEach(ex => {
-      if (weeklyBests.hasOwnProperty(ex.name)) {
-        const isRepBased = ANCHOR_REPS.has(ex.name);
-        let v = 0;
-        if (Array.isArray(ex.sets) && ex.sets.length) {
-          // New format — find best set
-          if (isRepBased) {
-            v = Math.max(...ex.sets.map(s => parseFloat(s.reps || 0)));
-          } else {
-            v = Math.max(...ex.sets.map(s => Math.abs(parseFloat(s.weight || 0))));
-          }
+      const group = nameToGroup[ex.name];
+      if (!group) return;
+      const isRepBased = ANCHOR_GROUPS[group].isRepBased;
+      let v = 0;
+      if (Array.isArray(ex.sets) && ex.sets.length) {
+        if (isRepBased) {
+          v = Math.max(...ex.sets.map(s => parseFloat(s.reps || 0)));
         } else {
-          // Legacy format
-          v = isRepBased
-            ? Math.abs(parseFloat(ex.reps || 0))
-            : Math.abs(parseFloat(ex.topWeight || ex.weight || 0));
+          v = Math.max(...ex.sets.map(s => Math.abs(parseFloat(s.weight || 0))));
         }
-        if (v > 0) {
-          if (!weeklyBests[ex.name][weekKey] || v > weeklyBests[ex.name][weekKey])
-            weeklyBests[ex.name][weekKey] = v;
-        }
+      } else {
+        v = isRepBased
+          ? Math.abs(parseFloat(ex.reps || 0))
+          : Math.abs(parseFloat(ex.topWeight || ex.weight || 0));
+      }
+      if (v > 0) {
+        if (!weeklyBests[group][weekKey] || v > weeklyBests[group][weekKey])
+          weeklyBests[group][weekKey] = v;
       }
     });
   });
 
   let liftHtml = '<div class="lift-cards">';
-  ANCHORS.forEach(l => {
-    const weekMap    = weeklyBests[l];
+  Object.entries(ANCHOR_GROUPS).forEach(([group, cfg]) => {
+    const weekMap    = weeklyBests[group];
     const weeks      = Object.keys(weekMap).sort();
-    const isRepBased = ANCHOR_REPS.has(l);
+    const isRepBased = cfg.isRepBased;
     const curVal     = weeks.length ? weekMap[weeks[weeks.length - 1]] : null;
     const unit       = isRepBased ? 'reps' : 'kg';
-    const display    = curVal !== null ? curVal : '—';
 
-    const liftId = l.replace(/[^a-z0-9]/gi,'_');
+    const liftId = group.replace(/[^a-z0-9]/gi,'_');
     liftHtml += `<div class="lift-card" id="liftcard-${liftId}">
       <div class="lift-card-header">
-        <span class="lift-name">${l}</span>
-        <span><span class="lift-val">${display}</span><span class="lift-val-unit">${curVal !== null ? unit : ''}</span></span>
+        <span class="lift-name">${group}</span>
+        <span><span class="lift-val">${curVal !== null ? curVal : '—'}</span><span class="lift-val-unit">${curVal !== null ? unit : ''}</span></span>
       </div>`;
 
     if (weeks.length === 0) {
@@ -1931,8 +2520,6 @@ async function renderHistory() {
       const points = weeks.map(w => weekMap[w]);
       liftHtml += buildSparkline(points, weeks, unit);
     }
-
-
 
     liftHtml += `</div>`;
   });
@@ -2014,7 +2601,8 @@ async function renderHistory() {
   renderSessionList();
 }
 
-function renderSessionList() {
+async function renderSessionList() {
+  await getExerciseCache(); // ensure exBadgeLookup has data
   const allSessions = window._historySessions || [];
   const { from, to } = getFilterRange(histFilter);
 
@@ -2031,8 +2619,13 @@ function renderSessionList() {
     return;
   }
 
-  const DAY_LABEL = { A:'Day 1', B:'Day 2', C:'Day 3' };
+  const DAY_LABEL = { A:'Day 1', B:'Day 2', C:'Day 3' }; // getDayLabel() handles extra_N
   const DAY_FOCUS_MAP = { A:'Lower + Core', B:'Upper Push/Pull', C:'Deadlift + Shoulders' };
+
+  // Build badge lookup from exercise cache (covers exercises not in EX_BADGES)
+  const exBadgeLookup = {};
+  (_exerciseCache || []).forEach(e => { exBadgeLookup[e.name] = e.badge; });
+
   let histHtml = '';
 
   filtered.forEach((s, idx) => {
@@ -2041,10 +2634,10 @@ function renderSessionList() {
     // Unique badge types present in this session (ordered: anchor, upper, lower, core)
     const badgeOrder = ['anchor','upper','lower','core'];
     const badgesPresent = [...new Set(
-      (s.exercises||[]).map(ex => EX_BADGES[ex.name] || 'acc').filter(b => b !== 'acc')
+      (s.exercises||[]).map(ex => ex.badge || exBadgeLookup[ex.name] || EX_BADGES[ex.name] || 'acc').filter(b => b !== 'acc')
     )].sort((a,b) => badgeOrder.indexOf(a) - badgeOrder.indexOf(b));
-    const badgeMap = { anchor:'badge-anchor', upper:'badge-upper', lower:'badge-lower', core:'badge-core' };
-    const badgeLabel = { anchor:'Anchor', upper:'Upper', lower:'Lower', core:'Core' };
+    const badgeMap = { anchor:'badge-anchor', upper:'badge-upper', lower:'badge-lower', core:'badge-core', cardio:'badge-cardio' };
+    const badgeLabel = { anchor:'Anchor', upper:'Upper', lower:'Lower', core:'Core', cardio:'Cardio' };
     const badgesHtml = badgesPresent.map(b =>
       `<span class="ex-badge ${badgeMap[b]}">${badgeLabel[b]}</span>`
     ).join('');
@@ -2053,8 +2646,8 @@ function renderSessionList() {
     let detailHtml = '';
     (s.exercises||[]).forEach((ex, ei) => {
       const uid = `${sid}_${ei}`;
-      const bt = EX_BADGES[ex.name] || 'acc';
-      const bl = bt === 'anchor' ? 'Anchor' : bt === 'upper' ? 'Upper' : bt === 'lower' ? 'Lower' : bt === 'core' ? 'Core' : 'Acc';
+      const bt = ex.badge || exBadgeLookup[ex.name] || EX_BADGES[ex.name] || 'acc';
+      const bl = bt === 'anchor' ? 'Anchor' : bt === 'upper' ? 'Upper' : bt === 'lower' ? 'Lower' : bt === 'core' ? 'Core' : bt === 'cardio' ? 'Cardio' : 'Acc';
       const ssTag = ex.superset_group ? `<span style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--green);background:rgba(26,219,78,0.1);padding:2px 6px;border-radius:10px;margin-left:6px">SS</span>` : '';
       const isWarmup = ex.name === 'Warm-up';
       detailHtml += `<div class="detail-ex-block">
@@ -2076,14 +2669,17 @@ function renderSessionList() {
     histHtml += `<div class="log-entry" id="${sid}" onclick="toggleSession('${sid}')">
       <div class="log-entry-summary">
         <div>
-          <div class="log-entry-title">${formatSessionDate(s.date)}${s.workout_time ? ' · ' + s.workout_time : ''} / ${DAY_LABEL[s.day]||s.day}</div>
+          <div class="log-entry-title">${formatSessionDate(s.date)}${s.workout_time ? ' · ' + s.workout_time : ''} / ${getDayLabel(s.day)}</div>
           <div class="log-entry-badges">${badgesHtml}</div>
         </div>
         <span class="log-entry-chevron">▼</span>
       </div>
       <div class="log-entry-detail" onclick="event.stopPropagation()">
         ${detailHtml}
-        <div class="input-group" style="margin-top:20px;margin-bottom:12px">
+        <div id="add-ex-area-hist_${sid}">
+          <button class="add-ex-btn" style="margin:14px 0 6px" onclick="showAddExSearch('hist_${sid}')">+ Add exercise</button>
+        </div>
+        <div class="input-group" style="margin-top:6px;margin-bottom:12px">
           <label class="input-label">Date &amp; time</label>
           <div style="display:flex;align-items:center;gap:8px">
             <span class="date-display" id="h_date_display_${sid}" onclick="openHistoryDatePicker('${sid}')">${formatDateDisplay(s.date)}</span>
@@ -2110,7 +2706,13 @@ function renderSessionList() {
 
 function toggleSession(sid) {
   const el = document.getElementById(sid);
+  const wasOpen = el.classList.contains('open');
   el.classList.toggle('open');
+  // Init add-exercise state for this history session when first opened
+  if (!wasOpen) {
+    const key = 'hist_' + sid;
+    if (!_addedExercises[key]) _addedExercises[key] = [];
+  }
 }
 
 async function saveSessionEdit(sid, sessionId, idx) {
@@ -2127,7 +2729,21 @@ async function saveSessionEdit(sid, sessionId, idx) {
     const uid = `${sid}_${ei}`;
     const notes = document.getElementById(`h_n_${uid}`)?.value || ex.notes || '';
     const sets = collectSetRows(uid);
-    return { name: ex.name, unit: ex.unit, sets, notes };
+    return { name: ex.name, unit: ex.unit, sets, notes, added_by: ex.added_by || 'coach' };
+  });
+
+  // Append user-added exercises from this history session
+  const histKey = 'hist_' + sid;
+  (_addedExercises[histKey] || []).forEach((ex, idx) => {
+    const uid = histKey + '_added_' + idx;
+    exercises.push({
+      name:        ex.name,
+      unit:        ex.unit || 'kg',
+      sets:        collectSetRows(uid) || ex.sets || [],
+      notes:       document.getElementById('n_' + uid)?.value || ex.notes || '',
+      coach_notes: ex.coach_notes || '',
+      added_by:    'brian'
+    });
   });
 
   const notes = document.getElementById(`h_notes_${sid}`)?.value || '';
@@ -2140,8 +2756,14 @@ async function saveSessionEdit(sid, sessionId, idx) {
     cachedSessions = null;
     statusEl.textContent = '✓ Saved';
     btn.textContent = 'Save changes'; btn.disabled = false;
+    // Clear added exercises state — they're now part of the session
+    delete _addedExercises['hist_' + sid];
+    const area = document.getElementById('add-ex-area-hist_' + sid);
+    if (area) area.innerHTML = '<button class="add-ex-btn" style="margin:14px 0 6px" onclick="showAddExSearch(\'hist_' + sid + '\')">+ Add exercise</button>';
     // Update stored copy so a second edit works correctly
-    window._historySessions[idx] = { ...s, exercises, notes, date };
+    var updated = JSON.parse(JSON.stringify(s));
+    updated.exercises = exercises; updated.notes = notes; updated.date = date;
+    window._historySessions[idx] = updated;
     setTimeout(() => { statusEl.textContent = ''; }, 3000);
   } catch(e) {
     statusEl.textContent = '⚠ Error';
@@ -2270,7 +2892,7 @@ function buildDayBlock(day, label, focus, exs) {
 
 function buildProgramExRow(ex) {
   const badgeType  = ex.badge || EX_BADGES[ex.exercise] || 'acc';
-  const badgeMap   = { anchor: 'badge-anchor', upper: 'badge-upper', lower: 'badge-lower', core: 'badge-core', acc: 'badge-acc' };
+  const badgeMap   = { anchor: 'badge-anchor', upper: 'badge-upper', lower: 'badge-lower', core: 'badge-core', cardio: 'badge-cardio', acc: 'badge-acc' };
   const badgeLabel = badgeType === 'anchor' ? 'Anchor' : badgeType === 'upper' ? 'Upper' : badgeType === 'lower' ? 'Lower' : badgeType === 'core' ? 'Core' : 'Acc';
   const desc = ex.description || '';
   return `<div class="program-ex-row">
@@ -2462,7 +3084,7 @@ function buildExerciseBlock(ex, i, si) {
   const exName     = ex.exercise || ex.name;
   const exUnit     = ex.unit || 'kg';
   const badgeType  = ex.badge || EX_BADGES[exName] || 'acc';
-  const badgeLabel = badgeType === 'anchor' ? 'Anchor' : badgeType === 'core' ? 'Core' : badgeType === 'upper' ? 'Upper' : badgeType === 'lower' ? 'Lower' : 'Acc';
+  const badgeLabel = badgeType === 'anchor' ? 'Anchor' : badgeType === 'core' ? 'Core' : badgeType === 'upper' ? 'Upper' : badgeType === 'lower' ? 'Lower' : badgeType === 'cardio' ? 'Cardio' : 'Acc';
   const desc       = ex.coach_notes || '';
   const uid        = `${si}_${i}`;
   const isInfo     = ex.rep_type === 'info';
@@ -2523,14 +3145,18 @@ function legacyToSets(ex) {
       sets.push({ weight: parseFloat(ex.weight) || 0, reps: ex.reps || '' });
     }
   }
-  return { ...ex, sets };
+  return { name: ex.name, exercise: ex.exercise, badge: ex.badge, unit: ex.unit, rep_type: ex.rep_type,
+    reps: ex.reps, weight: ex.weight, topWeight: ex.topWeight, activationWeight: ex.activationWeight,
+    protocol: ex.protocol, singles: ex.singles, coach_notes: ex.coach_notes,
+    superset_group: ex.superset_group, suggested_sets: ex.suggested_sets, sets: sets };
 }
 
 // Build the set-rows HTML for an exercise
 // ex can be a program row (has suggested_sets) or a session exercise (has sets array)
 function buildSetRows(uid, ex, unit) {
   const isTimed = isTimedEx(ex);
-  const repLabel = isTimed ? 'Time (s)' : 'Reps';
+  const noWeight = ex.badge === 'cardio';
+  const repLabel = ex.rep_type === 'km' ? 'Distance (km)' : ex.rep_type === 'min' ? 'Time (min)' : isTimed ? 'Time (s)' : 'Reps';
 
   // Determine initial sets data
   let sets;
@@ -2545,16 +3171,16 @@ function buildSetRows(uid, ex, unit) {
     sets = [{weight: '', reps: ''}, {weight: '', reps: ''}, {weight: '', reps: ''}];
   }
 
-  let html = `<div class="set-row-headers">
+  let html = `<div class="${noWeight ? 'set-row-headers no-weight' : 'set-row-headers'}">
     <div></div>
-    <div class="set-row-label">Weight (${unit || 'kg'})</div>
+    ${noWeight ? '' : `<div class="set-row-label">Weight (${unit || 'kg'})</div>`}
     <div class="set-row-label">${repLabel}</div>
     <div></div>
   </div>
-  <div class="set-rows" id="set-rows-${uid}">`;
+  <div class="set-rows ${noWeight ? 'no-weight' : ''}" id="set-rows-${uid}">`;
 
   sets.forEach((s, j) => {
-    html += buildSetRowHtml(uid, j, s.weight ?? '', s.reps ?? '', isTimed);
+    html += buildSetRowHtml(uid, j, s.weight ?? '', s.reps ?? '', isTimed, noWeight);
   });
 
   html += `</div>`;
@@ -2568,13 +3194,13 @@ function buildSetRows(uid, ex, unit) {
   return html;
 }
 
-function buildSetRowHtml(uid, j, weight, reps, isTimed) {
+function buildSetRowHtml(uid, j, weight, reps, isTimed, noWeight) {
   const wId = `set_${uid}_${j}_w`;
   const rId = `set_${uid}_${j}_r`;
   const step = 0.5;
-  return `<div class="set-row" id="set-row-${uid}-${j}">
+  return `<div class="${noWeight ? 'set-row no-weight' : 'set-row'}" id="set-row-${uid}-${j}">
     <div class="set-row-num">${j + 1}</div>
-    <div>${stepperHtml(wId, weight, -999, 300, '', step)}</div>
+    ${noWeight ? '' : `<div>${stepperHtml(wId, weight, -999, 300, '', step)}</div>`}
     <div>${isTimed
       ? stepperHtml(rId, reps, 0, 9999, '', 1)
       : stepperHtml(rId, reps, 0, 99, '')
@@ -3572,6 +4198,13 @@ async function nutSendMessage() {
     '- If you already set macro targets earlier in this conversation, do not output another SAVE_TARGETS block unless explicitly asked to recalculate.',
     '',
     'FOR EVERYTHING ELSE: answer directly and specifically. Use recentMeasurements for weight/BF trends. Use nutritionLogs to name patterns. Build familiarity with Brian\'s food preferences from his logs.',
+    '',
+    'EXERCISE SUBSTITUTIONS & ADDITIONS:',
+    'In session data, each exercise has an added_by field: "coach" = programmed by training coach, "brian" = added by Brian himself during the session.',
+    'When Brian adds an exercise (added_by: "brian"), it means he either substituted it for something unavailable, or did extra work. Note this in your analysis.',
+    'Example: if Brian added "Dumbbell bench press" with added_by "brian", he likely substituted it because the barbell was taken. Acknowledge this and factor it into next week\'s programming context.',
+    'If an exercise is missing from the session (coach assigned it but it\'s not in the logged exercises), he may have skipped it or it was unavailable — flag this if relevant.',
+    'Sessions with day field starting with "extra_" (e.g. extra_1, extra_2) are additional workouts Brian logged himself — not coach-programmed. These represent extra gym sessions, cardio, or active recovery. Factor this into energy expenditure, recovery, and calorie needs.',
     '',
     'CURRENT DATA:',
     nutCoachContext,

@@ -952,6 +952,7 @@ select {
     <div id="training-page-thisweek">
       <div class="success-banner" id="log-success">✓ Workout saved!</div>
       <div id="day-selector-container"></div>
+      <div id="extra-cards-container"></div>
       <div id="today-queue"></div>
     </div>
     <!-- Monthly Program sub-page -->
@@ -1854,6 +1855,7 @@ async function renderTodayQueue() {
 
   renderDaySelector();
   renderSelectedDay();
+  // Note: restoreExtraWorkouts() is called by callers via .then() after this resolves
 }
 
 function renderDaySelector() {
@@ -1893,24 +1895,18 @@ function addExtraWorkout() {
   }, 100);
 }
 
-function renderExtraWorkoutCard(ei) {
+function renderExtraWorkoutCard(ei, force) {
   const extra = extraWorkouts[ei];
   if (!extra) return;
   const title = 'Extra Workout';
   const dateDisplay = formatDateDisplay(extra.date);
 
-  // Find or create container
-  let container = document.getElementById('extra-cards-container');
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'extra-cards-container';
-    // Insert inside day-selector-container, after the selector/button
-    const selectorEl = document.getElementById('day-selector-container');
-    selectorEl.appendChild(container);
-  }
+  const container = document.getElementById('extra-cards-container');
+  if (!container) return;
 
-  // Remove existing card for this index if re-rendering
+  // If card already exists and not forcing re-render, skip
   const existing = document.getElementById('extra-wcard-' + ei);
+  if (existing && !force) return;
   if (existing) existing.remove();
 
   const card = document.createElement('div');
@@ -2059,17 +2055,22 @@ function discardExtraWorkout(ei) {
 }
 
 function restoreExtraWorkouts() {
-  // Only load from localStorage on first restore — after that, trust in-memory state
-  if (!window._extraWorkoutsRestored) {
-    extraWorkouts = loadExtraDrafts();
-    window._extraWorkoutsRestored = true;
-  }
-  // Only render cards that don't already have a DOM element
-  extraWorkouts.forEach((_, ei) => {
+  // No-op: extra-cards-container is a static div that never gets wiped
+  // Cards are created in addExtraWorkout() and removed in discard/save
+}
+
+function reloadExtraDraftsIfNeeded() {
+  // Called after renderTodayQueue — reload from localStorage and render
+  // any cards not already in the DOM (e.g. after page reload)
+  const stored = loadExtraDrafts();
+  stored.forEach((extra, ei) => {
     if (!document.getElementById('extra-wcard-' + ei)) {
+      extraWorkouts[ei] = extra;
       renderExtraWorkoutCard(ei);
     }
   });
+  // Sync in-memory array length
+  if (extraWorkouts.length < stored.length) extraWorkouts = stored;
 }
 
 function selectDay(idx) {
@@ -2324,6 +2325,7 @@ async function saveWorkoutFromQueue(si) {
     return {
       name:     exName,
       unit:     exUnit,
+      badge:    ex.badge || EX_BADGES[exName] || null,
       sets:     collectSetRows(uid),
       notes:    document.getElementById(`n_${uid}`)?.value || '',
       added_by: 'coach'
@@ -2375,7 +2377,7 @@ function trainingShowTab(sub, btn) {
   document.getElementById('training-page-program').style.display  = sub === 'program'  ? '' : 'none';
   document.getElementById('training-page-history').style.display  = sub === 'history'  ? '' : 'none';
   trainingActiveSubTab = sub;
-  if (sub === 'thisweek') renderTodayQueue();
+  if (sub === 'thisweek') renderTodayQueue().then(reloadExtraDraftsIfNeeded);
   if (sub === 'program')  renderProgram();
   if (sub === 'history') {
     // Ensure session data is loaded before rendering list
@@ -2401,7 +2403,7 @@ function showTab(t, btn) {
         (i === 1 && trainingActiveSubTab === 'program') ||
         (i === 2 && trainingActiveSubTab === 'history'));
     });
-    if (trainingActiveSubTab === 'thisweek') { renderTodayQueue().then(restoreExtraWorkouts); }
+    if (trainingActiveSubTab === 'thisweek') { renderTodayQueue().then(reloadExtraDraftsIfNeeded); }
     if (trainingActiveSubTab === 'program')  renderProgram();
     if (trainingActiveSubTab === 'history')  renderSessionList();
   }
@@ -2599,7 +2601,8 @@ async function renderHistory() {
   renderSessionList();
 }
 
-function renderSessionList() {
+async function renderSessionList() {
+  await getExerciseCache(); // ensure exBadgeLookup has data
   const allSessions = window._historySessions || [];
   const { from, to } = getFilterRange(histFilter);
 
@@ -2618,6 +2621,11 @@ function renderSessionList() {
 
   const DAY_LABEL = { A:'Day 1', B:'Day 2', C:'Day 3' }; // getDayLabel() handles extra_N
   const DAY_FOCUS_MAP = { A:'Lower + Core', B:'Upper Push/Pull', C:'Deadlift + Shoulders' };
+
+  // Build badge lookup from exercise cache (covers exercises not in EX_BADGES)
+  const exBadgeLookup = {};
+  (_exerciseCache || []).forEach(e => { exBadgeLookup[e.name] = e.badge; });
+
   let histHtml = '';
 
   filtered.forEach((s, idx) => {
@@ -2626,10 +2634,10 @@ function renderSessionList() {
     // Unique badge types present in this session (ordered: anchor, upper, lower, core)
     const badgeOrder = ['anchor','upper','lower','core'];
     const badgesPresent = [...new Set(
-      (s.exercises||[]).map(ex => EX_BADGES[ex.name] || 'acc').filter(b => b !== 'acc')
+      (s.exercises||[]).map(ex => ex.badge || exBadgeLookup[ex.name] || EX_BADGES[ex.name] || 'acc').filter(b => b !== 'acc')
     )].sort((a,b) => badgeOrder.indexOf(a) - badgeOrder.indexOf(b));
     const badgeMap = { anchor:'badge-anchor', upper:'badge-upper', lower:'badge-lower', core:'badge-core', cardio:'badge-cardio' };
-    const badgeLabel = { anchor:'Anchor', upper:'Upper', lower:'Lower', core:'Core' };
+    const badgeLabel = { anchor:'Anchor', upper:'Upper', lower:'Lower', core:'Core', cardio:'Cardio' };
     const badgesHtml = badgesPresent.map(b =>
       `<span class="ex-badge ${badgeMap[b]}">${badgeLabel[b]}</span>`
     ).join('');
@@ -2638,7 +2646,7 @@ function renderSessionList() {
     let detailHtml = '';
     (s.exercises||[]).forEach((ex, ei) => {
       const uid = `${sid}_${ei}`;
-      const bt = ex.badge || EX_BADGES[ex.name] || 'acc';
+      const bt = ex.badge || exBadgeLookup[ex.name] || EX_BADGES[ex.name] || 'acc';
       const bl = bt === 'anchor' ? 'Anchor' : bt === 'upper' ? 'Upper' : bt === 'lower' ? 'Lower' : bt === 'core' ? 'Core' : bt === 'cardio' ? 'Cardio' : 'Acc';
       const ssTag = ex.superset_group ? `<span style="font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--green);background:rgba(26,219,78,0.1);padding:2px 6px;border-radius:10px;margin-left:6px">SS</span>` : '';
       const isWarmup = ex.name === 'Warm-up';
