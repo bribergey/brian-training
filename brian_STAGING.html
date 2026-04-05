@@ -1695,7 +1695,8 @@ function buildAddedExBlock(ex, uid, si, addedIdx) {
   if (isTimed) setRowsHtml += '<div style="margin-bottom:10px"><label class="input-label">Timer</label>' + timerHtml(uid) + '</div>';
   setRowsHtml += '<button class="set-add-btn" onclick="addSet(\'' + uid + '\',\'' + unit + '\',' + isTimed + ')">+ Add set</button>';
   var toggleCall = 'toggleEx(\'ex-' + uid + '\')';
-  var deleteCall = 'deleteAddedEx(' + si + ',' + addedIdx + ')';
+  var siQd = typeof si === 'string' ? "'" + si + "'" : si;
+  var deleteCall = 'deleteAddedEx(' + siQd + ',' + addedIdx + ')';
   return '<div class="ex-block-swipe-wrap" id="swipe-' + uid + '">'
     + '<div class="ex-block" id="ex-' + uid + '">'
     + '<div class="ex-block-header" onclick="' + toggleCall + '">'
@@ -1813,7 +1814,7 @@ const DAY_FOCUS = { A: 'Lower + Core', B: 'Upper Push/Pull', C: 'Deadlift + Shou
 const DAY_FULL  = { A: 'Day 1', B: 'Day 2', C: 'Day 3' };
 function getDayLabel(day) {
   if (DAY_FULL[day]) return DAY_FULL[day];
-  if (day && day.startsWith('extra_')) return 'Extra ' + day.split('_')[1];
+  if (day && day.startsWith('extra') || day === 'extra') return 'Extra Workout';
   return day || 'Workout';
 }
 
@@ -1869,16 +1870,13 @@ function renderDaySelector() {
 
 function addExtraWorkout() {
   const today = new Date().toISOString().slice(0, 10);
-  // Use max existing extraNum + 1 to avoid gaps after discards, defaulting to 1
-  const maxNum = extraWorkouts.reduce((m, e) => Math.max(m, e.extraNum || 0), 0);
-  const num = maxNum + 1;
-  const extra = { extraNum: num, date: today, notes: '', exercises: [], added: [] };
+  const extra = { date: today, notes: '', exercises: [], added: [] };
   extraWorkouts.push(extra);
   saveExtraDrafts();
-  renderExtraWorkoutCard(num - 1); // index into extraWorkouts
-  // Scroll to the new card
+  const ei = extraWorkouts.length - 1;
+  renderExtraWorkoutCard(ei);
   setTimeout(() => {
-    const card = document.getElementById('extra-wcard-' + (num - 1));
+    const card = document.getElementById('extra-wcard-' + ei);
     if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 100);
 }
@@ -1886,7 +1884,7 @@ function addExtraWorkout() {
 function renderExtraWorkoutCard(ei) {
   const extra = extraWorkouts[ei];
   if (!extra) return;
-  const title = 'Extra ' + extra.extraNum;
+  const title = 'Extra Workout';
   const dateDisplay = formatDateDisplay(extra.date);
 
   // Find or create container
@@ -2018,7 +2016,7 @@ async function saveExtraWorkout(ei) {
   const date = document.getElementById('extra-date-' + ei)?.value || extra.date;
   const notes = document.getElementById('extra-notes-' + ei)?.value || '';
   const workoutTime = document.getElementById('extra-time-' + ei)?.value || null;
-  const dayKey = 'extra_' + extra.extraNum;
+  const dayKey = 'extra';
 
   try {
     await saveSession({ date, day: dayKey, notes, exercises,
@@ -2026,8 +2024,6 @@ async function saveExtraWorkout(ei) {
       program_session_key: null, workout_time: workoutTime });
     // Remove from draft store
     extraWorkouts.splice(ei, 1);
-    // Re-number remaining
-    extraWorkouts.forEach((e, i) => { e.extraNum = i + 1; });
     saveExtraDrafts();
     delete _addedExercises['extra_' + ei];
     window._historySessions = null;
@@ -2035,7 +2031,7 @@ async function saveExtraWorkout(ei) {
     document.getElementById('extra-wcard-' + ei)?.remove();
     setStatus('✓ Extra workout saved!');
   } catch(e) {
-    if (saveBtn) { saveBtn.textContent = 'Save Extra ' + extra.extraNum; saveBtn.disabled = false; }
+    if (saveBtn) { saveBtn.textContent = 'Save Extra Workout'; saveBtn.disabled = false; }
     setStatus('⚠ Could not save — try again.', true);
   }
 }
@@ -2045,7 +2041,6 @@ function discardExtraWorkout(ei) {
   const card = document.getElementById('extra-wcard-' + ei);
   if (card) card.remove();
   extraWorkouts.splice(ei, 1);
-  extraWorkouts.forEach((e, i) => { e.extraNum = i + 1; });
   saveExtraDrafts();
   delete _addedExercises['extra_' + ei];
 }
