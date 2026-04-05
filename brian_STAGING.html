@@ -590,6 +590,41 @@ select {
 }
 .me-goal-chip.active .me-goal-chip-desc { opacity: 0.8; }
 
+.add-ex-btn {
+  width: 100%; margin: 14px 0 6px;
+  background: none; border: 1.5px dashed var(--border2);
+  border-radius: 10px; padding: 10px; font-family: var(--mono);
+  font-size: 11px; font-weight: 700; color: var(--text); opacity: 0.5;
+  letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer;
+  text-align: center; touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent; transition: opacity 0.15s;
+}
+.add-ex-btn:active { opacity: 1; }
+.add-ex-search-wrap {
+  margin: 14px 0 6px; border: 1.5px solid var(--border2);
+  border-radius: 10px; overflow: hidden; background: var(--bg2);
+}
+.add-ex-search-input {
+  width: 100%; box-sizing: border-box;
+  padding: 11px 14px; border: none; background: transparent;
+  font-family: var(--sans); font-size: 14px; color: var(--text); outline: none;
+}
+.add-ex-search-results { max-height: 220px; overflow-y: auto; border-top: 1px solid var(--border); }
+.add-ex-result {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px; cursor: pointer; border-bottom: 1px solid var(--border);
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.add-ex-result:last-child { border-bottom: none; }
+.add-ex-result:active { background: var(--bg3); }
+.add-ex-result-name { font-size: 14px; font-weight: 500; color: var(--text); flex: 1; }
+.add-ex-cancel {
+  width: 100%; padding: 9px; border: none; background: none;
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  color: var(--text); opacity: 0.4; letter-spacing: 0.05em;
+  text-transform: uppercase; cursor: pointer; border-top: 1px solid var(--border);
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
 /* NUT TIME INPUT — match stepper height */
 .nut-time-input {
   width: 100%; background: var(--bg3); border: 1.5px solid var(--border2);
@@ -1211,11 +1246,48 @@ const EX_BADGES = {
   'Side plank (knees)':'core','Seated cable oblique crunch':'core','Single-leg cable knee raise':'core',
 };
 
-// ANCHORS: exercises with badge='anchor' — hardcoded for sync access in analytics
-// Future: replace with async query to exercises table WHERE badge='anchor'
+// ANCHOR_GROUPS: populated at runtime from exercises table
+// Each group tracks best lift across all exercises sharing that anchor_group
+let ANCHOR_GROUPS = {};
+let anchorGroupsLoaded = false;
+
+async function loadAnchorGroups() {
+  if (anchorGroupsLoaded) return;
+  try {
+    const rows = await sbGet('exercises', 'select=name,anchor_group,rep_type&badge=eq.anchor&anchor_group=not.is.null');
+    ANCHOR_GROUPS = {};
+    rows.forEach(ex => {
+      const g = ex.anchor_group;
+      if (!ANCHOR_GROUPS[g]) ANCHOR_GROUPS[g] = { names: new Set(), isRepBased: false };
+      ANCHOR_GROUPS[g].names.add(ex.name);
+      if (g === 'Pull-up') ANCHOR_GROUPS[g].isRepBased = true;
+    });
+    anchorGroupsLoaded = true;
+  } catch(e) {
+    // Fallback to hardcoded if fetch fails
+    ANCHOR_GROUPS = {
+      'Barbell squat':  { names: new Set(['Barbell back squat','Barbell squat (paused)']), isRepBased: false },
+      'Deadlift':       { names: new Set(['Deadlift']),                                    isRepBased: false },
+      'Bench press':    { names: new Set(['Barbell bench press']),                         isRepBased: false },
+      'Pull-up':        { names: new Set(['Pull-up']),                                      isRepBased: true  },
+      'Shoulder press': { names: new Set(['Barbell shoulder press']),                      isRepBased: false },
+    };
+    anchorGroupsLoaded = true;
+  }
+}
+
+// Legacy — kept for any references in shareAllLifts etc.
 const ANCHORS = ['Barbell back squat','Deadlift','Barbell bench press','Pull-up','Barbell shoulder press'];
-// Lifts tracked by reps instead of weight
 const ANCHOR_REPS = new Set(['Pull-up']);
+
+const _addedExercises = {}; // { si: [exerciseObjects] }
+let _exerciseCache = null;
+async function getExerciseCache() {
+  if (_exerciseCache) return _exerciseCache;
+  try { _exerciseCache = await sbGet('exercises', 'select=name,badge,unit,rep_type&order=name.asc'); }
+  catch(e) { _exerciseCache = []; }
+  return _exerciseCache;
+}
 
 let currentDay = 'A';
 let selectedDayIdx = null; // null = not yet set, persists across tab switches
@@ -1427,7 +1499,7 @@ function buildDefaultQueue(sessions) {
       label: day,
       scheduledDate: getScheduledDate(day),
       weekNumber: null,
-      exercises: exs.map((ex, idx) => ({...ex, exercise: ex.name, order_index: idx})),
+      exercises: exs.map((ex, idx) => ({ name: ex.name, exercise: ex.name, badge: ex.badge, unit: ex.unit, rep_type: ex.rep_type, sets: ex.sets, reps: ex.reps, weight: ex.weight, suggested_sets: ex.suggested_sets, coach_notes: ex.coach_notes, superset_group: ex.superset_group, order_index: idx })),
       logged: false,
       isDefault: true
     });
@@ -1439,6 +1511,140 @@ function buildDefaultQueue(sessions) {
 let weekQueue = [];
 
 // ─── DRAFT STATE (localStorage, keyed by day+date) ───────────────────────
+// ─── ADD EXERCISE ─────────────────────────────────────────────────────────
+
+async function showAddExSearch(si) {
+  const area = document.getElementById('add-ex-area-' + si);
+  if (!area) return;
+  const exercises = await getExerciseCache();
+  area.innerHTML = '<div class="add-ex-search-wrap" id="add-ex-search-' + si + '">'
+    + '<input class="add-ex-search-input" id="add-ex-input-' + si + '" placeholder="Search exercises…" autocomplete="off" autocorrect="off" oninput="filterAddEx(' + si + ', this.value)">'
+    + '<div class="add-ex-search-results" id="add-ex-results-' + si + '"></div>'
+    + '<button class="add-ex-cancel" onclick="cancelAddEx(' + si + ')">✕ Cancel</button>'
+    + '</div>';
+  renderAddExResults(si, exercises);
+  setTimeout(function() { var el = document.getElementById('add-ex-input-' + si); if (el) el.focus(); }, 50);
+}
+
+function filterAddEx(si, query) {
+  getExerciseCache().then(function(exercises) {
+    var q = query.trim().toLowerCase();
+    var filtered = q ? exercises.filter(function(e) { return e.name.toLowerCase().includes(q); }) : exercises;
+    renderAddExResults(si, filtered);
+  });
+}
+
+function renderAddExResults(si, exercises) {
+  var el = document.getElementById('add-ex-results-' + si);
+  if (!el) return;
+  if (!exercises.length) {
+    el.innerHTML = '<div style="padding:12px 14px;font-family:var(--mono);font-size:11px;opacity:0.4">No matches</div>';
+    return;
+  }
+  el.innerHTML = exercises.map(function(ex) {
+    var b = ex.badge || 'acc';
+    var bl = b === 'anchor' ? 'Anchor' : b === 'core' ? 'Core' : b === 'upper' ? 'Upper' : b === 'lower' ? 'Lower' : 'Acc';
+    var safeName = ex.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    return '<div class="add-ex-result" onclick="selectAddedExercise(' + si + ', \'' + safeName + '\')">'
+      + '<span class="ex-badge badge-' + b + '" style="flex-shrink:0">' + bl + '</span>'
+      + '<span class="add-ex-result-name">' + ex.name + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+function cancelAddEx(si) {
+  var area = document.getElementById('add-ex-area-' + si);
+  if (area) area.innerHTML = '<button class="add-ex-btn" onclick="showAddExSearch(' + si + ')">+ Add exercise</button>';
+}
+
+async function selectAddedExercise(si, exName) {
+  var exercises = await getExerciseCache();
+  var exMeta = exercises.find(function(e) { return e.name === exName; }) || { name: exName, badge: 'acc', unit: 'kg', rep_type: 'reps' };
+  var coachNotes = await buildAddedExNotes(exName, exMeta);
+  var addedEx = {
+    name: exName, unit: exMeta.unit || 'kg', badge: exMeta.badge || 'acc',
+    rep_type: exMeta.rep_type || 'reps',
+    sets: [{weight:'',reps:''},{weight:'',reps:''},{weight:'',reps:''}],
+    notes: '', coach_notes: coachNotes, added_by: 'brian'
+  };
+  if (!_addedExercises[si]) _addedExercises[si] = [];
+  var addedIdx = _addedExercises[si].length;
+  _addedExercises[si].push(addedEx);
+  var uid = si + '_added_' + addedIdx;
+  var exHtml = buildAddedExBlock(addedEx, uid, si);
+  var area = document.getElementById('add-ex-area-' + si);
+  var wrapper = document.createElement('div');
+  wrapper.innerHTML = exHtml;
+  area.parentNode.insertBefore(wrapper.firstChild, area);
+  area.innerHTML = '<button class="add-ex-btn" onclick="showAddExSearch(' + si + ')">+ Add exercise</button>';
+  var exEl = document.getElementById('ex-' + uid);
+  if (exEl) { exEl.classList.add('open'); var body = exEl.querySelector('.ex-body'); if (body) body.style.display = ''; }
+  saveDraft(si);
+}
+
+async function buildAddedExNotes(exName, exMeta) {
+  try {
+    var sessions = cachedSessions || [];
+    for (var i = sessions.length - 1; i >= 0; i--) {
+      var s = sessions[i];
+      var match = (s.exercises || []).find(function(e) { return (e.name || e.exercise) === exName; });
+      if (!match) continue;
+      var dateStr = s.date ? new Date(s.date + 'T12:00:00').toLocaleDateString('en-US', {month:'short',day:'numeric'}) : '';
+      var isTimed = exMeta.rep_type === 'sec' || exMeta.rep_type === 'min';
+      var sets = Array.isArray(match.sets) ? match.sets : [];
+      var numSets = sets.length;
+      var topSetDesc = '';
+      if (isTimed) {
+        var best = Math.max.apply(null, sets.map(function(s) { return parseFloat(s.reps || 0); }).filter(function(v) { return v > 0; }));
+        if (best > 0) topSetDesc = 'top set ' + best + (exMeta.rep_type === 'min' ? 'min' : 'sec');
+      } else if (exMeta.unit === 'BW') {
+        var best = Math.max.apply(null, sets.map(function(s) { return parseFloat(s.reps || 0); }).filter(function(v) { return v > 0; }));
+        if (best > 0) topSetDesc = 'top set ' + best + ' reps';
+      } else {
+        var bestW = 0, bestR = '';
+        sets.forEach(function(s) {
+          var w = Math.abs(parseFloat(s.weight || 0));
+          if (w > bestW) { bestW = w; bestR = s.reps; }
+        });
+        if (bestW > 0) topSetDesc = 'top set ' + bestW + (exMeta.unit || 'kg') + ' × ' + bestR;
+      }
+      var parts = [dateStr ? 'Last logged ' + dateStr : 'Previously logged'];
+      if (numSets > 0) parts.push(numSets + ' sets');
+      if (topSetDesc) parts.push(topSetDesc);
+      return parts.join(' · ');
+    }
+  } catch(e) {}
+  return 'Added by Brian — first time logging this exercise';
+}
+
+function buildAddedExBlock(ex, uid, si) {
+  var b = ex.badge || 'acc';
+  var bl = b === 'anchor' ? 'Anchor' : b === 'core' ? 'Core' : b === 'upper' ? 'Upper' : b === 'lower' ? 'Lower' : 'Acc';
+  var isTimed = ex.rep_type === 'sec' || ex.rep_type === 'min';
+  var unit = ex.unit || 'kg';
+  var repLabel = isTimed ? 'Time (s)' : 'Reps';
+  var setRowsHtml = '<div class="set-row-headers"><div></div>'
+    + '<div class="set-row-label">Weight (' + unit + ')</div>'
+    + '<div class="set-row-label">' + repLabel + '</div><div></div></div>'
+    + '<div class="set-rows" id="set-rows-' + uid + '">';
+  ex.sets.forEach(function(s, j) { setRowsHtml += buildSetRowHtml(uid, j, s.weight || '', s.reps || '', isTimed); });
+  setRowsHtml += '</div>';
+  if (isTimed) setRowsHtml += '<div style="margin-bottom:10px"><label class="input-label">Timer</label>' + timerHtml(uid) + '</div>';
+  setRowsHtml += '<button class="set-add-btn" onclick="addSet(\'' + uid + '\',\'' + unit + '\',' + isTimed + ')">+ Add set</button>';
+  var toggleCall = 'toggleEx(\'ex-' + uid + '\')';
+  return '<div class="ex-block" id="ex-' + uid + '">'
+    + '<div class="ex-block-header" onclick="' + toggleCall + '">'
+    + '<span class="ex-badge badge-' + b + '">' + bl + '</span>'
+    + '<span class="ex-name">' + ex.name + '</span>'
+    + '<span class="ex-chevron">▼</span></div>'
+    + '<div class="ex-body">'
+    + (ex.coach_notes ? '<div class="ex-desc">' + ex.coach_notes + '</div>' : '')
+    + setRowsHtml
+    + '<div class="input-group"><label class="input-label">Notes</label>'
+    + '<input type="text" id="n_' + uid + '" placeholder="optional"></div>'
+    + '</div></div>';
+}
+
 function draftKey(session) {
   // Include sessionKey so drafts are invalidated when program changes
   const sk = session.sessionKey || session.scheduledDate;
@@ -1449,16 +1655,29 @@ function saveDraft(si) {
   const session = weekQueue[si];
   if (!session) return;
   const exs = session.isDefault ? EXERCISES[session.day] : session.exercises;
-  const draft = { notes: document.getElementById(`notes-${si}`)?.value || '', exercises: {} };
+  const draft = { notes: document.getElementById(`notes-${si}`)?.value || '', exercises: {}, added: [] };
   exs.forEach((ex, i) => {
     const uid = `${si}_${i}`;
     const exName = ex.exercise || ex.name;
     const sets = collectSetRows(uid);
-    // Key by exercise name — immune to reordering and insertions
     draft.exercises[exName] = {
       sets: sets !== null ? sets : undefined,
       n: document.getElementById(`n_${uid}`)?.value || ''
     };
+  });
+  // Save user-added exercises
+  (_addedExercises[si] || []).forEach((ex, idx) => {
+    const uid = `${si}_added_${idx}`;
+    draft.added.push({
+      name:        ex.name,
+      unit:        ex.unit,
+      badge:       ex.badge,
+      rep_type:    ex.rep_type,
+      added_by:    ex.added_by,
+      coach_notes: ex.coach_notes,
+      sets:        collectSetRows(uid) || ex.sets,
+      notes:       document.getElementById(`n_${uid}`)?.value || ex.notes || ''
+    });
   });
   localStorage.setItem(draftKey(session), JSON.stringify(draft));
 }
@@ -1567,6 +1786,9 @@ function renderSelectedDay() {
   html += renderExerciseList(exs, si);
 
   html += `</div>
+      <div id="add-ex-area-${si}">
+        <button class="add-ex-btn" onclick="showAddExSearch(${si})">+ Add exercise</button>
+      </div>
       <div class="workout-notes-row">
         <label class="input-label">Session notes</label>
         <input type="text" id="notes-${si}" placeholder="Energy, PRs, anything felt off...">
@@ -1614,6 +1836,29 @@ function renderSelectedDay() {
       }
       if (d.n) { const el = document.getElementById(`n_${uid}`); if (el) el.value = d.n; }
     });
+    // Restore user-added exercises from draft
+    if (Array.isArray(draft.added) && draft.added.length) {
+      _addedExercises[si] = [];
+      const area = document.getElementById(`add-ex-area-${si}`);
+      draft.added.forEach((ex, idx) => {
+        _addedExercises[si].push(ex);
+        const uid = `${si}_added_${idx}`;
+        const exHtml = buildAddedExBlock(ex, uid, si);
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = exHtml;
+        if (area) area.parentNode.insertBefore(wrapper.firstChild, area);
+        // Restore set values
+        if (Array.isArray(ex.sets)) {
+          ex.sets.forEach((s, j) => {
+            const wEl = document.getElementById(`set_${uid}_${j}_w`);
+            const rEl = document.getElementById(`set_${uid}_${j}_r`);
+            if (wEl) wEl.value = s.weight ?? '';
+            if (rEl) rEl.value = s.reps ?? '';
+          });
+        }
+        if (ex.notes) { const nEl = document.getElementById(`n_${uid}`); if (nEl) nEl.value = ex.notes; }
+      });
+    }
   }
 
   // Restore open exercises from session state
@@ -1755,11 +2000,25 @@ async function saveWorkoutFromQueue(si) {
     const exUnit = ex.unit || 'kg';
     const uid = `${si}_${i}`;
     return {
-      name: exName,
-      unit: exUnit,
-      sets: collectSetRows(uid),
-      notes: document.getElementById(`n_${uid}`)?.value || ''
+      name:     exName,
+      unit:     exUnit,
+      sets:     collectSetRows(uid),
+      notes:    document.getElementById(`n_${uid}`)?.value || '',
+      added_by: 'coach'
     };
+  });
+
+  // Append user-added exercises
+  (_addedExercises[si] || []).forEach((ex, idx) => {
+    const uid = `${si}_added_${idx}`;
+    exercises.push({
+      name:        ex.name,
+      unit:        ex.unit || 'kg',
+      sets:        collectSetRows(uid) || ex.sets || [],
+      notes:       document.getElementById(`n_${uid}`)?.value || ex.notes || '',
+      coach_notes: ex.coach_notes || '',
+      added_by:    'brian'
+    });
   });
 
   try {
@@ -1767,6 +2026,7 @@ async function saveWorkoutFromQueue(si) {
     await saveSession({ date, day, notes, exercises, logged: new Date().toISOString(),
       program_session_key: session.sessionKey || null, workout_time: workoutTime });
     clearDraft(session);
+    delete _addedExercises[si];
     document.getElementById('header-sessions').textContent = (cachedSessions||[]).length;
     setStatus('✓ Workout saved to cloud!');
     document.getElementById('tab-today').scrollTop = 0;
@@ -1878,51 +2138,56 @@ async function renderHistory() {
   document.getElementById('stat-streak').textContent   = realSessions.length > 0 ? Math.ceil(realSessions.length / 3) : 0;
   document.getElementById('header-sessions').textContent = realSessions.length;
 
-  // Lift tracker — build weekly top weights (or reps) per anchor lift
+  // Lift tracker — build weekly bests per anchor GROUP
+  await loadAnchorGroups();
+
+  // Reverse map: exercise name → group label
+  const nameToGroup = {};
+  Object.entries(ANCHOR_GROUPS).forEach(([group, cfg]) => {
+    cfg.names.forEach(n => { nameToGroup[n] = group; });
+  });
+
   const weeklyBests = {};
-  ANCHORS.forEach(l => weeklyBests[l] = {});
+  Object.keys(ANCHOR_GROUPS).forEach(g => { weeklyBests[g] = {}; });
 
   realSessions.forEach(s => {
     const weekKey = getWeekKey(s.date);
     (s.exercises||[]).forEach(ex => {
-      if (weeklyBests.hasOwnProperty(ex.name)) {
-        const isRepBased = ANCHOR_REPS.has(ex.name);
-        let v = 0;
-        if (Array.isArray(ex.sets) && ex.sets.length) {
-          // New format — find best set
-          if (isRepBased) {
-            v = Math.max(...ex.sets.map(s => parseFloat(s.reps || 0)));
-          } else {
-            v = Math.max(...ex.sets.map(s => Math.abs(parseFloat(s.weight || 0))));
-          }
+      const group = nameToGroup[ex.name];
+      if (!group) return;
+      const isRepBased = ANCHOR_GROUPS[group].isRepBased;
+      let v = 0;
+      if (Array.isArray(ex.sets) && ex.sets.length) {
+        if (isRepBased) {
+          v = Math.max(...ex.sets.map(s => parseFloat(s.reps || 0)));
         } else {
-          // Legacy format
-          v = isRepBased
-            ? Math.abs(parseFloat(ex.reps || 0))
-            : Math.abs(parseFloat(ex.topWeight || ex.weight || 0));
+          v = Math.max(...ex.sets.map(s => Math.abs(parseFloat(s.weight || 0))));
         }
-        if (v > 0) {
-          if (!weeklyBests[ex.name][weekKey] || v > weeklyBests[ex.name][weekKey])
-            weeklyBests[ex.name][weekKey] = v;
-        }
+      } else {
+        v = isRepBased
+          ? Math.abs(parseFloat(ex.reps || 0))
+          : Math.abs(parseFloat(ex.topWeight || ex.weight || 0));
+      }
+      if (v > 0) {
+        if (!weeklyBests[group][weekKey] || v > weeklyBests[group][weekKey])
+          weeklyBests[group][weekKey] = v;
       }
     });
   });
 
   let liftHtml = '<div class="lift-cards">';
-  ANCHORS.forEach(l => {
-    const weekMap    = weeklyBests[l];
+  Object.entries(ANCHOR_GROUPS).forEach(([group, cfg]) => {
+    const weekMap    = weeklyBests[group];
     const weeks      = Object.keys(weekMap).sort();
-    const isRepBased = ANCHOR_REPS.has(l);
+    const isRepBased = cfg.isRepBased;
     const curVal     = weeks.length ? weekMap[weeks[weeks.length - 1]] : null;
     const unit       = isRepBased ? 'reps' : 'kg';
-    const display    = curVal !== null ? curVal : '—';
 
-    const liftId = l.replace(/[^a-z0-9]/gi,'_');
+    const liftId = group.replace(/[^a-z0-9]/gi,'_');
     liftHtml += `<div class="lift-card" id="liftcard-${liftId}">
       <div class="lift-card-header">
-        <span class="lift-name">${l}</span>
-        <span><span class="lift-val">${display}</span><span class="lift-val-unit">${curVal !== null ? unit : ''}</span></span>
+        <span class="lift-name">${group}</span>
+        <span><span class="lift-val">${curVal !== null ? curVal : '—'}</span><span class="lift-val-unit">${curVal !== null ? unit : ''}</span></span>
       </div>`;
 
     if (weeks.length === 0) {
@@ -1931,8 +2196,6 @@ async function renderHistory() {
       const points = weeks.map(w => weekMap[w]);
       liftHtml += buildSparkline(points, weeks, unit);
     }
-
-
 
     liftHtml += `</div>`;
   });
@@ -2141,7 +2404,9 @@ async function saveSessionEdit(sid, sessionId, idx) {
     statusEl.textContent = '✓ Saved';
     btn.textContent = 'Save changes'; btn.disabled = false;
     // Update stored copy so a second edit works correctly
-    window._historySessions[idx] = { ...s, exercises, notes, date };
+    var updated = JSON.parse(JSON.stringify(s));
+    updated.exercises = exercises; updated.notes = notes; updated.date = date;
+    window._historySessions[idx] = updated;
     setTimeout(() => { statusEl.textContent = ''; }, 3000);
   } catch(e) {
     statusEl.textContent = '⚠ Error';
@@ -2523,7 +2788,10 @@ function legacyToSets(ex) {
       sets.push({ weight: parseFloat(ex.weight) || 0, reps: ex.reps || '' });
     }
   }
-  return { ...ex, sets };
+  return { name: ex.name, exercise: ex.exercise, badge: ex.badge, unit: ex.unit, rep_type: ex.rep_type,
+    reps: ex.reps, weight: ex.weight, topWeight: ex.topWeight, activationWeight: ex.activationWeight,
+    protocol: ex.protocol, singles: ex.singles, coach_notes: ex.coach_notes,
+    superset_group: ex.superset_group, suggested_sets: ex.suggested_sets, sets: sets };
 }
 
 // Build the set-rows HTML for an exercise
