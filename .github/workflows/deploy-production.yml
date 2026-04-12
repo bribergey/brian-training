@@ -1,0 +1,37 @@
+name: Deploy Production to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Copy production HTML to gh-pages root
+        run: |
+          cp index.html gh-pages/index.html
+
+      - name: Commit and push to gh-pages
+        run: |
+          cd gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && echo "No changes to deploy" && exit 0
+          git commit -m "Deploy production: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          git push
