@@ -2456,7 +2456,9 @@ async function renderHistory() {
       'select=logged_at,weight_kg,body_fat_pct&order=logged_at.asc').catch(() => [])
   ]);
   const realSessions = sessions.filter(s => !s.skipped);
-  const coachSessions = realSessions.filter(s => s.program_session_key == null);
+  const coachSessions = realSessions.filter(s => s.program_session_key != null);
+
+  // Weekly streak: count consecutive weeks (Mon-Sun) with at least one session, walking backward from most recent
   const toLocalDateKey = (d) => {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
