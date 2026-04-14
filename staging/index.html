@@ -2457,6 +2457,12 @@ async function renderHistory() {
   ]);
   const realSessions = sessions.filter(s => !s.skipped);
   const coachSessions = realSessions.filter(s => s.program_session_key == null);
+  const toLocalDateKey = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  };
   const getWeekStartKey = (session) => {
     const rawDate = session.date || session.logged_at;
     if (!rawDate) return null;
@@ -2466,14 +2472,14 @@ async function renderHistory() {
     const diffToMonday = day === 0 ? -6 : 1 - day;
     d.setDate(d.getDate() + diffToMonday);
     d.setHours(0, 0, 0, 0);
-    return d.toISOString().slice(0, 10);
+    return toLocalDateKey(d);
   };
   const weekKeys = Array.from(new Set(realSessions.map(getWeekStartKey).filter(Boolean))).sort();
   let weeklyStreak = 0;
   if (weekKeys.length) {
     let cursor = new Date(weekKeys[weekKeys.length - 1] + 'T00:00:00');
     const seenWeeks = new Set(weekKeys);
-    while (seenWeeks.has(cursor.toISOString().slice(0, 10))) {
+    while (seenWeeks.has(toLocalDateKey(cursor))) {
       weeklyStreak += 1;
       cursor.setDate(cursor.getDate() - 7);
     }
