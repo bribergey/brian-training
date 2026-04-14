@@ -980,9 +980,9 @@ select {
   <div class="panel-inner">
 
     <div class="stats-grid">
-      <div class="stat-card"><div class="stat-val" id="stat-sessions">0</div><div class="stat-label">Sessions</div></div>
-      <div class="stat-card"><div class="stat-val" id="stat-weeks">0</div><div class="stat-label">Weeks</div></div>
-      <div class="stat-card"><div class="stat-val" id="stat-streak">0</div><div class="stat-label">Streak</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-sessions">0</div><div class="stat-label">Sessions by Coach</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-weeks">0</div><div class="stat-label">Total Sessions</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-streak">0</div><div class="stat-label">Weekly Streak</div></div>
     </div>
 
     <div class="card card-accent-gold" style="margin-bottom:12px">
@@ -2456,10 +2456,40 @@ async function renderHistory() {
       'select=logged_at,weight_kg,body_fat_pct&order=logged_at.asc').catch(() => [])
   ]);
   const realSessions = sessions.filter(s => !s.skipped);
+  const coachSessions = realSessions.filter(s => s.program_session_key != null);
 
-  document.getElementById('stat-sessions').textContent = realSessions.length;
-  document.getElementById('stat-weeks').textContent    = realSessions.length > 0 ? Math.ceil(realSessions.length / 3) : 0;
-  document.getElementById('stat-streak').textContent   = realSessions.length > 0 ? Math.ceil(realSessions.length / 3) : 0;
+  // Weekly streak: count consecutive weeks (Mon-Sun) with at least one session, walking backward from most recent
+  const toLocalDateKey = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  };
+  const getWeekStartKey = (session) => {
+    const rawDate = session.date || session.logged_at;
+    if (!rawDate) return null;
+    const d = new Date(rawDate + 'T00:00:00');
+    if (Number.isNaN(d.getTime())) return null;
+    const day = d.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    d.setDate(d.getDate() + diffToMonday);
+    d.setHours(0, 0, 0, 0);
+    return toLocalDateKey(d);
+  };
+  const weekKeys = Array.from(new Set(realSessions.map(getWeekStartKey).filter(Boolean))).sort();
+  let weeklyStreak = 0;
+  if (weekKeys.length) {
+    let cursor = new Date(weekKeys[weekKeys.length - 1] + 'T00:00:00');
+    const seenWeeks = new Set(weekKeys);
+    while (seenWeeks.has(toLocalDateKey(cursor))) {
+      weeklyStreak += 1;
+      cursor.setDate(cursor.getDate() - 7);
+    }
+  }
+
+  document.getElementById('stat-sessions').textContent = coachSessions.length;
+  document.getElementById('stat-weeks').textContent    = realSessions.length;
+  document.getElementById('stat-streak').textContent   = weeklyStreak;
   document.getElementById('header-sessions').textContent = realSessions.length;
 
   // Lift tracker — build weekly bests per anchor GROUP
