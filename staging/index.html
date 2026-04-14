@@ -2460,7 +2460,7 @@ async function renderHistory() {
   const getWeekStartKey = (session) => {
     const rawDate = session.date || session.logged_at;
     if (!rawDate) return null;
-    const d = new Date(rawDate);
+    const d = new Date(rawDate + 'T00:00:00');
     if (Number.isNaN(d.getTime())) return null;
     const day = d.getDay();
     const diffToMonday = day === 0 ? -6 : 1 - day;
