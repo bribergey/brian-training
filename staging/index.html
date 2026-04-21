@@ -3450,7 +3450,7 @@ async function renderMe() {
 
   try {
     const [profile, measurements] = await Promise.all([
-      sbGet(ENV === 'production' ? 'user_profile' : 'user_profile_staging', 'select=*&limit=1'),
+      sbGet('user_profile', 'select=*&limit=1'),
       sbGet(ENV === 'production' ? 'user_measurements' : 'user_measurements_staging', 'select=*&order=logged_at.desc')
     ]);
     meProfile     = profile[0] || {};
@@ -3793,9 +3793,9 @@ async function saveProfile() {
 
   try {
     if (p.id) {
-      await sbPatch(ENV === 'production' ? 'user_profile' : 'user_profile_staging', p.id, body);
+      await sbPatch('user_profile', p.id, body);
     } else {
-      await sbPost(ENV === 'production' ? 'user_profile' : 'user_profile_staging', body);
+      await sbPost('user_profile', body);
     }
     meProfile = { ...p, ...body };
     btn.textContent = 'Save profile'; btn.disabled = false;
@@ -3884,7 +3884,7 @@ function nutMacroTargetsHtml(mt) {
 async function nutLoadPlan() {
   const el = document.getElementById('nut-plan-content');
   try {
-    const profileTable = ENV === 'production' ? 'user_profile' : 'user_profile_staging';
+    const profileTable = 'user_profile';
     const [rows, profileRows] = await Promise.all([
       sbGet(NUT_PLANS_TABLE, 'select=*&order=generated_at.desc&limit=1'),
       sbGet(profileTable, 'select=macro_targets&limit=1')
@@ -3948,7 +3948,7 @@ async function nutInitCoach() {
     const fetches = [
       sbGet(ENV === 'production' ? 'program_full' : 'program_staging_full',
         'select=scheduled_date,day,session_label,exercise,sets,reps&scheduled_date=gte.' + today + '&order=scheduled_date.asc,order_index.asc&limit=40'),
-      sbGet(ENV === 'production' ? 'user_profile' : 'user_profile_staging', 'select=*&limit=1'),
+      sbGet('user_profile', 'select=*&limit=1'),
       sbGet(NUT_LOGS_TABLE, 'select=*&order=date.desc&limit=14'),
       sbGet(ENV === 'production' ? 'user_measurements' : 'user_measurements_staging', 'select=logged_at,weight_kg,body_fat_pct&order=logged_at.desc&limit=6'),
       // Always fetch memory summary and recent history count
@@ -4272,7 +4272,7 @@ async function nutSaveMacroTargets(rawStr) {
     const required = ['protein_g','training_carbs_g','rest_carbs_g','fat_g','training_kcal','rest_kcal'];
     const missing = required.filter(k => targets[k] === undefined);
     if (missing.length) { console.warn('nutSaveMacroTargets: missing fields:', missing); return; }
-    const profileTable = ENV === 'production' ? 'user_profile' : 'user_profile_staging';
+    const profileTable = 'user_profile';
     const rows = await sbGet(profileTable, 'select=id&limit=1');
     if (!rows.length) return;
     await sbPatch(profileTable, rows[0].id, { macro_targets: targets });
