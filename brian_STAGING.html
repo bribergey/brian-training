@@ -4689,22 +4689,25 @@ function nutHistRemoveMeal(id, idx) {
 async function nutHistDiscard(id) {
   const status = document.getElementById('nhe-status-' + id);
   const saveBtn = document.getElementById('nhe-save-' + id);
-  const submitBtn = document.getElementById('nhe-submit-' + id);
   const discardBtn = document.getElementById('nhe-discard-' + id);
   if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Deleting…'; }
-  if (discardBtn) discardBtn.disabled = true;
+  if (discardBtn) { discardBtn.disabled = true; discardBtn.textContent = 'Deleting…'; }
   try {
-    await fetch(`${SB_URL}/rest/v1/${NUT_LOGS_TABLE}?id=eq.${id}`, {
+    const r = await fetch(`${SB_URL}/rest/v1/${NUT_LOGS_TABLE}?id=eq.${id}`, {
       method: 'DELETE',
       headers: { ...SB_HDRS, 'Content-Type': 'application/json' }
     });
+    if (!r.ok) {
+      const errText = await r.text();
+      throw new Error(errText || r.status);
+    }
     // Close the entry and refresh history
     document.getElementById('nhe-' + id)?.classList.remove('open');
     nutLoadLogHistory();
   } catch(e) {
-    if (status) { status.textContent = '⚠ ' + e.message; status.style.display = 'block'; }
+    if (status) { status.textContent = '⚠ Delete failed: ' + e.message; status.style.display = 'block'; }
     if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
-    if (discardBtn) discardBtn.disabled = false;
+    if (discardBtn) { discardBtn.disabled = false; discardBtn.textContent = 'Discard entry'; }
   }
 }
 
