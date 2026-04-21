@@ -4616,6 +4616,7 @@ function nutHistCard(log) {
       <div class="detail-save-row">
         <button class="btn" id="nhe-save-${log.id}" onclick="nutHistSave('${log.id}', false)">Save</button>
         ${!log.submitted ? `<button class="btn btn-primary" id="nhe-submit-${log.id}" onclick="nutHistSave('${log.id}', true)">Submit</button>` : ''}
+        ${!log.submitted ? `<button class="btn-skip" id="nhe-discard-${log.id}" onclick="nutHistDiscard('${log.id}')">Discard entry</button>` : ''}
         <span class="detail-status" id="nhe-status-${log.id}" style="display:none">✓ Saved</span>
       </div>
     </div>
@@ -4683,6 +4684,28 @@ function nutHistRemoveMeal(id, idx) {
       <button class="nut-meal-remove" onclick="nutHistRemoveMeal('${id}',${i})">×</button>
     </div>`).join('');
   container.innerHTML = newHtml;
+}
+
+async function nutHistDiscard(id) {
+  const status = document.getElementById('nhe-status-' + id);
+  const saveBtn = document.getElementById('nhe-save-' + id);
+  const submitBtn = document.getElementById('nhe-submit-' + id);
+  const discardBtn = document.getElementById('nhe-discard-' + id);
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Deleting…'; }
+  if (discardBtn) discardBtn.disabled = true;
+  try {
+    await fetch(`${SB_URL}/rest/v1/${NUT_LOGS_TABLE}?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { ...SB_HDRS, 'Content-Type': 'application/json' }
+    });
+    // Close the entry and refresh history
+    document.getElementById('nhe-' + id)?.classList.remove('open');
+    nutLoadLogHistory();
+  } catch(e) {
+    if (status) { status.textContent = '⚠ ' + e.message; status.style.display = 'block'; }
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+    if (discardBtn) discardBtn.disabled = false;
+  }
 }
 
 async function nutHistSave(id, submit) {
