@@ -3787,22 +3787,6 @@ async function saveProfile() {
     updated_at:              new Date().toISOString()
   };
 
-  // Only clear macro targets if goal or activity actually changed to a different value
-  // If neither field changed, leave macro_targets completely untouched (don't include in body)
-  const newGoal     = body.nutrition_goal;
-  const newActivity = body.activity_level;
-  const oldGoal     = meProfile?.nutrition_goal || null;
-  const oldActivity = meProfile?.activity_level || null;
-  const goalChanged     = newGoal     && newGoal     !== oldGoal;
-  const activityChanged = newActivity && newActivity !== oldActivity;
-  if (goalChanged || activityChanged) {
-    // Archive previous targets before clearing
-    if (meProfile?.macro_targets) {
-      body.macro_targets_previous = meProfile.macro_targets;
-    }
-    body.macro_targets = null;
-  }
-
   const btn = document.getElementById('me-save-btn');
   btn.textContent = 'Saving…'; btn.disabled = true;
   status.style.display = 'none';
