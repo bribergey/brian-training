@@ -4389,12 +4389,26 @@ function nutRenderLogForm() {
     <div id="nut-log-status" style="display:none;font-family:var(--mono);font-size:11px;color:var(--green-dark);text-align:center;margin-top:6px"></div>`;
 }
 
-function nutDiscardLog() {
+async function nutDiscardLog() {
+  if (!nutCurrentLog) return;
+  // If this log was already saved to the DB, delete it
+  if (nutCurrentLog.id) {
+    try {
+      await fetch(`${SB_URL}/rest/v1/${NUT_LOGS_TABLE}?id=eq.${nutCurrentLog.id}`, {
+        method: 'DELETE',
+        headers: { ...SB_HDRS, 'Content-Type': 'application/json' }
+      });
+    } catch(e) {
+      console.warn('nutDiscardLog: failed to delete row', e);
+    }
+  }
   nutCurrentLog = null;
   const area = document.getElementById('nut-new-log-area');
   const btn  = document.getElementById('nut-new-log-btn');
   if (area) area.style.display = 'none';
   if (btn)  btn.style.display = 'block';
+  // Refresh history so the deleted row disappears
+  nutLoadLogHistory();
 }
 
 function nutSetRating(field, val, btn) {
