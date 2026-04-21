@@ -4385,7 +4385,16 @@ function nutRenderLogForm() {
       <button class="btn btn-full" id="nut-save-btn" onclick="nutSaveLog(false)">Save</button>
       <button class="btn btn-primary btn-full" id="nut-submit-btn" onclick="nutSaveLog(true)">Submit</button>
     </div>
+    <button class="btn-skip btn-full" onclick="nutDiscardLog()">Discard entry</button>
     <div id="nut-log-status" style="display:none;font-family:var(--mono);font-size:11px;color:var(--green-dark);text-align:center;margin-top:6px"></div>`;
+}
+
+function nutDiscardLog() {
+  nutCurrentLog = null;
+  const area = document.getElementById('nut-new-log-area');
+  const btn  = document.getElementById('nut-new-log-btn');
+  if (area) area.style.display = 'none';
+  if (btn)  btn.style.display = 'block';
 }
 
 function nutSetRating(field, val, btn) {
