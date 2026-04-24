@@ -2985,22 +2985,31 @@ let wakeLock = null;
 let wakeLockEnabled = false;
 
 async function requestWakeLock() {
-  if (!('wakeLock' in navigator)) return;
+  if (!('wakeLock' in navigator)) return false;
   try {
     wakeLock = await navigator.wakeLock.request('screen');
+    wakeLockEnabled = true;
     wakeLock.addEventListener('release', () => {
+      wakeLock = null;
       // Re-acquire if user still wants it and page is visible
       if (wakeLockEnabled && document.visibilityState === 'visible') {
         requestWakeLock();
+      } else {
+        updateWakeLockUI(false);
       }
     });
     updateWakeLockUI(true);
+    return true;
   } catch(e) {
+    wakeLock = null;
+    wakeLockEnabled = false;
     updateWakeLockUI(false);
+    return false;
   }
 }
 
 function releaseWakeLock() {
+  wakeLockEnabled = false;
   if (wakeLock) { wakeLock.release(); wakeLock = null; }
   updateWakeLockUI(false);
 }
