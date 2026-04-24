@@ -334,6 +334,7 @@ input[type=text], input[type=number], select, textarea {
   outline: none; transition: border-color 0.15s, background 0.15s;
   -webkit-appearance: none; appearance: none;
 }
+textarea { resize: none; }
 input[type=text]:focus, input[type=number]:focus, select:focus, textarea:focus {
   border-color: var(--text); background: var(--bg2);
 }
@@ -1720,7 +1721,7 @@ function buildAddedExBlock(ex, uid, si, addedIdx) {
     + (ex.coach_notes ? '<div class="ex-desc">' + ex.coach_notes + '</div>' : '')
     + setRowsHtml
     + '<div class="input-group"><label class="input-label">Notes</label>'
-    + '<input type="text" id="n_' + uid + '" placeholder="optional"></div>'
+    + '<textarea rows="2" id="n_' + uid + '" placeholder="optional"></textarea></div>'
     + '</div></div>'
     + '<button class="ex-block-delete-btn" onclick="' + deleteCall + '">Delete</button>'
     + '</div>';
@@ -2113,7 +2114,7 @@ function renderSelectedDay() {
       </div>
       <div class="workout-notes-row">
         <label class="input-label">Session notes</label>
-        <input type="text" id="notes-${si}" placeholder="Energy, PRs, anything felt off...">
+        <textarea rows="2" id="notes-${si}" placeholder="Energy, PRs, anything felt off..."></textarea>
       </div>
       <div class="log-input-grid lig-2" style="margin-top:14px">
         <div class="input-group">
@@ -2690,7 +2691,7 @@ async function renderSessionList() {
         detailHtml += buildSetRows(uid, exForRender, ex.unit || 'kg');
         detailHtml += `<div class="input-group">
         <label class="input-label">Notes</label>
-        <input type="text" id="h_n_${uid}" value="${ex.notes||''}" placeholder="optional">
+        <textarea rows="2" id="h_n_${uid}" placeholder="optional">${ex.notes||''}</textarea>
       </div>`;
       }
       detailHtml += `</div>`;
@@ -2721,7 +2722,7 @@ async function renderSessionList() {
         </div>
         <div class="input-group" style="margin-bottom:0">
           <label class="input-label">Session notes</label>
-          <input type="text" id="h_notes_${sid}" value="${s.notes||''}" placeholder="Energy, pain, anything notable...">
+          <textarea rows="2" id="h_notes_${sid}" placeholder="Energy, pain, anything notable...">${s.notes||''}</textarea>
         </div>
         <div class="detail-save-row">
           <button class="btn btn-primary" style="flex:1" onclick="saveSessionEdit('${sid}','${s.id}',${idx})">Save changes</button>
@@ -2984,22 +2985,31 @@ let wakeLock = null;
 let wakeLockEnabled = false;
 
 async function requestWakeLock() {
-  if (!('wakeLock' in navigator)) return;
+  if (!('wakeLock' in navigator)) return false;
   try {
     wakeLock = await navigator.wakeLock.request('screen');
+    wakeLockEnabled = true;
     wakeLock.addEventListener('release', () => {
+      wakeLock = null;
       // Re-acquire if user still wants it and page is visible
       if (wakeLockEnabled && document.visibilityState === 'visible') {
         requestWakeLock();
+      } else {
+        updateWakeLockUI(false);
       }
     });
     updateWakeLockUI(true);
+    return true;
   } catch(e) {
+    wakeLock = null;
+    wakeLockEnabled = false;
     updateWakeLockUI(false);
+    return false;
   }
 }
 
 function releaseWakeLock() {
+  wakeLockEnabled = false;
   if (wakeLock) { wakeLock.release(); wakeLock = null; }
   updateWakeLockUI(false);
 }
@@ -3133,7 +3143,7 @@ function buildExerciseBlock(ex, i, si) {
     html += buildSetRows(uid, ex, exUnit);
     html += `<div class="input-group">
     <label class="input-label">Notes</label>
-    <input type="text" id="n_${uid}" placeholder="optional">
+    <textarea rows="2" id="n_${uid}" placeholder="optional"></textarea>
   </div>`;
   }
 
