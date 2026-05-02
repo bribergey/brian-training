@@ -1458,47 +1458,39 @@ function formatDateDisplay(iso) {
 }
 
 // ─── LOAD SCHEDULED QUEUE FROM SUPABASE ──────────────────────────────────
-// Returns program rows that haven't been logged yet, grouped by session
+// Returns scheduled program rows that still need to be done, grouped by session
 async function loadQueue() {
   try {
-    // Get all program rows ordered by scheduled_date, then day
+    // Pull the full scheduled program, not just the active calendar week.
     const programRows = await sbGet(TABLES.program,
       'select=*&order=scheduled_date.asc,day.asc,order_index.asc');
 
-    // Only show sessions scheduled for the active calendar week.
-    const currentWeekStart = getWeekStart();
-    const currentWeekEnd = dateStr(new Date(new Date(currentWeekStart + 'T00:00:00').getTime() + (6 * 86400000)));
-    const currentWeekRows = programRows.filter(row => (
-      row.scheduled_date &&
-      row.scheduled_date >= currentWeekStart &&
-      row.scheduled_date <= currentWeekEnd
-    ));
-
-    if (!currentWeekRows.length) {
+    const scheduledRows = programRows.filter(row => row.scheduled_date);
+    if (!scheduledRows.length) {
       return [];
     }
 
-    // Get logged sessions to determine what's already done
+    // Get logged/skipped sessions to determine what's already done.
     const sessions = cachedSessions || await loadSessions();
 
-    // Match using explicit program_session_key — immune to date changes and delays
+    // Match using explicit program_session_key — immune to date changes and delays.
     const loggedKeys = new Set(sessions
       .filter(s => s.program_session_key)
       .map(s => s.program_session_key)
     );
-    // Fallback for sessions logged before this system existed: match by date+day
+    // Fallback for sessions logged before this system existed: match by date+day.
     const loggedDateKeys = new Set(sessions
       .filter(s => !s.program_session_key)
       .map(s => `${s.date}-${s.day}`)
     );
 
-    // Group program rows into sessions
+    // Group program rows into sessions and mark completed/skipped ones as logged.
     const sessionMap = new Map();
-    currentWeekRows.forEach(row => {
-      const key = `${row.scheduled_date}-${row.day}`;
+    scheduledRows.forEach(row => {
+      const key = row.session_key || `${row.scheduled_date}-${row.day}`;
       if (!sessionMap.has(key)) {
-        const isLogged = loggedKeys.has(row.session_key) ||
-                         loggedDateKeys.has(`${row.scheduled_date}-${row.day}`);
+        const dateDayKey = `${row.scheduled_date}-${row.day}`;
+        const isLogged = loggedKeys.has(row.session_key) || loggedDateKeys.has(dateDayKey);
         sessionMap.set(key, {
           day: row.day,
           label: row.session_label || row.day,
@@ -1512,8 +1504,14 @@ async function loadQueue() {
       sessionMap.get(key).exercises.push(row);
     });
 
-    const allSessions = [...sessionMap.values()];
-    return allSessions.filter(s => !s.logged);
+    return [...sessionMap.values()]
+      .filter(session => !session.logged)
+      .sort((a, b) => {
+        if (a.scheduledDate !== b.scheduledDate) {
+          return (a.scheduledDate || '').localeCompare(b.scheduledDate || '');
+        }
+        return String(a.day || '').localeCompare(String(b.day || ''));
+      });
   } catch(e) {
     console.warn('Could not load queue', e);
     return [];
