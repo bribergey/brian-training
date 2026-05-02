@@ -1465,6 +1465,19 @@ async function loadQueue() {
     const programRows = await sbGet(TABLES.program,
       'select=*&order=scheduled_date.asc,day.asc,order_index.asc');
 
+    // Only show sessions scheduled for the active calendar week.
+    const currentWeekStart = getWeekStart();
+    const currentWeekEnd = dateStr(new Date(new Date(currentWeekStart + 'T00:00:00').getTime() + (6 * 86400000)));
+    const currentWeekRows = programRows.filter(row => (
+      row.scheduled_date &&
+      row.scheduled_date >= currentWeekStart &&
+      row.scheduled_date <= currentWeekEnd
+    ));
+
+    if (!currentWeekRows.length) {
+      return [];
+    }
+
     // Get logged sessions to determine what's already done
     const sessions = cachedSessions || await loadSessions();
 
@@ -1481,15 +1494,15 @@ async function loadQueue() {
 
     // Group program rows into sessions
     const sessionMap = new Map();
-    programRows.forEach(row => {
-      const key = `${row.scheduled_date || 'unscheduled'}-${row.day}`;
+    currentWeekRows.forEach(row => {
+      const key = `${row.scheduled_date}-${row.day}`;
       if (!sessionMap.has(key)) {
         const isLogged = loggedKeys.has(row.session_key) ||
                          loggedDateKeys.has(`${row.scheduled_date}-${row.day}`);
         sessionMap.set(key, {
           day: row.day,
           label: row.session_label || row.day,
-          scheduledDate: row.scheduled_date || getScheduledDate(row.day),
+          scheduledDate: row.scheduled_date,
           weekNumber: row.week_number,
           sessionKey: row.session_key,
           exercises: [],
@@ -1500,17 +1513,10 @@ async function loadQueue() {
     });
 
     const allSessions = [...sessionMap.values()];
-    const pending = allSessions.filter(s => !s.logged);
-
-    // If no program rows exist yet, fall back to default queue (A/B/C this week)
-    if (!programRows.length) {
-      return buildDefaultQueue(sessions);
-    }
-
-    return pending;
+    return allSessions.filter(s => !s.logged);
   } catch(e) {
-    console.warn('Could not load queue, using defaults', e);
-    return buildDefaultQueue(cachedSessions || []);
+    console.warn('Could not load queue', e);
+    return [];
   }
 }
 
@@ -1839,10 +1845,7 @@ async function renderTodayQueue() {
 
   if (!weekQueue.length) {
     selectorEl.innerHTML = '<button class="log-extra-btn" onclick="addExtraWorkout()">+ Log extra workout</button>';
-    queueEl.innerHTML = `<div class="queue-empty">
-      <strong>All caught up!</strong>
-      No pending workouts. Your coach will schedule next week's sessions after your check-in.
-    </div>`;
+    queueEl.innerHTML = '';
     return;
   }
 
