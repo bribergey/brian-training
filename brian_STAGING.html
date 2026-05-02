@@ -1838,7 +1838,7 @@ async function renderTodayQueue() {
   const queueEl    = document.getElementById('today-queue');
 
   if (!weekQueue.length) {
-    selectorEl.innerHTML = '';
+    selectorEl.innerHTML = '<button class="log-extra-btn" onclick="addExtraWorkout()">+ Log extra workout</button>';
     queueEl.innerHTML = `<div class="queue-empty">
       <strong>All caught up!</strong>
       No pending workouts. Your coach will schedule next week's sessions after your check-in.
