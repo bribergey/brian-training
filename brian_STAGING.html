@@ -2815,7 +2815,13 @@ async function loadMonthlyProgram() {
   if (programCache) return programCache;
   try {
     const tbl = ENV === 'production' ? 'monthly_program_full' : 'monthly_program_staging_full';
-    const rows = await sbGet(tbl, 'select=*&order=month.desc,day.asc,order_index.asc');
+    let rows = await sbGet(tbl, 'select=*&order=month.desc,day.asc,order_index.asc');
+
+    if (!rows.length && ENV !== 'production') {
+      console.warn('monthly_program_staging_full is empty; falling back to production monthly_program_full');
+      rows = await sbGet('monthly_program_full', 'select=*&order=month.desc,day.asc,order_index.asc');
+    }
+
     programCache = rows;
     return rows;
   } catch(e) {
