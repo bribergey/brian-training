@@ -1495,6 +1495,7 @@ async function loadQueue() {
           day: row.day,
           label: row.session_label || row.day,
           scheduledDate: row.scheduled_date,
+          week: row.week,
           weekNumber: row.week_number,
           sessionKey: row.session_key,
           exercises: [],
@@ -1827,13 +1828,72 @@ function attachDraftListeners(si) {
   }
 }
 
-const DAY_DOW   = { A: 'Mon', B: 'Wed', C: 'Fri' };
-const DAY_FOCUS = { A: 'Lower + Core', B: 'Upper Push/Pull', C: 'Deadlift + Shoulders' };
-const DAY_FULL  = { A: 'Day 1', B: 'Day 2', C: 'Day 3' };
+const LEGACY_DAY_FOCUS = { A: 'Lower + Core', B: 'Upper Push/Pull', C: 'Deadlift + Shoulders' };
+const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function getAlphaDayIndex(day) {
+  if (typeof day !== 'string') return null;
+  const normalized = day.trim().toUpperCase();
+  if (!/^[A-Z]$/.test(normalized)) return null;
+  return normalized.charCodeAt(0) - 64;
+}
+
+function dayNum(day) {
+  if (!day) return '';
+  const normalized = String(day).trim();
+  if (!normalized) return '';
+  const alphaIndex = getAlphaDayIndex(normalized);
+  if (alphaIndex !== null) return String(alphaIndex);
+  if (/^\d+$/.test(normalized)) return String(parseInt(normalized, 10));
+  return normalized;
+}
+
 function getDayLabel(day) {
-  if (DAY_FULL[day]) return DAY_FULL[day];
-  if (day && day.startsWith('extra') || day === 'extra') return 'Extra Workout';
-  return day || 'Workout';
+  if ((day && day.startsWith('extra')) || day === 'extra') return 'Extra Workout';
+  const num = dayNum(day);
+  return num ? `Day ${num}` : (day || 'Workout');
+}
+
+function getScheduledDayOfWeek(iso) {
+  if (!iso) return '';
+  const date = new Date(iso + 'T12:00:00');
+  return WEEKDAY_SHORT[date.getDay()] || '';
+}
+
+function getLegacyDayFocus(day) {
+  return LEGACY_DAY_FOCUS[String(day || '').toUpperCase()] || '';
+}
+
+function getSessionLabelText(label, day) {
+  const trimmed = String(label || '').trim();
+  if (!trimmed) return '';
+  const normalizedDay = String(day || '').trim().toUpperCase();
+  if (!normalizedDay) return trimmed;
+  if (trimmed.toUpperCase() === normalizedDay) return '';
+  const alphaIndex = getAlphaDayIndex(normalizedDay);
+  if (alphaIndex !== null && trimmed === String(alphaIndex)) return '';
+  if (/^day\s+[a-z0-9]+$/i.test(trimmed)) return '';
+  return trimmed;
+}
+
+function getRelativeWeekNumber(session) {
+  const relativeWeek = Number(session?.week);
+  if (Number.isFinite(relativeWeek) && relativeWeek > 0) return relativeWeek;
+  const absoluteWeek = Number(session?.weekNumber);
+  if (Number.isFinite(absoluteWeek) && absoluteWeek > 0) return absoluteWeek;
+  return null;
+}
+
+function getSessionFocusText(session) {
+  return getSessionLabelText(session?.label, session?.day) || getLegacyDayFocus(session?.day);
+}
+
+function getDaySortValue(day) {
+  const alphaIndex = getAlphaDayIndex(day);
+  if (alphaIndex !== null) return alphaIndex;
+  const numeric = parseInt(String(day || ''), 10);
+  if (Number.isFinite(numeric)) return numeric;
+  return Number.MAX_SAFE_INTEGER;
 }
 
 async function renderTodayQueue() {
@@ -1864,9 +1924,9 @@ function renderDaySelector() {
   const selectorEl = document.getElementById('day-selector-container');
   let html = '<div class="day-selector">';
   weekQueue.forEach((session, idx) => {
-    const dayLabel = DAY_FULL[session.day]  || `Day ${dayNum(session.day)}`;
-    const dow      = DAY_DOW[session.day]   || '';
-    const focus    = DAY_FOCUS[session.day] || '';
+    const dayLabel = getDayLabel(session.day);
+    const dow      = getScheduledDayOfWeek(session.scheduledDate);
+    const focus    = getSessionFocusText(session);
     const isActive = idx === selectedDayIdx;
     const isDone   = session.logged;
     html += `<button class="day-btn${isActive ? ' active' : ''}${isDone ? ' done' : ''}"
@@ -2089,16 +2149,18 @@ function renderSelectedDay() {
   if (!session) { queueEl.innerHTML = ''; return; }
 
   const si          = selectedDayIdx;
-  const title       = DAY_FULL[session.day] || `Day ${dayNum(session.day)}`;
-  const focus       = DAY_FOCUS[session.day] || '';
+  const title       = getDayLabel(session.day);
+  const focus       = getSessionFocusText(session);
   const dateDisplay = formatDateDisplay(session.scheduledDate);
-  const weekLabel   = session.weekNumber ? `Week ${session.weekNumber} · ` : '';
+  const relativeWeek = getRelativeWeekNumber(session);
+  const weekLabel   = relativeWeek ? `Week ${relativeWeek}` : '';
+  const focusLine   = [weekLabel, focus].filter(Boolean).join(' · ');
 
   let html = `<div class="workout-card" id="wcard-${si}">
     <div class="workout-card-header">
       <div>
         <div class="workout-card-title">${title}</div>
-        <div class="workout-card-focus">${weekLabel}${focus}</div>
+        <div class="workout-card-focus">${focusLine}</div>
       </div>
 
     </div>
@@ -2362,7 +2424,7 @@ async function saveWorkoutFromQueue(si) {
     await renderTodayQueue();
   } catch(e) {
     setStatus('⚠ Saved locally — will sync when online.', true);
-    saveBtn.textContent = `Save Day ${day}`;
+    saveBtn.textContent = `Save ${getDayLabel(day)}`;
     saveBtn.disabled = false;
   }
 }
@@ -2864,18 +2926,20 @@ async function renderProgram() {
 }
 
 function renderMonthExercises(rows) {
-  const dayLabels = { A: 'Day 1', B: 'Day 2', C: 'Day 3' };
-  const dayFocus  = { A: 'Lower + Core', B: 'Upper Push/Pull', C: 'Deadlift + Shoulders' };
-  const days = ['A','B','C'];
-
   const normalRows = rows.filter(r => r.week_type !== 'deload');
+  const days = [...new Set(normalRows.map(r => r.day).filter(Boolean))]
+    .sort((a, b) => {
+      const sortDiff = getDaySortValue(a) - getDaySortValue(b);
+      if (sortDiff !== 0) return sortDiff;
+      return String(a).localeCompare(String(b));
+    });
 
   let html = '';
 
   days.forEach(day => {
     const exs = normalRows.filter(r => r.day === day).sort((a,b) => a.order_index - b.order_index);
     if (!exs.length) return;
-    html += buildDayBlock(day, dayLabels[day], dayFocus[day], exs);
+    html += buildDayBlock(day, getDayLabel(day), getLegacyDayFocus(day), exs);
   });
 
   document.getElementById('program-content').innerHTML = html;
@@ -2976,9 +3040,6 @@ function toggleArchive() {
 
 // ─── INIT ─────────────────────────────────────────────────────────────────
 
-function dayNum(d) {
-  return d === 'A' ? '1' : d === 'B' ? '2' : d === 'C' ? '3' : d;
-}
 async function init() {
   const sessions = await loadSessions();
   document.getElementById('header-sessions').textContent = sessions.length;
