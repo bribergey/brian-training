@@ -1888,6 +1888,37 @@ function getSessionFocusText(session) {
   return getSessionLabelText(session?.label, session?.day) || getLegacyDayFocus(session?.day);
 }
 
+function formatIsoDate(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function getCurrentMonthDateRange() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  return { start: formatIsoDate(start), end: formatIsoDate(end) };
+}
+
+function getIsoDayDistance(iso, todayIso) {
+  if (!iso) return Number.MAX_SAFE_INTEGER;
+  const then = Date.parse(iso + 'T12:00:00');
+  const now = Date.parse(todayIso + 'T12:00:00');
+  if (!Number.isFinite(then) || !Number.isFinite(now)) return Number.MAX_SAFE_INTEGER;
+  return Math.abs(Math.round((then - now) / 86400000));
+}
+
+function compareProgramLabelCandidates(next, prev, todayIso) {
+  if (!prev) return true;
+  if (next.distance !== prev.distance) return next.distance < prev.distance;
+  const nextUpcoming = next.scheduledDate && next.scheduledDate >= todayIso;
+  const prevUpcoming = prev.scheduledDate && prev.scheduledDate >= todayIso;
+  if (nextUpcoming !== prevUpcoming) return nextUpcoming;
+  if ((next.scheduledDate || '') !== (prev.scheduledDate || '')) {
+    return (next.scheduledDate || '') > (prev.scheduledDate || '');
+  }
+  return (next.orderIndex || 0) < (prev.orderIndex || 0);
+}
+
 function getDaySortValue(day) {
   const alphaIndex = getAlphaDayIndex(day);
   if (alphaIndex !== null) return alphaIndex;
@@ -2870,6 +2901,7 @@ async function saveSessionEdit(sid, sessionId, idx) {
 // ─── RENDER PROGRAM TAB ───────────────────────────────────────────────────
 let programCache = null;
 let showingArchive = false;
+let programTabLabelFallbackCache = null;
 
 async function loadMonthlyProgram() {
   if (programCache) return programCache;
@@ -2888,6 +2920,59 @@ async function loadMonthlyProgram() {
     console.warn('Could not load monthly program', e);
     return [];
   }
+}
+
+async function loadProgramTabLabelFallbacks() {
+  if (programTabLabelFallbackCache) return programTabLabelFallbackCache;
+
+  const todayIso = formatIsoDate(new Date());
+  const { start, end } = getCurrentMonthDateRange();
+  const params = `select=day,session_label,scheduled_date,order_index&scheduled_date=gte.${start}&scheduled_date=lt.${end}&order=scheduled_date.asc,order_index.asc`;
+
+  try {
+    let rows = await sbGet(TABLES.program, params);
+
+    if (!rows.length && ENV !== 'production') {
+      console.warn('program_staging_full is empty; falling back to production program_full for Program-tab labels');
+      rows = await sbGet('program_full', params);
+    }
+
+    const bestByDay = {};
+    rows.forEach(row => {
+      const day = String(row.day || '').trim().toUpperCase();
+      const focus = getSessionLabelText(row.session_label, day);
+      if (!day || !focus) return;
+
+      const candidate = {
+        focus,
+        scheduledDate: row.scheduled_date || '',
+        distance: getIsoDayDistance(row.scheduled_date, todayIso),
+        orderIndex: Number(row.order_index) || 0
+      };
+
+      if (compareProgramLabelCandidates(candidate, bestByDay[day], todayIso)) {
+        bestByDay[day] = candidate;
+      }
+    });
+
+    programTabLabelFallbackCache = Object.fromEntries(
+      Object.entries(bestByDay).map(([day, candidate]) => [day, candidate.focus])
+    );
+    return programTabLabelFallbackCache;
+  } catch (e) {
+    console.warn('Could not load Program-tab label fallbacks', e);
+    programTabLabelFallbackCache = {};
+    return programTabLabelFallbackCache;
+  }
+}
+
+function getMonthlyProgramDayFocus(rows, day, fallbackMap, useScheduleFallback) {
+  const explicit = rows
+    .map(row => getSessionLabelText(row.session_label, day))
+    .find(Boolean);
+  if (explicit) return explicit;
+  if (!useScheduleFallback) return '';
+  return fallbackMap[String(day || '').trim().toUpperCase()] || '';
 }
 
 async function renderProgram() {
@@ -2922,10 +3007,10 @@ async function renderProgram() {
     return;
   }
 
-  renderMonthExercises(current);
+  await renderMonthExercises(current, { useScheduleFallback: true });
 }
 
-function renderMonthExercises(rows) {
+async function renderMonthExercises(rows, options = {}) {
   const normalRows = rows.filter(r => r.week_type !== 'deload');
   const days = [...new Set(normalRows.map(r => r.day).filter(Boolean))]
     .sort((a, b) => {
@@ -2933,13 +3018,15 @@ function renderMonthExercises(rows) {
       if (sortDiff !== 0) return sortDiff;
       return String(a).localeCompare(String(b));
     });
+  const fallbackMap = options.useScheduleFallback ? await loadProgramTabLabelFallbacks() : {};
 
   let html = '';
 
   days.forEach(day => {
     const exs = normalRows.filter(r => r.day === day).sort((a,b) => a.order_index - b.order_index);
     if (!exs.length) return;
-    html += buildDayBlock(day, getDayLabel(day), getLegacyDayFocus(day), exs);
+    const focus = getMonthlyProgramDayFocus(exs, day, fallbackMap, options.useScheduleFallback);
+    html += buildDayBlock(day, getDayLabel(day), focus, exs);
   });
 
   document.getElementById('program-content').innerHTML = html;
@@ -3030,7 +3117,7 @@ async function renderArchivedDetail(month) {
       <div class="program-month-title">${label}</div>
       <button class="program-archive-btn active" onclick="renderProgram()">← Back</button>
     </div>`;
-  renderMonthExercises(monthRows);
+  await renderMonthExercises(monthRows, { useScheduleFallback: false });
 }
 
 function toggleArchive() {
