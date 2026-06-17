@@ -873,6 +873,7 @@ const SB_HDRS = { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authori
 const TABLES = {
   sessions: ENV === 'production' ? 'sessions'         : 'sessions_staging',
   program:  ENV === 'production' ? 'program_full'     : 'program_staging_full',
+  measurements: ENV === 'production' ? 'user_measurements' : 'user_measurements_staging',
 };
 
 // ─── SESSIONS: SUPABASE + localStorage CACHE ─────────────────────────────
@@ -2280,7 +2281,7 @@ async function renderHistory() {
   // Fetch measurements alongside sessions for body comp charts
   const [sessions, measurements] = await Promise.all([
     loadSessions(),
-    sbGet('user_measurements',
+    sbGet(TABLES.measurements,
       'select=logged_at,weight_kg,body_fat_pct&order=logged_at.asc').catch(() => [])
   ]);
   const realSessions = sessions.filter(s => !s.skipped);
@@ -3349,7 +3350,7 @@ async function renderMe() {
   try {
     const [profile, measurements] = await Promise.all([
       sbGet('user_profile', 'select=*&limit=1'),
-      sbGet('user_measurements', 'select=*&order=logged_at.desc')
+      sbGet(TABLES.measurements, 'select=*&order=logged_at.desc')
     ]);
     meProfile     = profile[0] || {};
     meMeasurements = measurements || [];
@@ -3646,7 +3647,7 @@ async function logMeasurement() {
   status.style.display = 'none';
 
   try {
-    await sbPost('user_measurements', {
+    await sbPost(TABLES.measurements, {
       logged_at: date,
       weight_kg: weight ? parseFloat(weight) : null,
       body_fat_pct: bf ? parseFloat(bf) : null,
