@@ -869,10 +869,37 @@ const ENV = 'production';
 const SB_URL  = 'https://mimvmaotzmacgiziovvi.supabase.co';
 const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pbXZtYW90em1hY2dpemlvdnZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNTMzNzYsImV4cCI6MjA4OTYyOTM3Nn0.dJMw37a4m9fBOmZQQOayZ8jKY28p10y_cSca4Sfoqe4';
 const SB_HDRS = { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
+const ACTIVE_USER_ID = 'brian';
+const USER_SCOPE_COLUMN = 'user_id';
+
+function getActiveUserId() {
+  return ACTIVE_USER_ID;
+}
+
+function withUserScope(params = '', column = USER_SCOPE_COLUMN) {
+  const scope = `${column}=eq.${encodeURIComponent(getActiveUserId())}`;
+  return params ? `${params}&${scope}` : scope;
+}
+
+function getUserScopedStorageKey(prefix, suffix = '') {
+  const base = `${prefix}_${ENV}_${getActiveUserId()}`;
+  return suffix ? `${base}_${suffix}` : base;
+}
+
+function normalizeProgramSessionKey(key) {
+  if (key == null) return null;
+  const raw = String(key).trim();
+  if (!raw) return null;
+  const prefix = `${getActiveUserId()}::`;
+  if (raw.startsWith(prefix) || raw.includes('::')) return raw;
+  return prefix + raw;
+}
 
 const TABLES = {
   sessions: ENV === 'production' ? 'sessions'         : 'sessions_staging',
   program:  ENV === 'production' ? 'program_full'     : 'program_staging_full',
+  monthlyProgram: ENV === 'production' ? 'monthly_program_full' : 'monthly_program_staging_full',
+  profile: ENV === 'production' ? 'user_profile' : 'user_profile_staging',
   measurements: ENV === 'production' ? 'user_measurements' : 'user_measurements_staging',
 };
 
@@ -881,13 +908,13 @@ let cachedSessions = null;
 
 async function loadSessions() {
   try {
-    const rows = await sbGet(TABLES.sessions, 'select=*&order=date.asc,logged_at.asc');
+    const rows = await sbGet(TABLES.sessions, withUserScope('select=*&order=date.asc,logged_at.asc'));
     cachedSessions = rows;
-    localStorage.setItem('brian_v3_cache_' + ENV, JSON.stringify(rows));
+    localStorage.setItem(getUserScopedStorageKey('brian_v3_cache'), JSON.stringify(rows));
     return rows;
   } catch(e) {
     console.warn('Supabase unavailable, reading from local cache.', e);
-    const cached = localStorage.getItem('brian_v3_cache_' + ENV);
+    const cached = localStorage.getItem(getUserScopedStorageKey('brian_v3_cache'));
     cachedSessions = cached ? JSON.parse(cached) : [];
     return cachedSessions;
   }
@@ -895,15 +922,16 @@ async function loadSessions() {
 
 async function saveSession(session) {
   if (cachedSessions) cachedSessions.push(session);
-  localStorage.setItem('brian_v3_cache_' + ENV, JSON.stringify(cachedSessions || [session]));
+  localStorage.setItem(getUserScopedStorageKey('brian_v3_cache'), JSON.stringify(cachedSessions || [session]));
   await sbPost(TABLES.sessions, {
+    user_id: getActiveUserId(),
     date: session.date,
     day:  session.day,
     notes: session.notes || null,
     exercises: session.exercises,
     logged_at: session.logged,
     skipped: session.skipped || false,
-    program_session_key: session.program_session_key || null,
+    program_session_key: normalizeProgramSessionKey(session.program_session_key),
     workout_time: session.workout_time || null
   });
 }
@@ -941,8 +969,9 @@ async function sbPost(table, body) {
   });
   if (!r.ok) throw new Error(await r.text());
 }
-async function sbPatch(table, id, body) {
-  const r = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+async function sbPatch(table, id, body, params = '') {
+  const query = params ? `id=eq.${encodeURIComponent(id)}&${params}` : `id=eq.${encodeURIComponent(id)}`;
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${query}`, {
     method: 'PATCH',
     headers: { ...SB_HDRS, 'Prefer': 'return=representation', 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
@@ -1198,7 +1227,7 @@ async function loadQueue() {
   try {
     // Pull the full scheduled program, not just the active calendar week.
     const programRows = await sbGet(TABLES.program,
-      'select=*&order=scheduled_date.asc,day.asc,order_index.asc');
+      withUserScope('select=*&order=scheduled_date.asc,day.asc,order_index.asc'));
 
     const scheduledRows = programRows.filter(row => row.scheduled_date);
     if (!scheduledRows.length) {
@@ -1211,7 +1240,7 @@ async function loadQueue() {
     // Match using explicit program_session_key — immune to date changes and delays.
     const loggedKeys = new Set(sessions
       .filter(s => s.program_session_key)
-      .map(s => s.program_session_key)
+      .map(s => normalizeProgramSessionKey(s.program_session_key))
     );
     // Fallback for sessions logged before this system existed: match by date+day.
     const loggedDateKeys = new Set(sessions
@@ -1225,14 +1254,15 @@ async function loadQueue() {
       const key = row.session_key || `${row.scheduled_date}-${row.day}`;
       if (!sessionMap.has(key)) {
         const dateDayKey = `${row.scheduled_date}-${row.day}`;
-        const isLogged = loggedKeys.has(row.session_key) || loggedDateKeys.has(dateDayKey);
+        const normalizedSessionKey = normalizeProgramSessionKey(row.session_key);
+        const isLogged = (normalizedSessionKey && loggedKeys.has(normalizedSessionKey)) || loggedDateKeys.has(dateDayKey);
         sessionMap.set(key, {
           day: row.day,
           label: row.session_label || row.day,
           scheduledDate: row.scheduled_date,
           week: row.week,
           weekNumber: row.week_number,
-          sessionKey: row.session_key,
+          sessionKey: normalizedSessionKey,
           exercises: [],
           logged: isLogged
         });
@@ -1283,7 +1313,8 @@ function buildDefaultQueue(sessions) {
 let weekQueue = [];
 // Extra workouts added by Brian this week (persisted in localStorage)
 // Format: [{ extraNum: 1, date: 'YYYY-MM-DD', notes: '', exercises: [], added: [] }]
-const EXTRA_DRAFT_KEY = () => `brian_extras_${ENV}_${getWeekStart()}`;
+const EXTRA_DRAFT_PREFIX = () => getUserScopedStorageKey('brian_extras');
+const EXTRA_DRAFT_KEY = () => `${EXTRA_DRAFT_PREFIX()}_${getWeekStart()}`;
 function getWeekStart() {
   const d = new Date();
   d.setDate(d.getDate() - d.getDay() + 1); // Monday
@@ -1295,7 +1326,7 @@ function loadExtraDrafts() {
     // Clear stale keys from previous weeks
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && k.startsWith('brian_extras_') && k !== EXTRA_DRAFT_KEY()) {
+      if (k && k.startsWith(EXTRA_DRAFT_PREFIX()) && k !== EXTRA_DRAFT_KEY()) {
         localStorage.removeItem(k);
         i--;
       }
@@ -1509,8 +1540,8 @@ function attachAddExOutsideClose(si) {
 
 function draftKey(session) {
   // Include sessionKey so drafts are invalidated when program changes
-  const sk = session.sessionKey || session.scheduledDate;
-  return `brian_draft_${ENV}_${session.day}_${sk}`;
+  const sk = normalizeProgramSessionKey(session.sessionKey) || session.scheduledDate;
+  return getUserScopedStorageKey('brian_draft', `${session.day}_${sk}`);
 }
 
 function saveDraft(si) {
@@ -2115,7 +2146,7 @@ async function confirmSkip(si) {
   try {
     await saveSession({ date, day, notes, exercises: [], skipped: true,
       logged: new Date().toISOString(),
-      program_session_key: session.sessionKey || null });
+      program_session_key: normalizeProgramSessionKey(session.sessionKey) });
     clearDraft(session);
     setStatus('Workout skipped — noted for your coach.');
     document.getElementById('tab-today').scrollTop = 0;
@@ -2178,7 +2209,7 @@ async function saveWorkoutFromQueue(si) {
   try {
     const workoutTime = document.getElementById(`time-input-${si}`)?.value || null;
     await saveSession({ date, day, notes, exercises, logged: new Date().toISOString(),
-      program_session_key: session.sessionKey || null, workout_time: workoutTime });
+      program_session_key: normalizeProgramSessionKey(session.sessionKey), workout_time: workoutTime });
     clearDraft(session);
     delete _addedExercises[si];
     document.getElementById('header-sessions').textContent = (cachedSessions||[]).length;
@@ -2282,7 +2313,7 @@ async function renderHistory() {
   const [sessions, measurements] = await Promise.all([
     loadSessions(),
     sbGet(TABLES.measurements,
-      'select=logged_at,weight_kg,body_fat_pct&order=logged_at.asc').catch(() => [])
+      withUserScope('select=logged_at,weight_kg,body_fat_pct&order=logged_at.asc')).catch(() => [])
   ]);
   const realSessions = sessions.filter(s => !s.skipped);
   const coachSessions = realSessions.filter(s => s.program_session_key != null);
@@ -2610,7 +2641,7 @@ async function saveSessionEdit(sid, sessionId, idx) {
   const workout_time = document.getElementById(`h_time_${sid}`)?.value || null;
 
   try {
-    await sbPatch(TABLES.sessions, sessionId, { exercises, notes, date, workout_time });
+    await sbPatch(TABLES.sessions, sessionId, { exercises, notes, date, workout_time }, withUserScope());
     // Update cache
     cachedSessions = null;
     statusEl.textContent = '✓ Saved';
@@ -2640,14 +2671,7 @@ let programTabLabelFallbackCache = null;
 async function loadMonthlyProgram() {
   if (programCache) return programCache;
   try {
-    const tbl = ENV === 'production' ? 'monthly_program_full' : 'monthly_program_staging_full';
-    let rows = await sbGet(tbl, 'select=*&order=month.desc,day.asc,order_index.asc');
-
-    if (!rows.length && ENV !== 'production') {
-      console.warn('monthly_program_staging_full is empty; falling back to production monthly_program_full');
-      rows = await sbGet('monthly_program_full', 'select=*&order=month.desc,day.asc,order_index.asc');
-    }
-
+    const rows = await sbGet(TABLES.monthlyProgram, withUserScope('select=*&order=month.desc,day.asc,order_index.asc'));
     programCache = rows;
     return rows;
   } catch(e) {
@@ -2661,16 +2685,10 @@ async function loadProgramTabLabelFallbacks() {
 
   const todayIso = formatIsoDate(new Date());
   const { start, end } = getCurrentMonthDateRange();
-  const params = `select=day,session_label,scheduled_date,order_index&scheduled_date=gte.${start}&scheduled_date=lt.${end}&order=scheduled_date.asc,order_index.asc`;
+  const params = withUserScope(`select=day,session_label,scheduled_date,order_index&scheduled_date=gte.${start}&scheduled_date=lt.${end}&order=scheduled_date.asc,order_index.asc`);
 
   try {
-    let rows = await sbGet(TABLES.program, params);
-
-    if (!rows.length && ENV !== 'production') {
-      console.warn('program_staging_full is empty; falling back to production program_full for Program-tab labels');
-      rows = await sbGet('program_full', params);
-    }
-
+    const rows = await sbGet(TABLES.program, params);
     const bestByDay = {};
     rows.forEach(row => {
       const day = String(row.day || '').trim().toUpperCase();
@@ -2862,6 +2880,7 @@ function toggleArchive() {
 // ─── INIT ─────────────────────────────────────────────────────────────────
 
 async function init() {
+  resetUserScopedState(true);
   const sessions = await loadSessions();
   document.getElementById('header-sessions').textContent = sessions.length;
 
@@ -3342,6 +3361,25 @@ const EXPERIENCE_OPTIONS = ['Beginner','Intermediate','Advanced'];
 
 let meProfile = null;
 let meMeasurements = [];
+let activeUserScopeToken = null;
+
+function resetUserScopedState(force = false) {
+  const nextToken = `${ENV}:${getActiveUserId()}`;
+  if (!force && activeUserScopeToken === nextToken) return;
+  activeUserScopeToken = nextToken;
+  cachedSessions = null;
+  weekQueue = [];
+  selectedDayIdx = null;
+  extraWorkouts = loadExtraDrafts();
+  programCache = null;
+  programTabLabelFallbackCache = null;
+  meProfile = null;
+  meMeasurements = [];
+  window._historySessions = null;
+  const extraCards = document.getElementById('extra-cards-container');
+  if (extraCards) extraCards.innerHTML = '';
+  Object.keys(_addedExercises).forEach(key => delete _addedExercises[key]);
+}
 
 async function renderMe() {
   const el = document.getElementById('me-inner');
@@ -3349,8 +3387,8 @@ async function renderMe() {
 
   try {
     const [profile, measurements] = await Promise.all([
-      sbGet('user_profile', 'select=*&limit=1'),
-      sbGet(TABLES.measurements, 'select=*&order=logged_at.desc')
+      sbGet(TABLES.profile, withUserScope('select=*&limit=1')),
+      sbGet(TABLES.measurements, withUserScope('select=*&order=logged_at.desc'))
     ]);
     meProfile     = profile[0] || {};
     meMeasurements = measurements || [];
@@ -3648,6 +3686,7 @@ async function logMeasurement() {
 
   try {
     await sbPost(TABLES.measurements, {
+      user_id: getActiveUserId(),
       logged_at: date,
       weight_kg: weight ? parseFloat(weight) : null,
       body_fat_pct: bf ? parseFloat(bf) : null,
@@ -3666,6 +3705,7 @@ async function saveProfile() {
   const p = meProfile;
   const status = document.getElementById('me-save-status');
   const body = {
+    user_id:                 getActiveUserId(),
     name:                    document.getElementById('me-name')?.value || null,
     dob:                     document.getElementById('me-dob')?.value || null,
     height_cm:               parseFloat(document.getElementById('me-height')?.value) || null,
@@ -3692,9 +3732,9 @@ async function saveProfile() {
 
   try {
     if (p.id) {
-      await sbPatch('user_profile', p.id, body);
+      await sbPatch(TABLES.profile, p.id, body, withUserScope());
     } else {
-      await sbPost('user_profile', body);
+      await sbPost(TABLES.profile, body);
     }
     meProfile = { ...p, ...body };
     btn.textContent = 'Save profile'; btn.disabled = false;
