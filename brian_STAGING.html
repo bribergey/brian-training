@@ -993,6 +993,22 @@ function getAuthClient() {
   return authClient;
 }
 
+async function hydrateHashSession(client) {
+  if (!client || !window.location.hash.includes('access_token=')) return null;
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const accessToken = params.get('access_token');
+  const refreshToken = params.get('refresh_token');
+  if (!accessToken || !refreshToken) return null;
+
+  const { data, error } = await client.auth.setSession({
+    access_token: accessToken,
+    refresh_token: refreshToken
+  });
+  if (error) throw error;
+  window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+  return data.session || null;
+}
+
 function getSupabaseHeaders(extra = {}) {
   const token = authSession?.access_token || SB_KEY;
   return {
@@ -1062,9 +1078,10 @@ async function refreshAuthState() {
   }
 
   try {
+    authSession = await hydrateHashSession(client);
     const { data, error } = await client.auth.getSession();
     if (error) throw error;
-    authSession = data.session || null;
+    authSession = authSession || data.session || null;
   } catch (e) {
     console.warn('Auth session bootstrap failed.', e);
     authSession = null;
