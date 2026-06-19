@@ -3605,7 +3605,7 @@ function getAuthCardMarkup() {
         <label class="input-label">Email sign-in</label>
         <div class="auth-email-row">
           <input type="email" id="auth-email-input" placeholder="you@example.com" autocomplete="email">
-          <button class="btn btn-primary" type="button" onclick="sendSignInLink()">Email link</button>
+          <button class="btn btn-primary" id="auth-email-link-btn" type="button" onclick="sendSignInLink()">Email link</button>
         </div>
       </div>
     `;
@@ -4030,6 +4030,7 @@ async function saveProfile() {
 
 async function sendSignInLink() {
   const email = document.getElementById('auth-email-input')?.value?.trim();
+  const btn = document.getElementById('auth-email-link-btn');
   if (!email) {
     setStatus('Enter an email first', true);
     return;
@@ -4046,6 +4047,10 @@ async function sendSignInLink() {
   }
 
   try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+    }
     const { error } = await client.auth.signInWithOtp({
       email,
       options: {
@@ -4054,10 +4059,15 @@ async function sendSignInLink() {
       }
     });
     if (error) throw error;
-    setStatus('Magic link sent');
+    setStatus('Magic link sent. Check your email.');
   } catch (e) {
     console.error('Sign-in link failed:', e);
-    setStatus('Sign-in link failed', true);
+    setStatus(e?.message || 'Sign-in link failed', true);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Email link';
+    }
   }
 }
 
