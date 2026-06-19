@@ -734,6 +734,92 @@ select {
 
 /* scrollbar on light bg */
 .panel::-webkit-scrollbar-thumb { background: var(--border2); }
+
+.header-auth-chip {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 10px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.78);
+}
+.header-auth-chip.state-authenticated {
+  color: var(--green);
+  border-color: rgba(26,219,78,0.28);
+  background: rgba(26,219,78,0.1);
+}
+.header-auth-chip.state-legacy {
+  color: #f6d37a;
+  border-color: rgba(245,184,0,0.26);
+  background: rgba(245,184,0,0.12);
+}
+.header-auth-chip.state-warning {
+  color: #ffd4d4;
+  border-color: rgba(220,38,38,0.26);
+  background: rgba(220,38,38,0.12);
+}
+.header-auth-chip.state-booting {
+  color: rgba(255,255,255,0.62);
+}
+.auth-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.auth-card-title {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.auth-card-status {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--green-dark);
+}
+.auth-card-note {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text);
+  opacity: 0.72;
+  margin-bottom: 14px;
+}
+.auth-card-note strong {
+  opacity: 1;
+}
+.auth-email-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+.auth-email-row input {
+  flex: 1;
+}
+.auth-inline-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+  opacity: 0.5;
+}
+.auth-inline-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.auth-inline-actions .btn {
+  width: auto;
+  min-width: 132px;
+}
 </style>
 </head>
 <body>
@@ -741,6 +827,7 @@ select {
 <div class="app-header">
   <div class="header-left">
     <div class="app-title"><span class="app-title-name">BRIAN'S</span><br><span class="app-title-sub">TRAINING HUB</span></div>
+    <div class="header-auth-chip state-booting" id="header-auth-chip">Checking access</div>
   </div>
   <button class="wake-lock-btn active" id="wake-lock-btn" onclick="toggleWakeLock()" title="Screen wake lock">
     <span class="wake-lock-icon" id="wake-lock-icon">🔆</span>
@@ -860,6 +947,7 @@ select {
   </button>
 </nav>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ─── ENVIRONMENT CONFIG ────────────────────────────────────────────────────
 // ENV: 'staging' hits sessions_staging / program_staging
@@ -868,21 +956,225 @@ const ENV = 'production';
 
 const SB_URL  = 'https://mimvmaotzmacgiziovvi.supabase.co';
 const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pbXZtYW90em1hY2dpemlvdnZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNTMzNzYsImV4cCI6MjA4OTYyOTM3Nn0.dJMw37a4m9fBOmZQQOayZ8jKY28p10y_cSca4Sfoqe4';
-const SB_HDRS = { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY };
-const ACTIVE_USER_ID = 'brian';
+const AUTH_REDIRECT_URL = ENV === 'production'
+  ? 'https://bribergey.github.io/brian-training/'
+  : 'https://bribergey.github.io/brian-training/staging/';
+const APP_USERS_TABLE = ENV === 'production' ? 'app_users' : 'app_users_staging';
+const ALLOW_LEGACY_IDENTITY_FALLBACK = false;
+const LEGACY_USER_FALLBACK_ID = 'brian';
 const USER_SCOPE_COLUMN = 'user_id';
+let authClient = null;
+let authSession = null;
+let authAppUser = null;
+let authStatus = { mode: 'booting', label: 'Checking access', detail: 'Checking sign-in state…' };
 
 function getActiveUserId() {
-  return ACTIVE_USER_ID;
+  if (authAppUser?.user_id) return authAppUser.user_id;
+  if (!authSession && ALLOW_LEGACY_IDENTITY_FALLBACK) return LEGACY_USER_FALLBACK_ID;
+  return null;
+}
+
+function getActiveUserIdOrThrow() {
+  const userId = getActiveUserId();
+  if (!userId) throw new Error('No resolved user identity');
+  return userId;
+}
+
+function getAuthClient() {
+  if (authClient || !window.supabase?.createClient) return authClient;
+  authClient = window.supabase.createClient(SB_URL, SB_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      flowType: 'implicit'
+    }
+  });
+  return authClient;
+}
+
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timed out`)), ms))
+  ]);
+}
+
+async function hydrateHashSession(client) {
+  if (!client || !window.location.hash.includes('access_token=')) return null;
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const accessToken = params.get('access_token');
+  const refreshToken = params.get('refresh_token');
+  if (!accessToken || !refreshToken) return null;
+
+  const setSession = client.auth.setSession({
+    access_token: accessToken,
+    refresh_token: refreshToken
+  });
+  const result = await Promise.race([
+    setSession,
+    new Promise(resolve => setTimeout(() => resolve({ timedOut: true }), 3500))
+  ]);
+  if (result.timedOut) {
+    const payload = decodeJwtPayload(accessToken);
+    window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      token_type: params.get('token_type') || 'bearer',
+      expires_at: Number(params.get('expires_at')) || payload.exp,
+      expires_in: Number(params.get('expires_in')) || null,
+      user: {
+        id: payload.sub,
+        email: payload.email,
+        aud: payload.aud,
+        role: payload.role
+      }
+    };
+  }
+
+  const { data, error } = result;
+  if (error) throw error;
+  window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+  return data.session || null;
+}
+
+async function hydrateCodeSession(client) {
+  if (!client) return null;
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (!code) return null;
+
+  const { data, error } = await withTimeout(
+    client.auth.exchangeCodeForSession(code),
+    8000,
+    'Auth code exchange'
+  );
+  if (error) throw error;
+  params.delete('code');
+  const nextSearch = params.toString();
+  window.history.replaceState(null, document.title, window.location.pathname + (nextSearch ? `?${nextSearch}` : ''));
+  return data.session || null;
+}
+
+function decodeJwtPayload(token) {
+  const raw = token.split('.')[1] || '';
+  const normalized = raw.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(raw.length / 4) * 4, '=');
+  return JSON.parse(atob(normalized));
+}
+
+function getSupabaseHeaders(extra = {}) {
+  const token = authSession?.access_token || SB_KEY;
+  return {
+    'Content-Type': 'application/json',
+    'apikey': SB_KEY,
+    'Authorization': 'Bearer ' + token,
+    ...extra
+  };
+}
+
+function setAuthStatus(mode, label, detail) {
+  authStatus = { mode, label, detail };
+  updateAuthUI();
+}
+
+function updateAuthUI() {
+  const chip = document.getElementById('header-auth-chip');
+  if (!chip) return;
+  chip.textContent = authStatus.label;
+  chip.className = 'header-auth-chip';
+  if (authStatus.mode === 'authenticated') chip.classList.add('state-authenticated');
+  else if (authStatus.mode === 'legacy') chip.classList.add('state-legacy');
+  else if (authStatus.mode === 'warning' || authStatus.mode === 'signed-out') chip.classList.add('state-warning');
+  else chip.classList.add('state-booting');
+}
+
+function getAuthCardStatusText() {
+  if (authStatus.mode === 'authenticated') return 'Ready';
+  if (authStatus.mode === 'legacy') return 'Legacy fallback';
+  if (authStatus.mode === 'warning') return 'Needs mapping';
+  if (authStatus.mode === 'signed-out') return 'Sign-in required';
+  return 'Checking';
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+async function resolveAuthAppUser(session) {
+  if (!session?.user?.id) return null;
+  try {
+    const params = `select=id,user_id,email,display_name,is_active,auth_user_id&auth_user_id=eq.${encodeURIComponent(session.user.id)}&is_active=is.true&limit=1`;
+    const rows = await sbGet(APP_USERS_TABLE, params);
+    return rows[0] || null;
+  } catch (e) {
+    console.warn('App user mapping lookup failed.', e);
+    return null;
+  }
+}
+
+async function refreshAuthState() {
+  const client = getAuthClient();
+  if (!client) {
+    authSession = null;
+    authAppUser = null;
+    if (ALLOW_LEGACY_IDENTITY_FALLBACK) {
+      setAuthStatus('legacy', 'Legacy Brian', 'Auth client unavailable; using legacy Brian identity.');
+    } else {
+      setAuthStatus('signed-out', 'Sign in required', 'Auth client unavailable; sign-in is required before app data can load.');
+    }
+    return;
+  }
+
+  try {
+    authSession = await hydrateHashSession(client);
+    authSession = authSession || await hydrateCodeSession(client);
+    const { data, error } = await withTimeout(
+      client.auth.getSession(),
+      8000,
+      'Auth session lookup'
+    );
+    if (error) throw error;
+    authSession = authSession || data.session || null;
+  } catch (e) {
+    console.warn('Auth session bootstrap failed.', e);
+    authSession = null;
+  }
+
+  authAppUser = await resolveAuthAppUser(authSession);
+
+  if (authSession && authAppUser) {
+    const label = authAppUser.display_name || authAppUser.email || authAppUser.user_id;
+    setAuthStatus('authenticated', `Signed in: ${label}`, `Signed in as ${label}.`);
+    return;
+  }
+
+  if (authSession && !authAppUser) {
+    const email = authSession.user?.email || 'this account';
+    setAuthStatus('warning', 'Missing app user', `${email} is signed in, but there is no app_users mapping row yet.`);
+    return;
+  }
+
+  if (ALLOW_LEGACY_IDENTITY_FALLBACK) {
+    setAuthStatus('legacy', 'Legacy Brian', 'Legacy Brian identity fallback is active until Phase 3 auth seeding is complete.');
+    return;
+  }
+
+  setAuthStatus('signed-out', 'Sign in required', 'Sign in is required before app data can load.');
 }
 
 function withUserScope(params = '', column = USER_SCOPE_COLUMN) {
-  const scope = `${column}=eq.${encodeURIComponent(getActiveUserId())}`;
+  const scope = `${column}=eq.${encodeURIComponent(getActiveUserIdOrThrow())}`;
   return params ? `${params}&${scope}` : scope;
 }
 
 function getUserScopedStorageKey(prefix, suffix = '') {
-  const base = `${prefix}_${ENV}_${getActiveUserId()}`;
+  const base = `${prefix}_${ENV}_${getActiveUserIdOrThrow()}`;
   return suffix ? `${base}_${suffix}` : base;
 }
 
@@ -890,7 +1182,7 @@ function normalizeProgramSessionKey(key) {
   if (key == null) return null;
   const raw = String(key).trim();
   if (!raw) return null;
-  const prefix = `${getActiveUserId()}::`;
+  const prefix = `${getActiveUserIdOrThrow()}::`;
   if (raw.startsWith(prefix) || raw.includes('::')) return raw;
   return prefix + raw;
 }
@@ -924,7 +1216,7 @@ async function saveSession(session) {
   if (cachedSessions) cachedSessions.push(session);
   localStorage.setItem(getUserScopedStorageKey('brian_v3_cache'), JSON.stringify(cachedSessions || [session]));
   await sbPost(TABLES.sessions, {
-    user_id: getActiveUserId(),
+    user_id: getActiveUserIdOrThrow(),
     date: session.date,
     day:  session.day,
     notes: session.notes || null,
@@ -958,13 +1250,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function sbGet(table, params = '') {
-  const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, { headers: SB_HDRS });
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, { headers: getSupabaseHeaders() });
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
 async function sbPost(table, body) {
   const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
-    method: 'POST', headers: { ...SB_HDRS, 'Prefer': 'return=minimal' },
+    method: 'POST', headers: getSupabaseHeaders({ 'Prefer': 'return=minimal' }),
     body: JSON.stringify(body)
   });
   if (!r.ok) throw new Error(await r.text());
@@ -973,7 +1265,7 @@ async function sbPatch(table, id, body, params = '') {
   const query = params ? `id=eq.${encodeURIComponent(id)}&${params}` : `id=eq.${encodeURIComponent(id)}`;
   const r = await fetch(`${SB_URL}/rest/v1/${table}?${query}`, {
     method: 'PATCH',
-    headers: { ...SB_HDRS, 'Prefer': 'return=representation', 'Content-Type': 'application/json' },
+    headers: getSupabaseHeaders({ 'Prefer': 'return=representation' }),
     body: JSON.stringify(body)
   });
   if (!r.ok) throw new Error(await r.text());
@@ -1047,10 +1339,21 @@ const EX_BADGES = {
 let ANCHOR_GROUPS = {};
 let anchorGroupsLoaded = false;
 
+function getFallbackAnchorGroups() {
+  return {
+    'Barbell squat':  { names: new Set(['Barbell back squat','Barbell squat (paused)']), isRepBased: false },
+    'Deadlift':       { names: new Set(['Deadlift']),                                    isRepBased: false },
+    'Bench press':    { names: new Set(['Barbell bench press']),                         isRepBased: false },
+    'Pull-up':        { names: new Set(['Pull-up']),                                      isRepBased: true  },
+    'Shoulder press': { names: new Set(['Barbell shoulder press']),                      isRepBased: false },
+  };
+}
+
 async function loadAnchorGroups() {
   if (anchorGroupsLoaded) return;
   try {
     const rows = await sbGet('exercises', 'select=name,anchor_group,rep_type&badge=eq.anchor&anchor_group=not.is.null');
+    if (!Array.isArray(rows) || rows.length === 0) throw new Error('Anchor exercise catalog is empty');
     ANCHOR_GROUPS = {};
     rows.forEach(ex => {
       const g = ex.anchor_group;
@@ -1061,13 +1364,7 @@ async function loadAnchorGroups() {
     anchorGroupsLoaded = true;
   } catch(e) {
     // Fallback to hardcoded if fetch fails
-    ANCHOR_GROUPS = {
-      'Barbell squat':  { names: new Set(['Barbell back squat','Barbell squat (paused)']), isRepBased: false },
-      'Deadlift':       { names: new Set(['Deadlift']),                                    isRepBased: false },
-      'Bench press':    { names: new Set(['Barbell bench press']),                         isRepBased: false },
-      'Pull-up':        { names: new Set(['Pull-up']),                                      isRepBased: true  },
-      'Shoulder press': { names: new Set(['Barbell shoulder press']),                      isRepBased: false },
-    };
+    ANCHOR_GROUPS = getFallbackAnchorGroups();
     anchorGroupsLoaded = true;
   }
 }
@@ -2880,12 +3177,44 @@ function toggleArchive() {
 // ─── INIT ─────────────────────────────────────────────────────────────────
 
 async function init() {
+  await refreshAuthState();
   resetUserScopedState(true);
+  const userId = getActiveUserId();
+  if (!userId) {
+    document.getElementById('header-sessions').textContent = '—';
+    document.getElementById('today-queue').innerHTML = '<div class="card"><div class="card-section-title">Sign in required</div><p style="font-size:15px;line-height:1.6;color:var(--text);opacity:0.72">Phase 3 auth enforcement is enabled, but no active user identity is available yet.</p></div>';
+    return;
+  }
   const sessions = await loadSessions();
   document.getElementById('header-sessions').textContent = sessions.length;
 
   // Render the today queue
   await renderTodayQueue();
+}
+
+let authStateChangeInFlight = false;
+
+async function refreshAppForAuthChange() {
+  if (authStateChangeInFlight) return;
+  authStateChangeInFlight = true;
+  try {
+    await refreshAuthState();
+    resetUserScopedState(true);
+    const userId = getActiveUserId();
+    if (!userId) {
+      document.getElementById('header-sessions').textContent = '—';
+      document.getElementById('today-queue').innerHTML = '<div class="card"><div class="card-section-title">Sign in required</div><p style="font-size:15px;line-height:1.6;color:var(--text);opacity:0.72">Phase 3 auth enforcement is enabled, but no active user identity is available yet.</p></div>';
+      return;
+    }
+    const sessions = await loadSessions();
+    document.getElementById('header-sessions').textContent = sessions.length;
+    showTab('today', document.querySelector('.nav-btn'));
+  } catch (e) {
+    console.warn('Auth state refresh failed.', e);
+    setAuthStatus('warning', 'Auth refresh failed', e?.message || 'Could not refresh app auth state.');
+  } finally {
+    authStateChangeInFlight = false;
+  }
 }
 
 // ─── WAKE LOCK ────────────────────────────────────────────────────────────
@@ -3363,8 +3692,61 @@ let meProfile = null;
 let meMeasurements = [];
 let activeUserScopeToken = null;
 
+function getAuthCardMarkup() {
+  const signedInEmail = authAppUser?.email || authSession?.user?.email || '';
+  const mappingMeta = authAppUser?.user_id
+    ? `<div class="auth-inline-meta">Mapped user_id: ${escapeHtml(authAppUser.user_id)}</div>`
+    : '';
+
+  let actionMarkup = '';
+  if (authSession) {
+    actionMarkup = `
+      <div class="auth-inline-actions">
+        <button class="btn" type="button" onclick="signOutUser()">Sign out</button>
+      </div>
+    `;
+  } else {
+    actionMarkup = `
+      <div class="input-group" style="margin-bottom:12px">
+        <label class="input-label">Email sign-in</label>
+        <div class="auth-email-row">
+          <input type="email" id="auth-email-input" placeholder="you@example.com" autocomplete="email">
+          <button class="btn btn-primary" id="auth-email-link-btn" type="button" onclick="sendSignInLink()">Email link</button>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="card" style="margin-bottom:18px">
+      <div class="auth-card-row">
+        <div class="auth-card-title">Access</div>
+        <div class="auth-card-status">${escapeHtml(getAuthCardStatusText())}</div>
+      </div>
+      <div class="auth-card-note">${escapeHtml(authStatus.detail)}</div>
+      ${signedInEmail ? `<div class="auth-inline-meta" style="margin-bottom:10px">Signed-in email: ${escapeHtml(signedInEmail)}</div>` : ''}
+      ${mappingMeta}
+      ${actionMarkup}
+      <div class="auth-inline-meta">Magic link redirect: ${escapeHtml(AUTH_REDIRECT_URL)}</div>
+      <div class="auth-inline-meta">Current resolved app user: ${escapeHtml(getActiveUserId() || 'none')}</div>
+    </div>
+  `;
+}
+
+function isExpectedAuthPageUrl() {
+  try {
+    const expected = new URL(AUTH_REDIRECT_URL);
+    const expectedPath = expected.pathname.endsWith('/') ? expected.pathname : expected.pathname + '/';
+    const currentPath = window.location.pathname.endsWith('/') ? window.location.pathname : window.location.pathname + '/';
+    return window.location.origin === expected.origin && currentPath === expectedPath;
+  } catch (e) {
+    return false;
+  }
+}
+
 function resetUserScopedState(force = false) {
-  const nextToken = `${ENV}:${getActiveUserId()}`;
+  const userId = getActiveUserId() || 'anonymous';
+  const nextToken = `${ENV}:${userId}`;
   if (!force && activeUserScopeToken === nextToken) return;
   activeUserScopeToken = nextToken;
   cachedSessions = null;
@@ -3384,6 +3766,11 @@ function resetUserScopedState(force = false) {
 async function renderMe() {
   const el = document.getElementById('me-inner');
   el.innerHTML = '<div style="color:var(--text);font-size:14px;opacity:0.5;padding:8px 0">Loading...</div>';
+
+  if (!getActiveUserId()) {
+    el.innerHTML = getAuthCardMarkup();
+    return;
+  }
 
   try {
     const [profile, measurements] = await Promise.all([
@@ -3451,6 +3838,7 @@ async function renderMe() {
   function timeVal(t) { return t ? t.slice(0,5) : ''; }
 
   el.innerHTML = `
+    ${getAuthCardMarkup()}
     <div class="card" style="margin-bottom:18px">
       <div class="card-section-title">Profile</div>
       <div class="input-group" style="margin-bottom:14px">
@@ -3686,7 +4074,7 @@ async function logMeasurement() {
 
   try {
     await sbPost(TABLES.measurements, {
-      user_id: getActiveUserId(),
+      user_id: getActiveUserIdOrThrow(),
       logged_at: date,
       weight_kg: weight ? parseFloat(weight) : null,
       body_fat_pct: bf ? parseFloat(bf) : null,
@@ -3705,7 +4093,7 @@ async function saveProfile() {
   const p = meProfile;
   const status = document.getElementById('me-save-status');
   const body = {
-    user_id:                 getActiveUserId(),
+    user_id:                 getActiveUserIdOrThrow(),
     name:                    document.getElementById('me-name')?.value || null,
     dob:                     document.getElementById('me-dob')?.value || null,
     height_cm:               parseFloat(document.getElementById('me-height')?.value) || null,
@@ -3746,6 +4134,62 @@ async function saveProfile() {
   }
 }
 
+async function sendSignInLink() {
+  const email = document.getElementById('auth-email-input')?.value?.trim();
+  const btn = document.getElementById('auth-email-link-btn');
+  if (!email) {
+    setStatus('Enter an email first', true);
+    return;
+  }
+
+  const client = getAuthClient();
+  if (!client) {
+    setStatus('Auth client unavailable', true);
+    return;
+  }
+  if (!isExpectedAuthPageUrl()) {
+    setStatus(`Open ${AUTH_REDIRECT_URL} before sending an email link`, true);
+    return;
+  }
+
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+    }
+    const { error } = await client.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: AUTH_REDIRECT_URL,
+        shouldCreateUser: false
+      }
+    });
+    if (error) throw error;
+    setStatus('Magic link sent. Check your email.');
+  } catch (e) {
+    console.error('Sign-in link failed:', e);
+    setStatus(e?.message || 'Sign-in link failed', true);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Email link';
+    }
+  }
+}
+
+async function signOutUser() {
+  const client = getAuthClient();
+  if (!client) return;
+  try {
+    const { error } = await client.auth.signOut();
+    if (error) throw error;
+    window.location.reload();
+  } catch (e) {
+    console.error('Sign-out failed:', e);
+    setStatus('Sign-out failed', true);
+  }
+}
+
 function bodyDotClick(evt) {
   var g = evt.target.closest('.bcsdot');
   if (!g) return;
@@ -3768,6 +4212,11 @@ document.addEventListener('click', function(evt) {
   if (evt.target.closest && evt.target.closest('.bcsdot')) bodyDotClick(evt);
 });
 
+getAuthClient()?.auth.onAuthStateChange((event) => {
+  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+    refreshAppForAuthChange();
+  }
+});
 
 init();
 wakeLockEnabled = true;
