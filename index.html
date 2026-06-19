@@ -3649,6 +3649,11 @@ async function renderMe() {
   const el = document.getElementById('me-inner');
   el.innerHTML = '<div style="color:var(--text);font-size:14px;opacity:0.5;padding:8px 0">Loading...</div>';
 
+  if (!getActiveUserId()) {
+    el.innerHTML = getAuthCardMarkup();
+    return;
+  }
+
   try {
     const [profile, measurements] = await Promise.all([
       sbGet(TABLES.profile, withUserScope('select=*&limit=1')),
