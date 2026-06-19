@@ -993,6 +993,13 @@ function getAuthClient() {
   return authClient;
 }
 
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timed out`)), ms))
+  ]);
+}
+
 async function hydrateHashSession(client) {
   if (!client || !window.location.hash.includes('access_token=')) return null;
   const params = new URLSearchParams(window.location.hash.slice(1));
@@ -1029,6 +1036,24 @@ async function hydrateHashSession(client) {
   const { data, error } = result;
   if (error) throw error;
   window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+  return data.session || null;
+}
+
+async function hydrateCodeSession(client) {
+  if (!client) return null;
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (!code) return null;
+
+  const { data, error } = await withTimeout(
+    client.auth.exchangeCodeForSession(code),
+    8000,
+    'Auth code exchange'
+  );
+  if (error) throw error;
+  params.delete('code');
+  const nextSearch = params.toString();
+  window.history.replaceState(null, document.title, window.location.pathname + (nextSearch ? `?${nextSearch}` : ''));
   return data.session || null;
 }
 
@@ -1108,7 +1133,12 @@ async function refreshAuthState() {
 
   try {
     authSession = await hydrateHashSession(client);
-    const { data, error } = await client.auth.getSession();
+    authSession = authSession || await hydrateCodeSession(client);
+    const { data, error } = await withTimeout(
+      client.auth.getSession(),
+      8000,
+      'Auth session lookup'
+    );
     if (error) throw error;
     authSession = authSession || data.session || null;
   } catch (e) {
