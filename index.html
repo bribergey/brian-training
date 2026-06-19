@@ -3187,6 +3187,31 @@ async function init() {
   await renderTodayQueue();
 }
 
+let authStateChangeInFlight = false;
+
+async function refreshAppForAuthChange() {
+  if (authStateChangeInFlight) return;
+  authStateChangeInFlight = true;
+  try {
+    await refreshAuthState();
+    resetUserScopedState(true);
+    const userId = getActiveUserId();
+    if (!userId) {
+      document.getElementById('header-sessions').textContent = '—';
+      document.getElementById('today-queue').innerHTML = '<div class="card"><div class="card-section-title">Sign in required</div><p style="font-size:15px;line-height:1.6;color:var(--text);opacity:0.72">Phase 3 auth enforcement is enabled, but no active user identity is available yet.</p></div>';
+      return;
+    }
+    const sessions = await loadSessions();
+    document.getElementById('header-sessions').textContent = sessions.length;
+    showTab('today', document.querySelector('.nav-btn'));
+  } catch (e) {
+    console.warn('Auth state refresh failed.', e);
+    setAuthStatus('warning', 'Auth refresh failed', e?.message || 'Could not refresh app auth state.');
+  } finally {
+    authStateChangeInFlight = false;
+  }
+}
+
 // ─── WAKE LOCK ────────────────────────────────────────────────────────────
 let wakeLock = null;
 let wakeLockEnabled = false;
@@ -4183,8 +4208,8 @@ document.addEventListener('click', function(evt) {
 });
 
 getAuthClient()?.auth.onAuthStateChange((event) => {
-  if (event !== 'INITIAL_SESSION') {
-    window.location.reload();
+  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+    refreshAppForAuthChange();
   }
 });
 
