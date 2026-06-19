@@ -44,3 +44,7 @@ Phase 3 multi-user auth was completed on 2026-06-19. Production login works for 
 - iPhone Home Screen/PWA login polish
 - longer-term environment cleanup
 
+Active Phase 4 work starts from:
+
+- `docs/phase4-onboarding-runbook.md`: repeatable staging-first onboarding/admin workflow.
+- `docs/coach-multi-user-operations.md`: coach and Telegram guardrails for multi-user reads/writes.

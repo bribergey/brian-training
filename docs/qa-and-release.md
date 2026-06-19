@@ -21,6 +21,8 @@ For auth/data work, staging should prove:
 - training queue renders for the mapped user
 - analytics/history do not leak other users
 - Me tab profile/measurements are scoped to the mapped user
+- onboarding runbook steps work for a synthetic mapped user before any real production user is created
+- coach/Telegram write instructions include an explicit environment, target `user_id`, and narrow table list
 
 Use synthetic staging users where possible. Clean up test rows after write tests.
 
@@ -59,4 +61,3 @@ Final updates should include:
 - what was not verified
 - any user action needed
 - links to PRs/Notion where useful
-
