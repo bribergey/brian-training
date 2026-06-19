@@ -10,6 +10,7 @@ These notes are for coach, Telegram, and Codex workflows that read or write Bria
 - Never rely on email alone once inside the workout tables; workout ownership is by app `user_id`.
 - Treat `exercises` as shared. A new exercise there is visible to every user.
 - Prefer staging rehearsal for new program patterns and coach instructions.
+- Prefer one coach context per user. Do not let a coach switch users implicitly.
 
 ## Table Map
 
@@ -127,3 +128,13 @@ Forbidden: reading or writing any other user_id; broad updates; production write
 
 If any of those fields are missing, pause and ask for them before acting.
 
+## User-Specific Coach Templates
+
+Detailed Brian/Ruixi coach instructions and test prompts live in `docs/phase4-5-coach-rollout.md`.
+
+Current production users:
+
+- Brian: `user_id = brian`
+- Ruixi: `user_id = ruixi`
+
+Brian's existing coach should remain scoped to `brian`. Ruixi should get a separate coach context scoped to `ruixi`.

@@ -14,6 +14,7 @@ Important cards:
 - `Create multiple users`: `34ce5cb9-20a5-8057-abbf-c1802ed6431c`
 - `Phase 3 - Real auth and single second-user pilot`: `383e5cb9-20a5-8198-8f3b-dc1f2cdf6f26`
 - `Phase 4 - Onboarding/admin hardening and second-user readiness`: `384e5cb9-20a5-816b-939f-d8b8351db545`
+- `Phase 4.5 - Coach/Telegram multi-user rollout`: `384e5cb9-20a5-815f-b2d5-cb73705f2ca3`
 
 ## How To Use Notion
 
