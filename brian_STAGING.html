@@ -1000,13 +1000,42 @@ async function hydrateHashSession(client) {
   const refreshToken = params.get('refresh_token');
   if (!accessToken || !refreshToken) return null;
 
-  const { data, error } = await client.auth.setSession({
+  const setSession = client.auth.setSession({
     access_token: accessToken,
     refresh_token: refreshToken
   });
+  const result = await Promise.race([
+    setSession,
+    new Promise(resolve => setTimeout(() => resolve({ timedOut: true }), 3500))
+  ]);
+  if (result.timedOut) {
+    const payload = decodeJwtPayload(accessToken);
+    window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      token_type: params.get('token_type') || 'bearer',
+      expires_at: Number(params.get('expires_at')) || payload.exp,
+      expires_in: Number(params.get('expires_in')) || null,
+      user: {
+        id: payload.sub,
+        email: payload.email,
+        aud: payload.aud,
+        role: payload.role
+      }
+    };
+  }
+
+  const { data, error } = result;
   if (error) throw error;
   window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
   return data.session || null;
+}
+
+function decodeJwtPayload(token) {
+  const raw = token.split('.')[1] || '';
+  const normalized = raw.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(raw.length / 4) * 4, '=');
+  return JSON.parse(atob(normalized));
 }
 
 function getSupabaseHeaders(extra = {}) {
