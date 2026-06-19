@@ -960,7 +960,7 @@ const AUTH_REDIRECT_URL = ENV === 'production'
   ? 'https://bribergey.github.io/brian-training/'
   : 'https://bribergey.github.io/brian-training/staging/';
 const APP_USERS_TABLE = ENV === 'production' ? 'app_users' : 'app_users_staging';
-const ALLOW_LEGACY_IDENTITY_FALLBACK = ENV === 'production';
+const ALLOW_LEGACY_IDENTITY_FALLBACK = false;
 const LEGACY_USER_FALLBACK_ID = 'brian';
 const USER_SCOPE_COLUMN = 'user_id';
 let authClient = null;
