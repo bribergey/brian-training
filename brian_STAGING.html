@@ -3621,9 +3621,21 @@ function getAuthCardMarkup() {
       ${signedInEmail ? `<div class="auth-inline-meta" style="margin-bottom:10px">Signed-in email: ${escapeHtml(signedInEmail)}</div>` : ''}
       ${mappingMeta}
       ${actionMarkup}
+      <div class="auth-inline-meta">Magic link redirect: ${escapeHtml(AUTH_REDIRECT_URL)}</div>
       <div class="auth-inline-meta">Current resolved app user: ${escapeHtml(getActiveUserId() || 'none')}</div>
     </div>
   `;
+}
+
+function isExpectedAuthPageUrl() {
+  try {
+    const expected = new URL(AUTH_REDIRECT_URL);
+    const expectedPath = expected.pathname.endsWith('/') ? expected.pathname : expected.pathname + '/';
+    const currentPath = window.location.pathname.endsWith('/') ? window.location.pathname : window.location.pathname + '/';
+    return window.location.origin === expected.origin && currentPath === expectedPath;
+  } catch (e) {
+    return false;
+  }
 }
 
 function resetUserScopedState(force = false) {
@@ -4026,6 +4038,10 @@ async function sendSignInLink() {
   const client = getAuthClient();
   if (!client) {
     setStatus('Auth client unavailable', true);
+    return;
+  }
+  if (!isExpectedAuthPageUrl()) {
+    setStatus(`Open ${AUTH_REDIRECT_URL} before sending an email link`, true);
     return;
   }
 
