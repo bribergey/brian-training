@@ -1339,10 +1339,21 @@ const EX_BADGES = {
 let ANCHOR_GROUPS = {};
 let anchorGroupsLoaded = false;
 
+function getFallbackAnchorGroups() {
+  return {
+    'Barbell squat':  { names: new Set(['Barbell back squat','Barbell squat (paused)']), isRepBased: false },
+    'Deadlift':       { names: new Set(['Deadlift']),                                    isRepBased: false },
+    'Bench press':    { names: new Set(['Barbell bench press']),                         isRepBased: false },
+    'Pull-up':        { names: new Set(['Pull-up']),                                      isRepBased: true  },
+    'Shoulder press': { names: new Set(['Barbell shoulder press']),                      isRepBased: false },
+  };
+}
+
 async function loadAnchorGroups() {
   if (anchorGroupsLoaded) return;
   try {
     const rows = await sbGet('exercises', 'select=name,anchor_group,rep_type&badge=eq.anchor&anchor_group=not.is.null');
+    if (!Array.isArray(rows) || rows.length === 0) throw new Error('Anchor exercise catalog is empty');
     ANCHOR_GROUPS = {};
     rows.forEach(ex => {
       const g = ex.anchor_group;
@@ -1353,13 +1364,7 @@ async function loadAnchorGroups() {
     anchorGroupsLoaded = true;
   } catch(e) {
     // Fallback to hardcoded if fetch fails
-    ANCHOR_GROUPS = {
-      'Barbell squat':  { names: new Set(['Barbell back squat','Barbell squat (paused)']), isRepBased: false },
-      'Deadlift':       { names: new Set(['Deadlift']),                                    isRepBased: false },
-      'Bench press':    { names: new Set(['Barbell bench press']),                         isRepBased: false },
-      'Pull-up':        { names: new Set(['Pull-up']),                                      isRepBased: true  },
-      'Shoulder press': { names: new Set(['Barbell shoulder press']),                      isRepBased: false },
-    };
+    ANCHOR_GROUPS = getFallbackAnchorGroups();
     anchorGroupsLoaded = true;
   }
 }
