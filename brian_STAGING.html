@@ -4032,7 +4032,10 @@ async function sendSignInLink() {
   try {
     const { error } = await client.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: AUTH_REDIRECT_URL }
+      options: {
+        emailRedirectTo: AUTH_REDIRECT_URL,
+        shouldCreateUser: false
+      }
     });
     if (error) throw error;
     setStatus('Magic link sent');
