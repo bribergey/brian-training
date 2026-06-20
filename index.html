@@ -797,6 +797,16 @@ select {
 .auth-card-note strong {
   opacity: 1;
 }
+.auth-context-note {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+}
 .auth-email-row {
   display: flex;
   gap: 10px;
@@ -3182,7 +3192,7 @@ async function init() {
   const userId = getActiveUserId();
   if (!userId) {
     document.getElementById('header-sessions').textContent = '—';
-    document.getElementById('today-queue').innerHTML = '<div class="card"><div class="card-section-title">Sign in required</div><p style="font-size:15px;line-height:1.6;color:var(--text);opacity:0.72">Phase 3 auth enforcement is enabled, but no active user identity is available yet.</p></div>';
+    document.getElementById('today-queue').innerHTML = '<div class="card"><div class="card-section-title">Sign in required</div><p style="font-size:15px;line-height:1.6;color:var(--text);opacity:0.72">Sign in to load your training queue, history, analytics, and profile.</p></div>';
     return;
   }
   const sessions = await loadSessions();
@@ -3203,7 +3213,7 @@ async function refreshAppForAuthChange() {
     const userId = getActiveUserId();
     if (!userId) {
       document.getElementById('header-sessions').textContent = '—';
-      document.getElementById('today-queue').innerHTML = '<div class="card"><div class="card-section-title">Sign in required</div><p style="font-size:15px;line-height:1.6;color:var(--text);opacity:0.72">Phase 3 auth enforcement is enabled, but no active user identity is available yet.</p></div>';
+      document.getElementById('today-queue').innerHTML = '<div class="card"><div class="card-section-title">Sign in required</div><p style="font-size:15px;line-height:1.6;color:var(--text);opacity:0.72">Sign in to load your training queue, history, analytics, and profile.</p></div>';
       return;
     }
     const sessions = await loadSessions();
@@ -3724,6 +3734,7 @@ function getAuthCardMarkup() {
         <div class="auth-card-status">${escapeHtml(getAuthCardStatusText())}</div>
       </div>
       <div class="auth-card-note">${escapeHtml(authStatus.detail)}</div>
+      <div class="auth-context-note">Use the same browser or Home Screen app window for requesting and opening sign-in links. If a mobile link opens somewhere else and this app stays signed out, use the browser that opened the link for that session.</div>
       ${signedInEmail ? `<div class="auth-inline-meta" style="margin-bottom:10px">Signed-in email: ${escapeHtml(signedInEmail)}</div>` : ''}
       ${mappingMeta}
       ${actionMarkup}
