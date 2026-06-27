@@ -422,10 +422,12 @@ select {
 .lift-cards { display: flex; flex-direction: column; gap: 12px; }
 .lift-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
 .lift-card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+.lift-card-metric { text-align: right; flex-shrink: 0; }
 .lift-name { font-size: 15px; font-weight: 600; color: var(--text); }
 .lift-val { font-family: var(--display); font-size: 22px; font-weight: 800; color: var(--green); }
 .lift-val-unit { font-family: var(--mono); font-size: 11px; color: var(--text); opacity: 0.5; margin-left: 2px; }
-.lift-sparkline { width: 100%; height: 56px; display: block; }
+.lift-current { font-family: var(--mono); font-size: 10px; color: var(--text); opacity: 0.45; margin-top: 2px; }
+.lift-sparkline { width: 100%; height: 70px; display: block; }
 .lift-spark-labels { display: flex; justify-content: space-between; margin-top: 4px; }
 .lift-spark-label { font-family: var(--mono); font-size: 9px; color: var(--text); opacity: 0.4; }
 .lift-no-data { font-family: var(--mono); font-size: 11px; color: var(--text); opacity: 0.4; padding: 8px 0; }
@@ -898,6 +900,13 @@ select {
 
     <div class="card card-accent-gold" style="margin-bottom:12px">
       <div class="card-section-title">Anchor lifts — best logged</div>
+      <div class="hist-filters lift-filters">
+        <button class="hist-filter-btn lift-filter-btn" onclick="setLiftFilter('30',this)">30D</button>
+        <button class="hist-filter-btn lift-filter-btn" onclick="setLiftFilter('60',this)">60D</button>
+        <button class="hist-filter-btn lift-filter-btn active" onclick="setLiftFilter('90',this)">90D</button>
+        <button class="hist-filter-btn lift-filter-btn" onclick="setLiftFilter('year',this)">Year</button>
+        <button class="hist-filter-btn lift-filter-btn" onclick="setLiftFilter('all',this)">All</button>
+      </div>
       <div id="lift-tracker"><div style="color:var(--text);font-size:14px">No sessions yet.</div></div>
     </div>
 
@@ -1394,6 +1403,33 @@ async function getExerciseCache() {
 
 let currentDay = 'A';
 let selectedDayIdx = null; // null = not yet set, persists across tab switches
+let selectedSessionKey = null;
+
+function selectedSessionStorageKey() {
+  return getUserScopedStorageKey('brian_selected_queue_session');
+}
+
+function getQueueSelectionKey(session) {
+  if (!session) return null;
+  return normalizeProgramSessionKey(session.sessionKey) || `${session.scheduledDate || ''}-${session.day || ''}`;
+}
+
+function loadSelectedSessionKey() {
+  try { return localStorage.getItem(selectedSessionStorageKey()) || null; }
+  catch { return null; }
+}
+
+function rememberSelectedSession(session) {
+  selectedSessionKey = getQueueSelectionKey(session);
+  try {
+    if (selectedSessionKey) localStorage.setItem(selectedSessionStorageKey(), selectedSessionKey);
+  } catch {}
+}
+
+function forgetSelectedSession() {
+  selectedSessionKey = null;
+  try { localStorage.removeItem(selectedSessionStorageKey()); } catch {}
+}
 
 // ─── EXERCISE HELPERS ─────────────────────────────────────────────────────
 // ─── STEPPER HELPER ──────────────────────────────────────────────────────
@@ -1480,44 +1516,58 @@ function getWeekKey(dateStr) {
   return `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
 }
 
-function buildSparkline(points, weeks, unit) {
+function formatShortDateLabel(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T12:00:00');
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function buildSparkline(points, labels, unit) {
   unit = unit || 'kg';
-  const W = 300, H = 48, PAD = 10;
+  const W = 300, H = 64, PAD_X = 10, PAD_TOP = 16, PAD_BOT = 12;
   const n = points.length;
   const minV = Math.min(...points);
   const maxV = Math.max(...points);
   const range = maxV - minV || 1;
 
-  const toX = i => PAD + (i / Math.max(n - 1, 1)) * (W - PAD * 2);
-  const toY = v => PAD + (1 - (v - minV) / range) * (H - PAD * 2);
+  const toX = i => PAD_X + (i / Math.max(n - 1, 1)) * (W - PAD_X * 2);
+  const toY = v => PAD_TOP + (1 - (v - minV) / range) * (H - PAD_TOP - PAD_BOT);
 
   const pathD = n > 1 ? points.map((v, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ') : '';
+  const bestVal = Math.max(...points);
+  const firstBestIdx = points.findIndex(v => v === bestVal);
+  const lastIdx = points.length - 1;
 
   const dots = points.map((v, i) => {
     const isLast = i === points.length - 1;
-    const isBest = v === Math.max(...points);
+    const isBest = i === firstBestIdx;
     const r    = isLast ? 4 : 3;
     const fill = (isBest || isLast) ? 'var(--green)' : 'var(--bg2)';
-    return `<circle cx="${toX(i).toFixed(1)}" cy="${toY(v).toFixed(1)}" r="${r}" fill="${fill}" stroke="var(--green)" stroke-width="2"/>`;
+    const title = `${labels[i] || ''}: ${v}${unit}`;
+    return `<circle cx="${toX(i).toFixed(1)}" cy="${toY(v).toFixed(1)}" r="${r}" fill="${fill}" stroke="var(--green)" stroke-width="2"><title>${title}</title></circle>`;
   }).join('');
 
-  // Label all dots except the last (current val is already shown at top)
-  const valueLabels = points.slice(0, -1).map((v, i) => {
-    const labelY = (toY(v) - 7).toFixed(1);
+  const labelIndexes = points.length <= 4
+    ? points.map((_, i) => i)
+    : Array.from(new Set([firstBestIdx, lastIdx])).filter(i => i >= 0);
+  const valueLabels = labelIndexes.map((i) => {
+    const v = points[i];
+    const labelY = Math.max(9, toY(v) - 7).toFixed(1);
     return `<text x="${toX(i).toFixed(1)}" y="${labelY}" text-anchor="middle" font-size="9" fill="var(--text)" opacity="0.5" font-family="monospace">${v}${unit}</text>`;
   }).join('');
 
-  const firstWeek = weeks.length ? `Wk 1` : '';
-  const lastWeek  = weeks.length > 1 ? `Wk ${weeks.length}` : '';
+  const firstLabel = labels.length ? labels[0] : '';
+  const lastLabel  = labels.length > 1 ? labels[labels.length - 1] : '';
 
-  return `<svg class="lift-sparkline" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+  return `<svg class="lift-sparkline" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
     ${pathD ? `<path d="${pathD}" fill="none" stroke="var(--green)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.6"/>` : ''}
     ${dots}
     ${valueLabels}
   </svg>
   <div class="lift-spark-labels">
-    <span class="lift-spark-label">${firstWeek}</span>
-    <span class="lift-spark-label">${lastWeek}</span>
+    <span class="lift-spark-label">${firstLabel}</span>
+    <span class="lift-spark-label">${lastLabel}</span>
   </div>`;
 }
 
@@ -2001,6 +2051,9 @@ function getDaySortValue(day) {
 }
 
 async function renderTodayQueue() {
+  const previousSelectionKey = selectedSessionKey ||
+    (selectedDayIdx !== null && selectedDayIdx !== undefined ? getQueueSelectionKey(weekQueue[selectedDayIdx]) : null) ||
+    loadSelectedSessionKey();
   weekQueue = await loadQueue();
   const selectorEl = document.getElementById('day-selector-container');
   const queueEl    = document.getElementById('today-queue');
@@ -2011,12 +2064,22 @@ async function renderTodayQueue() {
     return;
   }
 
+  // Prefer the same scheduled session across auth refreshes/re-renders.
+  const selectedKeyIdx = previousSelectionKey
+    ? weekQueue.findIndex(s => getQueueSelectionKey(s) === previousSelectionKey)
+    : -1;
+  if (selectedKeyIdx >= 0) {
+    selectedDayIdx = selectedKeyIdx;
+    rememberSelectedSession(weekQueue[selectedDayIdx]);
+  }
+
   // Default to today's scheduled day if found, else first
   const today = new Date().toISOString().split('T')[0];
   const todayIdx = weekQueue.findIndex(s => s.scheduledDate === today);
   // Only reset day selection on first load or if current index is now out of bounds
   if (selectedDayIdx === null || selectedDayIdx === undefined || selectedDayIdx >= weekQueue.length) {
     selectedDayIdx = todayIdx >= 0 ? todayIdx : 0;
+    rememberSelectedSession(weekQueue[selectedDayIdx]);
   }
 
   renderDaySelector();
@@ -2242,6 +2305,7 @@ function reloadExtraDraftsIfNeeded() {
 function selectDay(idx) {
   saveDraft(selectedDayIdx);
   selectedDayIdx = idx;
+  rememberSelectedSession(weekQueue[selectedDayIdx]);
   renderDaySelector();
   renderSelectedDay();
   document.getElementById('tab-today').scrollTop = 0;
@@ -2455,6 +2519,7 @@ async function confirmSkip(si) {
       logged: new Date().toISOString(),
       program_session_key: normalizeProgramSessionKey(session.sessionKey) });
     clearDraft(session);
+    forgetSelectedSession();
     setStatus('Workout skipped — noted for your coach.');
     document.getElementById('tab-today').scrollTop = 0;
     await renderTodayQueue();
@@ -2519,6 +2584,7 @@ async function saveWorkoutFromQueue(si) {
       program_session_key: normalizeProgramSessionKey(session.sessionKey), workout_time: workoutTime });
     clearDraft(session);
     delete _addedExercises[si];
+    forgetSelectedSession();
     document.getElementById('header-sessions').textContent = (cachedSessions||[]).length;
     setStatus('✓ Workout saved to cloud!');
     document.getElementById('tab-today').scrollTop = 0;
@@ -2580,12 +2646,20 @@ function showTab(t, btn) {
 
 // ─── RENDER HISTORY ───────────────────────────────────────────────────────
 let histFilter = '30'; // default
+let liftFilter = '90'; // default anchor-lift analytics range
 
 function setHistFilter(f, btn) {
   histFilter = f;
-  document.querySelectorAll('.hist-filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.hist-filter-btn:not(.lift-filter-btn)').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderSessionList();
+}
+
+function setLiftFilter(f, btn) {
+  liftFilter = f;
+  document.querySelectorAll('.lift-filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderHistory();
 }
 
 function getFilterRange(f) {
@@ -2597,6 +2671,7 @@ function getFilterRange(f) {
     return { from: mon, to: null };
   }
   if (f === '30')  { const d = new Date(today); d.setDate(d.getDate() - 30); return { from: d, to: null }; }
+  if (f === '60')  { const d = new Date(today); d.setDate(d.getDate() - 60); return { from: d, to: null }; }
   if (f === '90')  { const d = new Date(today); d.setDate(d.getDate() - 90); return { from: d, to: null }; }
   if (f === 'year') { return { from: new Date(today.getFullYear(), 0, 1), to: null }; }
   if (f === 'lastyear') {
@@ -2604,6 +2679,15 @@ function getFilterRange(f) {
     return { from: new Date(y, 0, 1), to: new Date(y, 11, 31) };
   }
   return { from: null, to: null };
+}
+
+function dateIsInRange(dateStr, range) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr + 'T00:00:00');
+  if (Number.isNaN(d.getTime())) return false;
+  if (range?.from && d < range.from) return false;
+  if (range?.to && d > range.to) return false;
+  return true;
 }
 
 function formatSessionDate(dateStr) {
@@ -2670,9 +2754,12 @@ async function renderHistory() {
 
   const weeklyBests = {};
   Object.keys(ANCHOR_GROUPS).forEach(g => { weeklyBests[g] = {}; });
+  const liftRange = getFilterRange(liftFilter);
 
   realSessions.forEach(s => {
-    const weekKey = getWeekKey(s.date);
+    const sessionDate = s.date || (s.logged_at || '').slice(0, 10);
+    if (!dateIsInRange(sessionDate, liftRange)) return;
+    const weekKey = getWeekKey(sessionDate);
     (s.exercises||[]).forEach(ex => {
       const group = nameToGroup[ex.name];
       if (!group) return;
@@ -2690,8 +2777,9 @@ async function renderHistory() {
           : Math.abs(parseFloat(ex.topWeight || ex.weight || 0));
       }
       if (v > 0) {
-        if (!weeklyBests[group][weekKey] || v > weeklyBests[group][weekKey])
-          weeklyBests[group][weekKey] = v;
+        if (!weeklyBests[group][weekKey] || v > weeklyBests[group][weekKey].value) {
+          weeklyBests[group][weekKey] = { value: v, date: sessionDate };
+        }
       }
     });
   });
@@ -2701,21 +2789,26 @@ async function renderHistory() {
     const weekMap    = weeklyBests[group];
     const weeks      = Object.keys(weekMap).sort();
     const isRepBased = cfg.isRepBased;
-    const curVal     = weeks.length ? weekMap[weeks[weeks.length - 1]] : null;
+    const points     = weeks.map(w => weekMap[w].value);
+    const maxVal     = points.length ? Math.max(...points) : null;
+    const curVal     = points.length ? points[points.length - 1] : null;
     const unit       = isRepBased ? 'reps' : 'kg';
+    const currentMeta = maxVal !== null && curVal !== null && curVal !== maxVal
+      ? `<div class="lift-current">Latest ${curVal}${unit}</div>`
+      : '';
 
     const liftId = group.replace(/[^a-z0-9]/gi,'_');
     liftHtml += `<div class="lift-card" id="liftcard-${liftId}">
       <div class="lift-card-header">
         <span class="lift-name">${group}</span>
-        <span><span class="lift-val">${curVal !== null ? curVal : '—'}</span><span class="lift-val-unit">${curVal !== null ? unit : ''}</span></span>
+        <span class="lift-card-metric"><span class="lift-val">${maxVal !== null ? maxVal : '—'}</span><span class="lift-val-unit">${maxVal !== null ? unit : ''}</span>${currentMeta}</span>
       </div>`;
 
     if (weeks.length === 0) {
-      liftHtml += `<div class="lift-no-data">No data yet — log a session to start tracking</div>`;
+      liftHtml += `<div class="lift-no-data">No anchor data in this range</div>`;
     } else {
-      const points = weeks.map(w => weekMap[w]);
-      liftHtml += buildSparkline(points, weeks, unit);
+      const labels = weeks.map(w => formatShortDateLabel(weekMap[w].date));
+      liftHtml += buildSparkline(points, labels, unit);
     }
 
     liftHtml += `</div>`;
@@ -2752,8 +2845,11 @@ async function renderHistory() {
       var toX = function(i) { return PAD_X + (i / (vs.length - 1)) * (W - PAD_X * 2); };
       var toY = function(v) { return PAD_TOP + (1 - (v - minV) / range) * (H - PAD_TOP - PAD_BOT); };
       var pathD = vs.map(function(v, i) { return (i === 0 ? 'M' : 'L') + toX(i).toFixed(1) + ',' + toY(v).toFixed(1); }).join(' ');
-      // Value labels above each dot
-      var valLabels = vals.map(function(pt, i) {
+      var labelIndexes = vals.length <= 4
+        ? vals.map(function(_, i) { return i; })
+        : [0, vals.length - 1];
+      var valLabels = labelIndexes.map(function(i) {
+        var pt = vals[i];
         return '<text x="' + toX(i).toFixed(1) + '" y="' + (toY(pt.v) - 8).toFixed(1) + '" text-anchor="middle" font-size="9" fill="var(--text)" opacity="0.4" font-family="monospace">' + pt.v + unit + '</text>';
       }).join('');
       // Clickable dots — tap shows tooltip with date
@@ -3577,7 +3673,7 @@ function restoreSetRows(uid, ex, sets) {
 
 // ─── SHARE LIFT CARD ─────────────────────────────────────────────────────
 async function shareAllLifts() {
-  const cards = document.querySelectorAll('.lift-card');
+  const cards = document.querySelectorAll('#lift-tracker .lift-card');
   if (!cards.length) { setStatus('No lift data yet', true); return; }
 
   const btn = document.getElementById('share-lifts-btn');
@@ -3763,6 +3859,7 @@ function resetUserScopedState(force = false) {
   cachedSessions = null;
   weekQueue = [];
   selectedDayIdx = null;
+  selectedSessionKey = null;
   extraWorkouts = loadExtraDrafts();
   programCache = null;
   programTabLabelFallbackCache = null;
