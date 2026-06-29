@@ -11,12 +11,16 @@ Primary project:
 
 Use the Supabase connector/CLI for read checks and migrations. Follow the Supabase skill guidance when doing auth, RLS, schema, or database work.
 
+Canonical app data lives in the dedicated `training` schema. The legacy `public`
+table names are compatibility views for cached clients and older tooling; new
+code, coach instructions, and SQL should use `training.*`.
+
 ## Auth Model
 
 The app uses Supabase Auth and an app-user mapping table.
 
-- Production mapping table: `public.app_users`
-- Staging mapping table: `public.app_users_staging`
+- Production mapping table: `training.app_users`
+- Staging mapping table: `training.app_users_staging`
 - Brian production app identity: `user_id = brian`
 - Brian auth user id as of Phase 3: `8d28136d-e06c-49fb-b4f8-0fa7788068d7`
 
@@ -31,7 +35,7 @@ Supabase Auth URL settings should include:
 
 ## Data Model Notes
 
-Production user-owned tables:
+Production user-owned tables in `training`:
 
 - `sessions`
 - `program`
@@ -39,7 +43,7 @@ Production user-owned tables:
 - `user_profile`
 - `user_measurements`
 
-Staging user-owned tables:
+Staging user-owned tables in `training`:
 
 - `sessions_staging`
 - `program_staging`
@@ -83,4 +87,3 @@ Staging deploy:
 - Public URL is `/staging/`.
 
 GitHub Pages cache can lag briefly. Use cache-buster query strings during QA, for example `?v=qa-YYYYMMDD`.
-
