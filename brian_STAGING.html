@@ -985,6 +985,8 @@ const USER_SCOPE_COLUMN = 'user_id';
 let authClient = null;
 let authSession = null;
 let authAppUser = null;
+let authLastLookupError = null;
+let authLastLookupAttempt = null;
 let authStatus = { mode: 'booting', label: 'Checking access', detail: 'Checking sign-in state…' };
 
 function getActiveUserId() {
@@ -1082,8 +1084,8 @@ function decodeJwtPayload(token) {
   return JSON.parse(atob(normalized));
 }
 
-function getSupabaseHeaders(extra = {}) {
-  const token = authSession?.access_token || SB_KEY;
+function getSupabaseHeaders(extra = {}, tokenOverride = null) {
+  const token = tokenOverride || authSession?.access_token || SB_KEY;
   return {
     'Content-Type': 'application/json',
     'apikey': SB_KEY,
@@ -1125,16 +1127,71 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function formatAuthUserId(id) {
+  if (!id) return '';
+  const raw = String(id);
+  return raw.length > 12 ? `${raw.slice(0, 8)}…${raw.slice(-4)}` : raw;
+}
+
+async function lookupAppUserForSession(session) {
+  const params = `select=id,user_id,email,display_name,is_active,auth_user_id&auth_user_id=eq.${encodeURIComponent(session.user.id)}&is_active=is.true&limit=1`;
+  const rows = await sbGet(APP_USERS_TABLE, params, session.access_token);
+  return rows[0] || null;
+}
+
 async function resolveAuthAppUser(session) {
+  authLastLookupError = null;
+  authLastLookupAttempt = session?.user?.id
+    ? { authUserId: session.user.id, email: session.user.email || '' }
+    : null;
   if (!session?.user?.id) return null;
+
   try {
-    const params = `select=id,user_id,email,display_name,is_active,auth_user_id&auth_user_id=eq.${encodeURIComponent(session.user.id)}&is_active=is.true&limit=1`;
-    const rows = await sbGet(APP_USERS_TABLE, params);
-    return rows[0] || null;
+    const appUser = await lookupAppUserForSession(session);
+    if (appUser) return appUser;
   } catch (e) {
     console.warn('App user mapping lookup failed.', e);
-    return null;
+    authLastLookupError = e?.message || String(e);
   }
+
+  const client = getAuthClient();
+  if (!client || !session.refresh_token) return null;
+
+  try {
+    const { data, error } = await withTimeout(
+      client.auth.refreshSession(session),
+      8000,
+      'Auth session refresh'
+    );
+    if (error) throw error;
+    if (!data?.session?.user?.id) return null;
+    authSession = data.session;
+    authLastLookupAttempt = {
+      authUserId: authSession.user.id,
+      email: authSession.user.email || authLastLookupAttempt?.email || ''
+    };
+    const appUser = await lookupAppUserForSession(authSession);
+    if (appUser) {
+      authLastLookupError = null;
+      return appUser;
+    }
+  } catch (e) {
+    console.warn('App user mapping retry failed.', e);
+    const message = e?.message || String(e);
+    authLastLookupError = authLastLookupError ? `${authLastLookupError}; ${message}` : message;
+  }
+
+  return null;
+}
+
+function getMissingAppUserDetail() {
+  const email = authSession?.user?.email || 'this account';
+  const authId = formatAuthUserId(authSession?.user?.id || authLastLookupAttempt?.authUserId);
+  const authHint = authId ? ` Auth user: ${authId}.` : '';
+  if (authLastLookupError) {
+    return `${email} is signed in, but the app user lookup failed after refreshing the session.${authHint} ${authLastLookupError}`;
+  }
+  return `${email} is signed in, but no active app_users mapping row was readable.${authHint}`;
 }
 
 async function refreshAuthState() {
@@ -1174,8 +1231,7 @@ async function refreshAuthState() {
   }
 
   if (authSession && !authAppUser) {
-    const email = authSession.user?.email || 'this account';
-    setAuthStatus('warning', 'Missing app user', `${email} is signed in, but there is no app_users mapping row yet.`);
+    setAuthStatus('warning', 'Missing app user', getMissingAppUserDetail());
     return;
   }
 
@@ -1268,8 +1324,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-async function sbGet(table, params = '') {
-  const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, { headers: getSupabaseHeaders() });
+async function sbGet(table, params = '', tokenOverride = null) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, { headers: getSupabaseHeaders({}, tokenOverride) });
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
