@@ -14,31 +14,34 @@ These notes are for coach, Telegram, and Codex workflows that read or write Bria
 
 ## Table Map
 
+Use the canonical `training` schema for all new SQL. Legacy `public.*` names are
+compatibility views only.
+
 Production:
 
-- `app_users`
-- `program`
-- `monthly_program`
-- `sessions`
-- `user_profile`
-- `user_measurements`
-- `program_full`
-- `monthly_program_full`
+- `training.app_users`
+- `training.program`
+- `training.monthly_program`
+- `training.sessions`
+- `training.user_profile`
+- `training.user_measurements`
+- `training.program_full`
+- `training.monthly_program_full`
 
 Staging:
 
-- `app_users_staging`
-- `program_staging`
-- `monthly_program_staging`
-- `sessions_staging`
-- `user_profile_staging`
-- `user_measurements_staging`
-- `program_staging_full`
-- `monthly_program_staging_full`
+- `training.app_users_staging`
+- `training.program_staging`
+- `training.monthly_program_staging`
+- `training.sessions_staging`
+- `training.user_profile_staging`
+- `training.user_measurements_staging`
+- `training.program_staging_full`
+- `training.monthly_program_staging_full`
 
 Shared:
 
-- `exercises`
+- `training.exercises`
 
 ## Required Preflight
 
@@ -57,7 +60,7 @@ Read one user's sessions:
 
 ```sql
 select id, date, day, logged_at, skipped, program_session_key
-from public.sessions
+from training.sessions
 where user_id = '<target_user_id>'
 order by date desc, logged_at desc
 limit 20;
@@ -67,7 +70,7 @@ Read one user's current program:
 
 ```sql
 select *
-from public.program
+from training.program
 where user_id = '<target_user_id>'
 order by scheduled_date asc, day asc, order_index asc;
 ```
@@ -76,7 +79,7 @@ Read one user's profile:
 
 ```sql
 select *
-from public.user_profile
+from training.user_profile
 where user_id = '<target_user_id>'
 limit 1;
 ```
@@ -92,7 +95,7 @@ Every update or delete must include a `where user_id = '<target_user_id>'` claus
 Good update shape:
 
 ```sql
-update public.program
+update training.program
 set coach_notes = '<new note>'
 where user_id = '<target_user_id>'
   and id = '<row_id>';
@@ -101,7 +104,7 @@ where user_id = '<target_user_id>'
 Bad update shape:
 
 ```sql
-update public.program
+update training.program
 set coach_notes = '<new note>';
 ```
 
@@ -130,11 +133,4 @@ If any of those fields are missing, pause and ask for them before acting.
 
 ## User-Specific Coach Templates
 
-Detailed Brian/Ruixi coach instructions and test prompts live in `docs/phase4-5-coach-rollout.md`.
-
-Current production users:
-
-- Brian: `user_id = brian`
-- Ruixi: `user_id = ruixi`
-
-Brian's existing coach should remain scoped to `brian`. Ruixi should get a separate coach context scoped to `ruixi`.
+Detailed user-specific coach instructions and test prompts live in `docs/phase4-5-coach-rollout.md`. Brian's existing coach should remain scoped to `brian`; any other user should use a separate coach context without being named inside Brian's runtime prompt.

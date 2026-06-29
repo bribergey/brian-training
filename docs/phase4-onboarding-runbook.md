@@ -13,13 +13,13 @@ Phase 4 turns the Phase 3 strict-auth foundation into a repeatable operating pro
 
 ## Current Architecture
 
-Production user mapping lives in `public.app_users`.
+Production user mapping lives in `training.app_users`.
 
-Staging user mapping lives in `public.app_users_staging`.
+Staging user mapping lives in `training.app_users_staging`.
 
-The frontend resolves the signed-in Supabase Auth user to an app `user_id`, then all user-owned table reads and writes are scoped by that app user.
+The frontend resolves the signed-in Supabase Auth user to an app `user_id`, then all user-owned table reads and writes are scoped by that app user. Legacy `public.*` names exist as compatibility views, but new SQL should use `training.*`.
 
-User-owned production tables:
+User-owned production tables in `training`:
 
 - `sessions`
 - `program`
@@ -27,7 +27,7 @@ User-owned production tables:
 - `user_profile`
 - `user_measurements`
 
-User-owned staging tables:
+User-owned staging tables in `training`:
 
 - `sessions_staging`
 - `program_staging`
@@ -119,4 +119,3 @@ For app login polish regressions:
 
 - Revert the HTML copy-only change on the feature branch.
 - Redeploy staging before considering production.
-
