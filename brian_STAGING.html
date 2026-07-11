@@ -69,17 +69,17 @@ body {
 .app-title {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 7px;
   min-width: 0;
 }
 .briq-mark {
   display: grid;
   flex: 0 0 auto;
-  grid-template-columns: 9px 21px;
-  grid-template-rows: 14px 14px;
-  gap: 4px;
-  height: 32px;
-  width: 34px;
+  grid-template-columns: 5px 11px;
+  grid-template-rows: 7px 7px;
+  gap: 3px;
+  height: 17px;
+  width: 19px;
 }
 .briq-mark span {
   background: #ffffff;
@@ -95,7 +95,7 @@ body {
   display: flex;
   align-items: baseline;
   font-family: var(--display);
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
   letter-spacing: 0;
   line-height: 1;
@@ -138,8 +138,8 @@ body {
 .wake-lock-btn.active .wake-lock-label { color: var(--green); }
 @media (max-width: 390px) {
   .app-header { padding-left: 14px; padding-right: 14px; gap: 7px; }
-  .app-title { gap: 7px; }
-  .briq-wordmark { font-size: 17px; }
+  .app-title { gap: 6px; }
+  .briq-wordmark { font-size: 20px; }
   .header-badge { padding-left: 9px; padding-right: 9px; }
   .header-badge-val { font-size: 21px; }
 }
@@ -1145,7 +1145,7 @@ select {
 
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav">
-  <button class="nav-btn active" onclick="showTab('today',this)">
+  <button class="nav-btn active" data-tab="today" onclick="showTab('today',this)">
     <div class="nav-icon">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12.409 13.017A5 5 0 0 1 22 15c0 3.866-4 7-9 7-4.077 0-8.153-.82-10.371-2.462-.426-.316-.631-.832-.62-1.362C2.118 12.723 2.627 2 10 2a3 3 0 0 1 3 3 2 2 0 0 1-2 2c-1.105 0-1.64-.444-2-1"/>
@@ -1155,7 +1155,19 @@ select {
     </div>
     Training
   </button>
-  <button class="nav-btn" onclick="showTab('history',this)">
+  <button class="nav-btn" data-tab="daily" onclick="showTab('daily',this)">
+    <div class="nav-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="17" rx="2"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="3" y1="9" x2="21" y2="9"/>
+        <polyline points="8 15 11 18 16 13"/>
+      </svg>
+    </div>
+    Daily
+  </button>
+  <button class="nav-btn" data-tab="history" onclick="showTab('history',this)">
     <div class="nav-icon">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 16v5"/>
@@ -1168,19 +1180,7 @@ select {
     </div>
     Analytics
   </button>
-  <button class="nav-btn" onclick="showTab('daily',this)">
-    <div class="nav-icon">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="3" y="4" width="18" height="17" rx="2"/>
-        <line x1="8" y1="2" x2="8" y2="6"/>
-        <line x1="16" y1="2" x2="16" y2="6"/>
-        <line x1="3" y1="9" x2="21" y2="9"/>
-        <polyline points="8 15 11 18 16 13"/>
-      </svg>
-    </div>
-    Daily
-  </button>
-  <button class="nav-btn" onclick="showTab('me',this)">
+  <button class="nav-btn" data-tab="me" onclick="showTab('me',this)">
     <div class="nav-icon">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
@@ -2792,6 +2792,55 @@ async function saveWorkoutFromQueue(si) {
 async function saveWorkout() { await saveWorkoutFromQueue(0); }
 
 let trainingActiveSubTab = 'thisweek';
+let activeMainTab = 'today';
+
+const VALID_MAIN_TABS = ['today', 'daily', 'history', 'me'];
+const VALID_TRAINING_SUBTABS = ['thisweek', 'program', 'history'];
+const VALID_DAILY_SUBTABS = ['log', 'history'];
+
+function navigationStateKey() {
+  return getUserScopedStorageKey('app_navigation_v1');
+}
+
+function saveNavigationState() {
+  if (!getActiveUserId()) return;
+  try {
+    localStorage.setItem(navigationStateKey(), JSON.stringify({
+      main: activeMainTab,
+      training: trainingActiveSubTab,
+      daily: dailyActiveSubTab,
+      dailyDate: dailySelectedDate
+    }));
+  } catch (e) {
+    console.warn('Could not save app navigation state.', e);
+  }
+}
+
+function loadNavigationState() {
+  activeMainTab = 'today';
+  trainingActiveSubTab = 'thisweek';
+  dailyActiveSubTab = 'log';
+  if (!getActiveUserId()) return activeMainTab;
+  try {
+    const saved = JSON.parse(localStorage.getItem(navigationStateKey()) || 'null');
+    if (VALID_MAIN_TABS.includes(saved?.main)) activeMainTab = saved.main;
+    if (VALID_TRAINING_SUBTABS.includes(saved?.training)) trainingActiveSubTab = saved.training;
+    if (VALID_DAILY_SUBTABS.includes(saved?.daily)) dailyActiveSubTab = saved.daily;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(saved?.dailyDate || '')) dailySelectedDate = saved.dailyDate;
+  } catch (e) {
+    console.warn('Could not restore app navigation state.', e);
+  }
+  return activeMainTab;
+}
+
+function navButtonForTab(tab) {
+  return document.querySelector(`.nav-btn[data-tab="${tab}"]`);
+}
+
+function restoreNavigationState() {
+  const tab = loadNavigationState();
+  showTab(tab, navButtonForTab(tab));
+}
 
 function trainingShowTab(sub, btn) {
   document.querySelectorAll('#tab-today .nut-subtab').forEach(b => b.classList.remove('active'));
@@ -2807,12 +2856,15 @@ function trainingShowTab(sub, btn) {
     if (!window._historySessions) { renderHistory(); }
     else renderSessionList();
   }
+  saveNavigationState();
 }
 
 function showTab(t, btn) {
+  if (!VALID_MAIN_TABS.includes(t)) t = 'today';
+  activeMainTab = t;
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  (btn || document.querySelector('.nav-btn')).classList.add('active');
+  (btn || navButtonForTab(t) || document.querySelector('.nav-btn')).classList.add('active');
   document.getElementById('tab-'+t).classList.add('active');
   if (t === 'history')   renderHistory();
   if (t === 'today') {
@@ -2832,6 +2884,7 @@ function showTab(t, btn) {
   }
   if (t === 'daily')     renderDaily();
   if (t === 'me')        renderMe();
+  saveNavigationState();
 }
 
 // ─── RENDER HISTORY ───────────────────────────────────────────────────────
@@ -3461,6 +3514,7 @@ async function init() {
 
   // Render the today queue
   await renderTodayQueue();
+  restoreNavigationState();
 }
 
 let authStateChangeInFlight = false;
@@ -3484,7 +3538,7 @@ async function refreshAppForAuthChange() {
     }
     const sessions = await loadSessions();
     document.getElementById('header-sessions').textContent = sessions.length;
-    showTab('today', document.querySelector('.nav-btn'));
+    restoreNavigationState();
   } catch (e) {
     console.warn('Auth state refresh failed.', e);
     setAuthStatus('warning', 'Auth refresh failed', e?.message || 'Could not refresh app auth state.');
@@ -4088,6 +4142,7 @@ function dailyCurrentData() {
     time: row.querySelector('.daily-food-time')?.value || '',
     description: row.querySelector('.daily-food-description')?.value?.trim() || ''
   })).filter(entry => entry.time || entry.description);
+  const firstMealTime = foodEntries.map(entry => entry.time).filter(Boolean).sort()[0] || null;
   const sleepHours = dailyNumber(document.getElementById('daily-sleep-duration')?.value);
 
   return {
@@ -4106,7 +4161,7 @@ function dailyCurrentData() {
     took_magnesium: document.getElementById('daily-flag-magnesium')?.classList.contains('active') || false,
     traveled: document.getElementById('daily-flag-travel')?.classList.contains('active') || false,
     illness: document.getElementById('daily-flag-illness')?.classList.contains('active') || false,
-    first_calories_at: document.getElementById('daily-first-calories')?.value || null,
+    first_calories_at: firstMealTime,
     last_calories_at: document.getElementById('daily-last-calories')?.value || null,
     food_entries: foodEntries,
     notes: document.getElementById('daily-notes')?.value?.trim() || null
@@ -4184,6 +4239,7 @@ async function dailyChangeDate(value) {
   dailySelectedDate = value || dailyLocalDate();
   dailyEditingId = null;
   renderDailyLogForm();
+  saveNavigationState();
 }
 
 function dailyLoadDraft(date) {
@@ -4268,16 +4324,11 @@ function renderDailyLogForm() {
     '</div>' +
     '<div class="card" style="margin-bottom:18px">' +
       '<div class="card-section-title">Food &amp; drinks</div>' +
-      '<div class="log-input-grid lig-2" style="margin-bottom:16px">' +
-        '<div class="input-group"><label class="input-label">First calories</label>' +
-          '<input type="time" class="date-picker-input daily-time-input" id="daily-first-calories" value="' + escapeHtml((data.first_calories_at || '').slice(0,5)) +
-          '" onchange="dailyScheduleDraft()"></div>' +
-        '<div class="input-group"><label class="input-label">Last calories</label>' +
-          '<input type="time" class="date-picker-input daily-time-input" id="daily-last-calories" value="' + escapeHtml((data.last_calories_at || '').slice(0,5)) +
-          '" onchange="dailyScheduleDraft()"></div>' +
-      '</div>' +
       '<div id="daily-food-entries">' + dailyFoodEntriesMarkup(foodEntries) + '</div>' +
       '<button type="button" class="daily-add-btn" onclick="dailyAddFood()">+ Add food or drink</button>' +
+      '<div class="input-group" style="margin-top:16px"><label class="input-label">Last calories</label>' +
+        '<input type="time" class="date-picker-input daily-time-input" id="daily-last-calories" value="' + escapeHtml((data.last_calories_at || '').slice(0,5)) +
+        '" onchange="dailyScheduleDraft()"></div>' +
     '</div>' +
     '<div class="card" style="margin-bottom:18px">' +
       '<div class="card-section-title">Notes</div>' +
@@ -4327,6 +4378,7 @@ async function saveDailyLog() {
     dailyActiveSubTab = 'history';
     dailySetSubTabUI('history');
     renderDailyHistory();
+    saveNavigationState();
     document.getElementById('tab-daily')?.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (e) {
     console.error('Daily Log save failed:', e);
@@ -4373,6 +4425,7 @@ function dailyEditHistory(id) {
   dailyActiveSubTab = 'log';
   dailySetSubTabUI('log');
   renderDailyLogForm();
+  saveNavigationState();
   document.getElementById('tab-daily')?.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -4389,6 +4442,7 @@ async function dailyShowTab(sub, btn) {
   dailySaveDraftNow();
   dailyActiveSubTab = sub;
   dailySetSubTabUI(sub);
+  saveNavigationState();
   try {
     await loadDailyLogs(sub === 'history');
     if (sub === 'log') renderDailyLogForm();
