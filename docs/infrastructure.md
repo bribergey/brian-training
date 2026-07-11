@@ -28,8 +28,10 @@ The frontend resolves the active app user from the authenticated Supabase sessio
 
 Supabase Auth URL settings should include:
 
-- Site URL: `https://bribergey.github.io/brian-training/`
+- Site URL: `https://briqtraining.com/`
 - Redirect allow-list:
+  - `https://briqtraining.com/`
+  - `https://briqtraining.com/staging/`
   - `https://bribergey.github.io/brian-training/`
   - `https://bribergey.github.io/brian-training/staging/`
 
@@ -78,12 +80,14 @@ Production deploy:
 
 - Push to `main`.
 - Workflow copies `index.html` to `gh-pages/index.html`.
-- Public URL is GitHub Pages root.
+- Public URL is `https://briqtraining.com/`.
+- Legacy GitHub Pages URL redirects from `https://bribergey.github.io/brian-training/`.
 
 Staging deploy:
 
 - Push to `staging`.
 - Workflow copies `brian_STAGING.html` to `gh-pages/staging/index.html`.
-- Public URL is `/staging/`.
+- Public URL is `https://briqtraining.com/staging/`.
+- Legacy GitHub Pages staging URL redirects from `https://bribergey.github.io/brian-training/staging/`.
 
 GitHub Pages cache can lag briefly. Use cache-buster query strings during QA, for example `?v=qa-YYYYMMDD`.

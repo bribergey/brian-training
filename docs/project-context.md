@@ -20,7 +20,8 @@ The app is currently a static HTML/Supabase application.
 
 Production:
 
-- URL: `https://bribergey.github.io/brian-training/`
+- URL: `https://briqtraining.com/`
+- Legacy redirect URL: `https://bribergey.github.io/brian-training/`
 - Source branch: `main`
 - Deployed file: `gh-pages/index.html`
 - App `ENV`: `production`
@@ -28,7 +29,8 @@ Production:
 
 Staging:
 
-- URL: `https://bribergey.github.io/brian-training/staging/`
+- URL: `https://briqtraining.com/staging/`
+- Legacy redirect URL: `https://bribergey.github.io/brian-training/staging/`
 - Source branch: `staging`
 - Deployed file: `gh-pages/staging/index.html`
 - App `ENV`: `staging`

@@ -32,7 +32,8 @@ Production QA should be as read-only as possible.
 
 Expected checks after auth/RLS work:
 
-- production URL remains `https://bribergey.github.io/brian-training/`
+- production URL remains `https://briqtraining.com/`
+- legacy GitHub Pages URL redirects to the custom domain
 - no staging badge/text appears
 - signed-in header resolves to Brian
 - production session count matches DB read-check
