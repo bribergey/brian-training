@@ -797,14 +797,6 @@ select {
 .auth-card-note strong {
   opacity: 1;
 }
-.auth-email-row {
-  display: flex;
-  gap: 10px;
-  align-items: stretch;
-}
-.auth-email-row input {
-  flex: 1;
-}
 .auth-form-grid {
   display: grid;
   gap: 12px;
@@ -848,7 +840,8 @@ select {
   flex-wrap: wrap;
   gap: 8px 14px;
   align-items: center;
-  margin: 10px 0 12px;
+  justify-content: space-between;
+  margin: 4px 0 12px;
 }
 .auth-link-button {
   border: 0;
@@ -860,7 +853,10 @@ select {
   font-weight: 700;
   letter-spacing: 0;
   padding: 0;
-  text-transform: uppercase;
+  text-align: left;
+}
+.auth-link-button:hover {
+  color: var(--text);
 }
 .auth-form-status {
   display: none;
@@ -883,8 +879,26 @@ select {
   color: var(--text);
   opacity: 0.5;
 }
+.auth-help-text {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.45;
+  opacity: 0.6;
+}
+.auth-account-grid {
+  display: grid;
+  gap: 14px;
+}
+.auth-divider {
+  border-top: 1px solid var(--border);
+  margin: 4px 0 2px;
+}
+.auth-readonly-field {
+  opacity: 0.7;
+}
 .auth-inline-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: center;
 }
@@ -3789,13 +3803,15 @@ let meMeasurements = [];
 let activeUserScopeToken = null;
 
 function getAuthCardMarkup() {
-  const signedInEmail = authAppUser?.email || authSession?.user?.email || '';
-  const mappingMeta = authAppUser?.user_id
-    ? `<div class="auth-inline-meta">Mapped user_id: ${escapeHtml(authAppUser.user_id)}</div>`
-    : '';
+  const signedInEmail = authSession?.user?.email || authAppUser?.email || '';
+  const appUserId = authAppUser?.user_id || getActiveUserId() || '';
 
+  let title = 'Sign in';
+  let note = 'Use your email and password to open your training app.';
   let actionMarkup = '';
   if (authRecoveryMode && authSession) {
+    title = 'Create password';
+    note = 'Choose a password for this account.';
     actionMarkup = `
       <form class="auth-form-grid" onsubmit="event.preventDefault(); updateRecoveredPassword();">
         <div class="input-group">
@@ -3820,9 +3836,45 @@ function getAuthCardMarkup() {
       </div>
     `;
   } else if (authSession) {
+    title = 'Access';
+    note = authAppUser
+      ? 'You are signed in to your training account.'
+      : 'This email is signed in, but it is not connected to a training profile yet.';
     actionMarkup = `
-      <div class="auth-inline-actions">
-        <button class="btn" type="button" onclick="signOutUser()">Sign out</button>
+      <div class="auth-account-grid">
+        <form class="auth-form-grid" onsubmit="event.preventDefault(); updateAccountEmail();">
+          <div class="input-group">
+            <label class="input-label">Email</label>
+            <input type="email" id="account-email-input" value="${escapeHtml(signedInEmail)}" autocomplete="email">
+          </div>
+          <div class="input-group">
+            <label class="input-label">User ID</label>
+            <input class="auth-readonly-field" type="text" id="account-user-id-input" value="${escapeHtml(appUserId || 'Pending setup')}" readonly>
+          </div>
+          <button class="btn btn-primary btn-full" id="account-email-btn" type="submit">Save email</button>
+        </form>
+        <div class="auth-divider"></div>
+        <form class="auth-form-grid" onsubmit="event.preventDefault(); updateAccountPassword();">
+          <div class="input-group">
+            <label class="input-label">New password</label>
+            <div class="auth-password-row">
+              <input type="password" id="account-new-password-input" autocomplete="new-password">
+              <button class="btn auth-password-toggle" type="button" onclick="togglePasswordField('account-new-password-input', this)">Show</button>
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Confirm password</label>
+            <div class="auth-password-row">
+              <input type="password" id="account-confirm-password-input" autocomplete="new-password">
+              <button class="btn auth-password-toggle" type="button" onclick="togglePasswordField('account-confirm-password-input', this)">Show</button>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-full" id="account-password-btn" type="submit">Change password</button>
+        </form>
+        <div class="auth-form-status" id="auth-form-status"></div>
+        <div class="auth-inline-actions">
+          <button class="btn" type="button" onclick="signOutUser()">Sign out</button>
+        </div>
       </div>
     `;
   } else {
@@ -3843,8 +3895,7 @@ function getAuthCardMarkup() {
         <div class="auth-form-status" id="auth-form-status"></div>
       </form>
       <div class="auth-secondary-actions">
-        <button class="auth-link-button" type="button" onclick="sendPasswordReset()">Set or reset password</button>
-        <button class="auth-link-button" id="auth-email-link-btn" type="button" onclick="sendSignInLink()">Email link</button>
+        <button class="auth-link-button" id="auth-reset-btn" type="button" onclick="sendPasswordReset()">Reset password</button>
       </div>
     `;
   }
@@ -3852,16 +3903,10 @@ function getAuthCardMarkup() {
   return `
     <div class="card" style="margin-bottom:18px">
       <div class="auth-card-row">
-        <div class="auth-card-title">Access</div>
-        <div class="auth-card-status">${escapeHtml(getAuthCardStatusText())}</div>
+        <div class="auth-card-title">${escapeHtml(title)}</div>
       </div>
-      <div class="auth-card-note">${escapeHtml(authStatus.detail)}</div>
-      ${!authSession ? `<div class="auth-context-note">Use your password for this device. If you do not have one yet, set or reset it from this same app window.</div>` : ''}
-      ${signedInEmail ? `<div class="auth-inline-meta" style="margin-bottom:10px">Signed-in email: ${escapeHtml(signedInEmail)}</div>` : ''}
-      ${mappingMeta}
+      <div class="auth-card-note">${escapeHtml(note)}</div>
       ${actionMarkup}
-      <div class="auth-inline-meta">Auth redirect: ${escapeHtml(AUTH_REDIRECT_URL)}</div>
-      <div class="auth-inline-meta">Current resolved app user: ${escapeHtml(getActiveUserId() || 'none')}</div>
     </div>
   `;
 }
@@ -4287,6 +4332,7 @@ function togglePasswordField(inputId, btn) {
 
 function getAuthEmailValue() {
   return document.getElementById('auth-email-input')?.value?.trim()
+    || document.getElementById('account-email-input')?.value?.trim()
     || authSession?.user?.email
     || '';
 }
@@ -4337,8 +4383,10 @@ async function signInWithPassword() {
 
 async function sendPasswordReset() {
   const email = getAuthEmailValue();
+  const btn = document.getElementById('auth-reset-btn');
   if (!email) {
-    setAuthFormStatus('Enter your email first.', true);
+    setAuthFormStatus('Enter your email, then use Reset password.', true);
+    document.getElementById('auth-email-input')?.focus();
     return;
   }
 
@@ -4353,16 +4401,25 @@ async function sendPasswordReset() {
   }
 
   try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+    }
     const { error } = await withTimeout(
       client.auth.resetPasswordForEmail(email, { redirectTo: AUTH_REDIRECT_URL }),
       10000,
       'Password reset request'
     );
     if (error) throw error;
-    setAuthFormStatus('Password email sent. Open it from this app window.');
+    setAuthFormStatus('Password reset email sent. Open it to create or change your password.');
   } catch (e) {
     console.error('Password reset request failed:', e);
     setAuthFormStatus(e?.message || 'Password reset failed.', true);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Reset password';
+    }
   }
 }
 
@@ -4410,6 +4467,98 @@ async function updateRecoveredPassword() {
     if (btn) {
       btn.disabled = false;
       btn.textContent = 'Save password';
+    }
+  }
+}
+
+async function updateAccountEmail() {
+  const email = document.getElementById('account-email-input')?.value?.trim() || '';
+  const currentEmail = authSession?.user?.email || '';
+  const btn = document.getElementById('account-email-btn');
+  if (!email) {
+    setAuthFormStatus('Enter an email address.', true);
+    return;
+  }
+  if (email === currentEmail) {
+    setAuthFormStatus('Email is already up to date.');
+    return;
+  }
+
+  const client = getAuthClient();
+  if (!client || !authSession) {
+    setAuthFormStatus('Sign in again before changing your email.', true);
+    return;
+  }
+
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+    }
+    const { error } = await withTimeout(
+      client.auth.updateUser({ email }),
+      10000,
+      'Email update'
+    );
+    if (error) throw error;
+    setAuthFormStatus('Check the new email address to confirm the change.');
+  } catch (e) {
+    console.error('Email update failed:', e);
+    setAuthFormStatus(e?.message || 'Email update failed.', true);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Save email';
+    }
+  }
+}
+
+async function updateAccountPassword() {
+  const password = document.getElementById('account-new-password-input')?.value || '';
+  const confirmation = document.getElementById('account-confirm-password-input')?.value || '';
+  const btn = document.getElementById('account-password-btn');
+  if (!password || !confirmation) {
+    setAuthFormStatus('Enter and confirm your new password.', true);
+    return;
+  }
+  if (password.length < 8) {
+    setAuthFormStatus('Use at least 8 characters.', true);
+    return;
+  }
+  if (password !== confirmation) {
+    setAuthFormStatus('Passwords do not match.', true);
+    return;
+  }
+
+  const client = getAuthClient();
+  if (!client || !authSession) {
+    setAuthFormStatus('Sign in again before changing your password.', true);
+    return;
+  }
+
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+    }
+    const { error } = await withTimeout(
+      client.auth.updateUser({ password }),
+      10000,
+      'Password update'
+    );
+    if (error) throw error;
+    const newPasswordInput = document.getElementById('account-new-password-input');
+    const confirmPasswordInput = document.getElementById('account-confirm-password-input');
+    if (newPasswordInput) newPasswordInput.value = '';
+    if (confirmPasswordInput) confirmPasswordInput.value = '';
+    setAuthFormStatus('Password saved.');
+  } catch (e) {
+    console.error('Password update failed:', e);
+    setAuthFormStatus(e?.message || 'Password update failed.', true);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Change password';
     }
   }
 }
