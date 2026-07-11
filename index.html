@@ -422,12 +422,10 @@ select {
 .lift-cards { display: flex; flex-direction: column; gap: 12px; }
 .lift-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
 .lift-card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
-.lift-card-metric { text-align: right; flex-shrink: 0; }
 .lift-name { font-size: 15px; font-weight: 600; color: var(--text); }
 .lift-val { font-family: var(--display); font-size: 22px; font-weight: 800; color: var(--green); }
 .lift-val-unit { font-family: var(--mono); font-size: 11px; color: var(--text); opacity: 0.5; margin-left: 2px; }
-.lift-current { font-family: var(--mono); font-size: 10px; color: var(--text); opacity: 0.45; margin-top: 2px; }
-.lift-sparkline { width: 100%; height: 70px; display: block; }
+.lift-sparkline { width: 100%; height: 56px; display: block; }
 .lift-spark-labels { display: flex; justify-content: space-between; margin-top: 4px; }
 .lift-spark-label { font-family: var(--mono); font-size: 9px; color: var(--text); opacity: 0.4; }
 .lift-no-data { font-family: var(--mono); font-size: 11px; color: var(--text); opacity: 0.4; padding: 8px 0; }
@@ -799,23 +797,81 @@ select {
 .auth-card-note strong {
   opacity: 1;
 }
-.auth-context-note {
+.auth-form-grid {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.auth-form-grid input[type=email],
+.auth-form-grid input[type=password],
+.auth-form-grid input[type=text] {
   background: var(--bg3);
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border2);
   border-radius: var(--radius-xs);
   color: var(--text);
-  font-size: 13px;
-  line-height: 1.45;
-  margin: 0 0 14px;
-  padding: 10px 12px;
+  font-family: var(--mono);
+  font-size: 15px;
+  min-height: 46px;
+  padding: 11px 12px;
+  width: 100%;
 }
-.auth-email-row {
+.auth-form-grid input:focus {
+  background: var(--bg2);
+  border-color: var(--text);
+  outline: none;
+}
+.auth-password-row {
   display: flex;
   gap: 10px;
   align-items: stretch;
 }
-.auth-email-row input {
+.auth-password-row input {
   flex: 1;
+  min-width: 0;
+}
+.auth-password-toggle {
+  width: auto;
+  min-width: 76px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.auth-secondary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 4px 0 12px;
+}
+.auth-link-button {
+  border: 0;
+  background: transparent;
+  color: var(--green-dark);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  padding: 0;
+  text-align: left;
+}
+.auth-link-button:hover {
+  color: var(--text);
+}
+.auth-form-status {
+  display: none;
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 8px 0 0;
+}
+.auth-form-status.active {
+  display: block;
+}
+.auth-form-status.error {
+  color: var(--red);
+}
+.auth-form-status.success {
+  color: var(--green-dark);
 }
 .auth-inline-meta {
   font-family: var(--mono);
@@ -823,8 +879,60 @@ select {
   color: var(--text);
   opacity: 0.5;
 }
+.auth-help-text {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.45;
+  opacity: 0.6;
+}
+.auth-account-grid {
+  display: grid;
+  gap: 10px;
+}
+.auth-account-row {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+}
+.auth-account-row .input-group {
+  flex: 1;
+  min-width: 0;
+}
+.auth-account-row .btn {
+  width: auto;
+  min-width: 76px;
+  padding-left: 14px;
+  padding-right: 14px;
+}
+.auth-account-row input[type=email] {
+  width: 100%;
+  background: var(--bg3);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--radius-xs);
+  padding: 11px 13px;
+  font-size: 16px;
+  font-family: var(--sans);
+  font-weight: 500;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.auth-account-row input[type=email]:focus {
+  border-color: var(--text);
+  background: var(--bg2);
+}
+.auth-password-panel {
+  display: none;
+  margin-top: 2px;
+}
+.auth-password-panel.active {
+  display: block;
+}
 .auth-inline-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: center;
 }
@@ -839,7 +947,6 @@ select {
 <div class="app-header">
   <div class="header-left">
     <div class="app-title"><span class="app-title-name">BRIAN'S</span><br><span class="app-title-sub">TRAINING HUB</span></div>
-    <div class="header-auth-chip state-booting" id="header-auth-chip">Checking access</div>
   </div>
   <button class="wake-lock-btn active" id="wake-lock-btn" onclick="toggleWakeLock()" title="Screen wake lock">
     <span class="wake-lock-icon" id="wake-lock-icon">🔆</span>
@@ -900,13 +1007,6 @@ select {
 
     <div class="card card-accent-gold" style="margin-bottom:12px">
       <div class="card-section-title">Anchor lifts — best logged</div>
-      <div class="hist-filters lift-filters">
-        <button class="hist-filter-btn lift-filter-btn" onclick="setLiftFilter('30',this)">30D</button>
-        <button class="hist-filter-btn lift-filter-btn" onclick="setLiftFilter('60',this)">60D</button>
-        <button class="hist-filter-btn lift-filter-btn active" onclick="setLiftFilter('90',this)">90D</button>
-        <button class="hist-filter-btn lift-filter-btn" onclick="setLiftFilter('year',this)">Year</button>
-        <button class="hist-filter-btn lift-filter-btn" onclick="setLiftFilter('all',this)">All</button>
-      </div>
       <div id="lift-tracker"><div style="color:var(--text);font-size:14px">No sessions yet.</div></div>
     </div>
 
@@ -979,7 +1079,6 @@ const AUTH_REDIRECT_URL = ENV === 'production'
   ? 'https://briqtraining.com/'
   : 'https://briqtraining.com/staging/';
 const APP_USERS_TABLE = ENV === 'production' ? 'app_users' : 'app_users_staging';
-const REST_SCHEMA = 'training';
 const ALLOW_LEGACY_IDENTITY_FALLBACK = false;
 const LEGACY_USER_FALLBACK_ID = 'brian';
 const USER_SCOPE_COLUMN = 'user_id';
@@ -988,6 +1087,7 @@ let authSession = null;
 let authAppUser = null;
 let authLastLookupError = null;
 let authLastLookupAttempt = null;
+let authRecoveryMode = false;
 let authStatus = { mode: 'booting', label: 'Checking access', detail: 'Checking sign-in state…' };
 
 function getActiveUserId() {
@@ -1028,6 +1128,7 @@ async function hydrateHashSession(client) {
   const accessToken = params.get('access_token');
   const refreshToken = params.get('refresh_token');
   if (!accessToken || !refreshToken) return null;
+  const isRecovery = params.get('type') === 'recovery';
 
   const setSession = client.auth.setSession({
     access_token: accessToken,
@@ -1040,6 +1141,7 @@ async function hydrateHashSession(client) {
   if (result.timedOut) {
     const payload = decodeJwtPayload(accessToken);
     window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+    if (isRecovery) authRecoveryMode = true;
     return {
       access_token: accessToken,
       refresh_token: refreshToken,
@@ -1058,6 +1160,7 @@ async function hydrateHashSession(client) {
   const { data, error } = result;
   if (error) throw error;
   window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+  if (isRecovery && data.session) authRecoveryMode = true;
   return data.session || null;
 }
 
@@ -1066,6 +1169,7 @@ async function hydrateCodeSession(client) {
   const params = new URLSearchParams(window.location.search);
   const code = params.get('code');
   if (!code) return null;
+  const isRecovery = params.get('type') === 'recovery';
 
   const { data, error } = await withTimeout(
     client.auth.exchangeCodeForSession(code),
@@ -1076,6 +1180,7 @@ async function hydrateCodeSession(client) {
   params.delete('code');
   const nextSearch = params.toString();
   window.history.replaceState(null, document.title, window.location.pathname + (nextSearch ? `?${nextSearch}` : ''));
+  if (isRecovery && data.session) authRecoveryMode = true;
   return data.session || null;
 }
 
@@ -1085,14 +1190,12 @@ function decodeJwtPayload(token) {
   return JSON.parse(atob(normalized));
 }
 
-function getSupabaseHeaders(extra = {}, tokenOverride = null) {
-  const token = tokenOverride || authSession?.access_token || SB_KEY;
+function getSupabaseHeaders(extra = {}) {
+  const token = authSession?.access_token || SB_KEY;
   return {
     'Content-Type': 'application/json',
     'apikey': SB_KEY,
     'Authorization': 'Bearer ' + token,
-    'Accept-Profile': REST_SCHEMA,
-    'Content-Profile': REST_SCHEMA,
     ...extra
   };
 }
@@ -1114,6 +1217,7 @@ function updateAuthUI() {
 }
 
 function getAuthCardStatusText() {
+  if (authRecoveryMode) return 'Set password';
   if (authStatus.mode === 'authenticated') return 'Ready';
   if (authStatus.mode === 'legacy') return 'Legacy fallback';
   if (authStatus.mode === 'warning') return 'Needs mapping';
@@ -1130,71 +1234,16 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
-function formatAuthUserId(id) {
-  if (!id) return '';
-  const raw = String(id);
-  return raw.length > 12 ? `${raw.slice(0, 8)}…${raw.slice(-4)}` : raw;
-}
-
-async function lookupAppUserForSession(session) {
-  const params = `select=id,user_id,email,display_name,is_active,auth_user_id&auth_user_id=eq.${encodeURIComponent(session.user.id)}&is_active=is.true&limit=1`;
-  const rows = await sbGet(APP_USERS_TABLE, params, session.access_token);
-  return rows[0] || null;
-}
-
 async function resolveAuthAppUser(session) {
-  authLastLookupError = null;
-  authLastLookupAttempt = session?.user?.id
-    ? { authUserId: session.user.id, email: session.user.email || '' }
-    : null;
   if (!session?.user?.id) return null;
-
   try {
-    const appUser = await lookupAppUserForSession(session);
-    if (appUser) return appUser;
+    const params = `select=id,user_id,email,display_name,is_active,auth_user_id&auth_user_id=eq.${encodeURIComponent(session.user.id)}&is_active=is.true&limit=1`;
+    const rows = await sbGet(APP_USERS_TABLE, params);
+    return rows[0] || null;
   } catch (e) {
     console.warn('App user mapping lookup failed.', e);
-    authLastLookupError = e?.message || String(e);
+    return null;
   }
-
-  const client = getAuthClient();
-  if (!client || !session.refresh_token) return null;
-
-  try {
-    const { data, error } = await withTimeout(
-      client.auth.refreshSession(session),
-      8000,
-      'Auth session refresh'
-    );
-    if (error) throw error;
-    if (!data?.session?.user?.id) return null;
-    authSession = data.session;
-    authLastLookupAttempt = {
-      authUserId: authSession.user.id,
-      email: authSession.user.email || authLastLookupAttempt?.email || ''
-    };
-    const appUser = await lookupAppUserForSession(authSession);
-    if (appUser) {
-      authLastLookupError = null;
-      return appUser;
-    }
-  } catch (e) {
-    console.warn('App user mapping retry failed.', e);
-    const message = e?.message || String(e);
-    authLastLookupError = authLastLookupError ? `${authLastLookupError}; ${message}` : message;
-  }
-
-  return null;
-}
-
-function getMissingAppUserDetail() {
-  const email = authSession?.user?.email || 'this account';
-  const authId = formatAuthUserId(authSession?.user?.id || authLastLookupAttempt?.authUserId);
-  const authHint = authId ? ` Auth user: ${authId}.` : '';
-  if (authLastLookupError) {
-    return `${email} is signed in, but the app user lookup failed after refreshing the session.${authHint} ${authLastLookupError}`;
-  }
-  return `${email} is signed in, but no active app_users mapping row was readable.${authHint}`;
 }
 
 async function refreshAuthState() {
@@ -1227,6 +1276,11 @@ async function refreshAuthState() {
 
   authAppUser = await resolveAuthAppUser(authSession);
 
+  if (authSession && authRecoveryMode) {
+    setAuthStatus('warning', 'Set new password', 'Choose a new password to finish account recovery.');
+    return;
+  }
+
   if (authSession && authAppUser) {
     const label = authAppUser.display_name || authAppUser.email || authAppUser.user_id;
     setAuthStatus('authenticated', `Signed in: ${label}`, `Signed in as ${label}.`);
@@ -1234,7 +1288,8 @@ async function refreshAuthState() {
   }
 
   if (authSession && !authAppUser) {
-    setAuthStatus('warning', 'Missing app user', getMissingAppUserDetail());
+    const email = authSession.user?.email || 'this account';
+    setAuthStatus('warning', 'Missing app user', `${email} is signed in, but there is no app_users mapping row yet.`);
     return;
   }
 
@@ -1327,8 +1382,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-async function sbGet(table, params = '', tokenOverride = null) {
-  const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, { headers: getSupabaseHeaders({}, tokenOverride) });
+async function sbGet(table, params = '') {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, { headers: getSupabaseHeaders() });
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
@@ -1462,33 +1517,6 @@ async function getExerciseCache() {
 
 let currentDay = 'A';
 let selectedDayIdx = null; // null = not yet set, persists across tab switches
-let selectedSessionKey = null;
-
-function selectedSessionStorageKey() {
-  return getUserScopedStorageKey('brian_selected_queue_session');
-}
-
-function getQueueSelectionKey(session) {
-  if (!session) return null;
-  return normalizeProgramSessionKey(session.sessionKey) || `${session.scheduledDate || ''}-${session.day || ''}`;
-}
-
-function loadSelectedSessionKey() {
-  try { return localStorage.getItem(selectedSessionStorageKey()) || null; }
-  catch { return null; }
-}
-
-function rememberSelectedSession(session) {
-  selectedSessionKey = getQueueSelectionKey(session);
-  try {
-    if (selectedSessionKey) localStorage.setItem(selectedSessionStorageKey(), selectedSessionKey);
-  } catch {}
-}
-
-function forgetSelectedSession() {
-  selectedSessionKey = null;
-  try { localStorage.removeItem(selectedSessionStorageKey()); } catch {}
-}
 
 // ─── EXERCISE HELPERS ─────────────────────────────────────────────────────
 // ─── STEPPER HELPER ──────────────────────────────────────────────────────
@@ -1575,58 +1603,44 @@ function getWeekKey(dateStr) {
   return `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
 }
 
-function formatShortDateLabel(iso) {
-  if (!iso) return '';
-  const d = new Date(iso + 'T12:00:00');
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-function buildSparkline(points, labels, unit) {
+function buildSparkline(points, weeks, unit) {
   unit = unit || 'kg';
-  const W = 300, H = 64, PAD_X = 10, PAD_TOP = 16, PAD_BOT = 12;
+  const W = 300, H = 48, PAD = 10;
   const n = points.length;
   const minV = Math.min(...points);
   const maxV = Math.max(...points);
   const range = maxV - minV || 1;
 
-  const toX = i => PAD_X + (i / Math.max(n - 1, 1)) * (W - PAD_X * 2);
-  const toY = v => PAD_TOP + (1 - (v - minV) / range) * (H - PAD_TOP - PAD_BOT);
+  const toX = i => PAD + (i / Math.max(n - 1, 1)) * (W - PAD * 2);
+  const toY = v => PAD + (1 - (v - minV) / range) * (H - PAD * 2);
 
   const pathD = n > 1 ? points.map((v, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ') : '';
-  const bestVal = Math.max(...points);
-  const firstBestIdx = points.findIndex(v => v === bestVal);
-  const lastIdx = points.length - 1;
 
   const dots = points.map((v, i) => {
     const isLast = i === points.length - 1;
-    const isBest = i === firstBestIdx;
+    const isBest = v === Math.max(...points);
     const r    = isLast ? 4 : 3;
     const fill = (isBest || isLast) ? 'var(--green)' : 'var(--bg2)';
-    const title = `${labels[i] || ''}: ${v}${unit}`;
-    return `<circle cx="${toX(i).toFixed(1)}" cy="${toY(v).toFixed(1)}" r="${r}" fill="${fill}" stroke="var(--green)" stroke-width="2"><title>${title}</title></circle>`;
+    return `<circle cx="${toX(i).toFixed(1)}" cy="${toY(v).toFixed(1)}" r="${r}" fill="${fill}" stroke="var(--green)" stroke-width="2"/>`;
   }).join('');
 
-  const labelIndexes = points.length <= 4
-    ? points.map((_, i) => i)
-    : Array.from(new Set([firstBestIdx, lastIdx])).filter(i => i >= 0);
-  const valueLabels = labelIndexes.map((i) => {
-    const v = points[i];
-    const labelY = Math.max(9, toY(v) - 7).toFixed(1);
+  // Label all dots except the last (current val is already shown at top)
+  const valueLabels = points.slice(0, -1).map((v, i) => {
+    const labelY = (toY(v) - 7).toFixed(1);
     return `<text x="${toX(i).toFixed(1)}" y="${labelY}" text-anchor="middle" font-size="9" fill="var(--text)" opacity="0.5" font-family="monospace">${v}${unit}</text>`;
   }).join('');
 
-  const firstLabel = labels.length ? labels[0] : '';
-  const lastLabel  = labels.length > 1 ? labels[labels.length - 1] : '';
+  const firstWeek = weeks.length ? `Wk 1` : '';
+  const lastWeek  = weeks.length > 1 ? `Wk ${weeks.length}` : '';
 
-  return `<svg class="lift-sparkline" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+  return `<svg class="lift-sparkline" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
     ${pathD ? `<path d="${pathD}" fill="none" stroke="var(--green)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.6"/>` : ''}
     ${dots}
     ${valueLabels}
   </svg>
   <div class="lift-spark-labels">
-    <span class="lift-spark-label">${firstLabel}</span>
-    <span class="lift-spark-label">${lastLabel}</span>
+    <span class="lift-spark-label">${firstWeek}</span>
+    <span class="lift-spark-label">${lastWeek}</span>
   </div>`;
 }
 
@@ -2110,9 +2124,6 @@ function getDaySortValue(day) {
 }
 
 async function renderTodayQueue() {
-  const previousSelectionKey = selectedSessionKey ||
-    (selectedDayIdx !== null && selectedDayIdx !== undefined ? getQueueSelectionKey(weekQueue[selectedDayIdx]) : null) ||
-    loadSelectedSessionKey();
   weekQueue = await loadQueue();
   const selectorEl = document.getElementById('day-selector-container');
   const queueEl    = document.getElementById('today-queue');
@@ -2123,22 +2134,12 @@ async function renderTodayQueue() {
     return;
   }
 
-  // Prefer the same scheduled session across auth refreshes/re-renders.
-  const selectedKeyIdx = previousSelectionKey
-    ? weekQueue.findIndex(s => getQueueSelectionKey(s) === previousSelectionKey)
-    : -1;
-  if (selectedKeyIdx >= 0) {
-    selectedDayIdx = selectedKeyIdx;
-    rememberSelectedSession(weekQueue[selectedDayIdx]);
-  }
-
   // Default to today's scheduled day if found, else first
   const today = new Date().toISOString().split('T')[0];
   const todayIdx = weekQueue.findIndex(s => s.scheduledDate === today);
   // Only reset day selection on first load or if current index is now out of bounds
   if (selectedDayIdx === null || selectedDayIdx === undefined || selectedDayIdx >= weekQueue.length) {
     selectedDayIdx = todayIdx >= 0 ? todayIdx : 0;
-    rememberSelectedSession(weekQueue[selectedDayIdx]);
   }
 
   renderDaySelector();
@@ -2364,7 +2365,6 @@ function reloadExtraDraftsIfNeeded() {
 function selectDay(idx) {
   saveDraft(selectedDayIdx);
   selectedDayIdx = idx;
-  rememberSelectedSession(weekQueue[selectedDayIdx]);
   renderDaySelector();
   renderSelectedDay();
   document.getElementById('tab-today').scrollTop = 0;
@@ -2578,7 +2578,6 @@ async function confirmSkip(si) {
       logged: new Date().toISOString(),
       program_session_key: normalizeProgramSessionKey(session.sessionKey) });
     clearDraft(session);
-    forgetSelectedSession();
     setStatus('Workout skipped — noted for your coach.');
     document.getElementById('tab-today').scrollTop = 0;
     await renderTodayQueue();
@@ -2643,7 +2642,6 @@ async function saveWorkoutFromQueue(si) {
       program_session_key: normalizeProgramSessionKey(session.sessionKey), workout_time: workoutTime });
     clearDraft(session);
     delete _addedExercises[si];
-    forgetSelectedSession();
     document.getElementById('header-sessions').textContent = (cachedSessions||[]).length;
     setStatus('✓ Workout saved to cloud!');
     document.getElementById('tab-today').scrollTop = 0;
@@ -2705,20 +2703,12 @@ function showTab(t, btn) {
 
 // ─── RENDER HISTORY ───────────────────────────────────────────────────────
 let histFilter = '30'; // default
-let liftFilter = '90'; // default anchor-lift analytics range
 
 function setHistFilter(f, btn) {
   histFilter = f;
-  document.querySelectorAll('.hist-filter-btn:not(.lift-filter-btn)').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.hist-filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderSessionList();
-}
-
-function setLiftFilter(f, btn) {
-  liftFilter = f;
-  document.querySelectorAll('.lift-filter-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  renderHistory();
 }
 
 function getFilterRange(f) {
@@ -2730,7 +2720,6 @@ function getFilterRange(f) {
     return { from: mon, to: null };
   }
   if (f === '30')  { const d = new Date(today); d.setDate(d.getDate() - 30); return { from: d, to: null }; }
-  if (f === '60')  { const d = new Date(today); d.setDate(d.getDate() - 60); return { from: d, to: null }; }
   if (f === '90')  { const d = new Date(today); d.setDate(d.getDate() - 90); return { from: d, to: null }; }
   if (f === 'year') { return { from: new Date(today.getFullYear(), 0, 1), to: null }; }
   if (f === 'lastyear') {
@@ -2738,15 +2727,6 @@ function getFilterRange(f) {
     return { from: new Date(y, 0, 1), to: new Date(y, 11, 31) };
   }
   return { from: null, to: null };
-}
-
-function dateIsInRange(dateStr, range) {
-  if (!dateStr) return false;
-  const d = new Date(dateStr + 'T00:00:00');
-  if (Number.isNaN(d.getTime())) return false;
-  if (range?.from && d < range.from) return false;
-  if (range?.to && d > range.to) return false;
-  return true;
 }
 
 function formatSessionDate(dateStr) {
@@ -2813,12 +2793,9 @@ async function renderHistory() {
 
   const weeklyBests = {};
   Object.keys(ANCHOR_GROUPS).forEach(g => { weeklyBests[g] = {}; });
-  const liftRange = getFilterRange(liftFilter);
 
   realSessions.forEach(s => {
-    const sessionDate = s.date || (s.logged_at || '').slice(0, 10);
-    if (!dateIsInRange(sessionDate, liftRange)) return;
-    const weekKey = getWeekKey(sessionDate);
+    const weekKey = getWeekKey(s.date);
     (s.exercises||[]).forEach(ex => {
       const group = nameToGroup[ex.name];
       if (!group) return;
@@ -2836,9 +2813,8 @@ async function renderHistory() {
           : Math.abs(parseFloat(ex.topWeight || ex.weight || 0));
       }
       if (v > 0) {
-        if (!weeklyBests[group][weekKey] || v > weeklyBests[group][weekKey].value) {
-          weeklyBests[group][weekKey] = { value: v, date: sessionDate };
-        }
+        if (!weeklyBests[group][weekKey] || v > weeklyBests[group][weekKey])
+          weeklyBests[group][weekKey] = v;
       }
     });
   });
@@ -2848,26 +2824,21 @@ async function renderHistory() {
     const weekMap    = weeklyBests[group];
     const weeks      = Object.keys(weekMap).sort();
     const isRepBased = cfg.isRepBased;
-    const points     = weeks.map(w => weekMap[w].value);
-    const maxVal     = points.length ? Math.max(...points) : null;
-    const curVal     = points.length ? points[points.length - 1] : null;
+    const curVal     = weeks.length ? weekMap[weeks[weeks.length - 1]] : null;
     const unit       = isRepBased ? 'reps' : 'kg';
-    const currentMeta = maxVal !== null && curVal !== null && curVal !== maxVal
-      ? `<div class="lift-current">Latest ${curVal}${unit}</div>`
-      : '';
 
     const liftId = group.replace(/[^a-z0-9]/gi,'_');
     liftHtml += `<div class="lift-card" id="liftcard-${liftId}">
       <div class="lift-card-header">
         <span class="lift-name">${group}</span>
-        <span class="lift-card-metric"><span class="lift-val">${maxVal !== null ? maxVal : '—'}</span><span class="lift-val-unit">${maxVal !== null ? unit : ''}</span>${currentMeta}</span>
+        <span><span class="lift-val">${curVal !== null ? curVal : '—'}</span><span class="lift-val-unit">${curVal !== null ? unit : ''}</span></span>
       </div>`;
 
     if (weeks.length === 0) {
-      liftHtml += `<div class="lift-no-data">No anchor data in this range</div>`;
+      liftHtml += `<div class="lift-no-data">No data yet — log a session to start tracking</div>`;
     } else {
-      const labels = weeks.map(w => formatShortDateLabel(weekMap[w].date));
-      liftHtml += buildSparkline(points, labels, unit);
+      const points = weeks.map(w => weekMap[w]);
+      liftHtml += buildSparkline(points, weeks, unit);
     }
 
     liftHtml += `</div>`;
@@ -2904,11 +2875,8 @@ async function renderHistory() {
       var toX = function(i) { return PAD_X + (i / (vs.length - 1)) * (W - PAD_X * 2); };
       var toY = function(v) { return PAD_TOP + (1 - (v - minV) / range) * (H - PAD_TOP - PAD_BOT); };
       var pathD = vs.map(function(v, i) { return (i === 0 ? 'M' : 'L') + toX(i).toFixed(1) + ',' + toY(v).toFixed(1); }).join(' ');
-      var labelIndexes = vals.length <= 4
-        ? vals.map(function(_, i) { return i; })
-        : [0, vals.length - 1];
-      var valLabels = labelIndexes.map(function(i) {
-        var pt = vals[i];
+      // Value labels above each dot
+      var valLabels = vals.map(function(pt, i) {
         return '<text x="' + toX(i).toFixed(1) + '" y="' + (toY(pt.v) - 8).toFixed(1) + '" text-anchor="middle" font-size="9" fill="var(--text)" opacity="0.4" font-family="monospace">' + pt.v + unit + '</text>';
       }).join('');
       // Clickable dots — tap shows tooltip with date
@@ -3345,9 +3313,14 @@ async function init() {
   await refreshAuthState();
   resetUserScopedState(true);
   const userId = getActiveUserId();
+  if (authRecoveryMode) {
+    document.getElementById('header-sessions').textContent = '—';
+    document.getElementById('today-queue').innerHTML = getAuthCardMarkup();
+    return;
+  }
   if (!userId) {
     document.getElementById('header-sessions').textContent = '—';
-    document.getElementById('today-queue').innerHTML = '<div class="card"><div class="card-section-title">Sign in required</div><p style="font-size:15px;line-height:1.6;color:var(--text);opacity:0.72">Sign in to load your training queue, history, analytics, and profile.</p></div>';
+    document.getElementById('today-queue').innerHTML = getAuthCardMarkup();
     return;
   }
   const sessions = await loadSessions();
@@ -3366,9 +3339,14 @@ async function refreshAppForAuthChange() {
     await refreshAuthState();
     resetUserScopedState(true);
     const userId = getActiveUserId();
+    if (authRecoveryMode) {
+      document.getElementById('header-sessions').textContent = '—';
+      document.getElementById('today-queue').innerHTML = getAuthCardMarkup();
+      return;
+    }
     if (!userId) {
       document.getElementById('header-sessions').textContent = '—';
-      document.getElementById('today-queue').innerHTML = '<div class="card"><div class="card-section-title">Sign in required</div><p style="font-size:15px;line-height:1.6;color:var(--text);opacity:0.72">Sign in to load your training queue, history, analytics, and profile.</p></div>';
+      document.getElementById('today-queue').innerHTML = getAuthCardMarkup();
       return;
     }
     const sessions = await loadSessions();
@@ -3732,7 +3710,7 @@ function restoreSetRows(uid, ex, sets) {
 
 // ─── SHARE LIFT CARD ─────────────────────────────────────────────────────
 async function shareAllLifts() {
-  const cards = document.querySelectorAll('#lift-tracker .lift-card');
+  const cards = document.querySelectorAll('.lift-card');
   if (!cards.length) { setStatus('No lift data yet', true); return; }
 
   const btn = document.getElementById('share-lifts-btn');
@@ -3858,26 +3836,94 @@ let meMeasurements = [];
 let activeUserScopeToken = null;
 
 function getAuthCardMarkup() {
-  const signedInEmail = authAppUser?.email || authSession?.user?.email || '';
-  const mappingMeta = authAppUser?.user_id
-    ? `<div class="auth-inline-meta">Mapped user_id: ${escapeHtml(authAppUser.user_id)}</div>`
-    : '';
+  const signedInEmail = authSession?.user?.email || authAppUser?.email || '';
 
+  let title = 'Sign in';
+  let note = 'Use your email and password to open your training app.';
   let actionMarkup = '';
-  if (authSession) {
+  if (authRecoveryMode && authSession) {
+    title = 'Create password';
+    note = 'Choose a password for this account.';
     actionMarkup = `
+      <form class="auth-form-grid" onsubmit="event.preventDefault(); updateRecoveredPassword();">
+        <div class="input-group">
+          <label class="input-label">New password</label>
+          <div class="auth-password-row">
+            <input type="password" id="auth-new-password-input" autocomplete="new-password">
+            <button class="btn auth-password-toggle" type="button" onclick="togglePasswordField('auth-new-password-input', this)">Show</button>
+          </div>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Confirm password</label>
+          <div class="auth-password-row">
+            <input type="password" id="auth-confirm-password-input" autocomplete="new-password">
+            <button class="btn auth-password-toggle" type="button" onclick="togglePasswordField('auth-confirm-password-input', this)">Show</button>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full" id="auth-update-password-btn" type="submit">Save password</button>
+        <div class="auth-form-status" id="auth-form-status"></div>
+      </form>
       <div class="auth-inline-actions">
-        <button class="btn" type="button" onclick="signOutUser()">Sign out</button>
+        <button class="btn" type="button" onclick="signOutUser()">Cancel</button>
+      </div>
+    `;
+  } else if (authSession) {
+    title = 'Account';
+    note = authAppUser
+      ? 'You are signed in to your training account.'
+      : 'This email is signed in, but it is not connected to a training profile yet.';
+    actionMarkup = `
+      <div class="auth-account-grid">
+        <form class="auth-account-row" onsubmit="event.preventDefault(); updateAccountEmail();">
+          <div class="input-group">
+            <label class="input-label">Email</label>
+            <input type="email" id="account-email-input" value="${escapeHtml(signedInEmail)}" autocomplete="email">
+          </div>
+          <button class="btn btn-primary" id="account-email-btn" type="submit">Save</button>
+        </form>
+        <div class="auth-form-status" id="auth-form-status"></div>
+        <button class="auth-link-button" id="account-change-password-toggle" type="button" onclick="toggleAccountPasswordPanel()">Change password</button>
+        <form class="auth-form-grid auth-password-panel" id="account-password-panel" onsubmit="event.preventDefault(); updateAccountPassword();">
+          <div class="input-group">
+            <label class="input-label">New password</label>
+            <div class="auth-password-row">
+              <input type="password" id="account-new-password-input" autocomplete="new-password">
+              <button class="btn auth-password-toggle" type="button" onclick="togglePasswordField('account-new-password-input', this)">Show</button>
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Confirm password</label>
+            <div class="auth-password-row">
+              <input type="password" id="account-confirm-password-input" autocomplete="new-password">
+              <button class="btn auth-password-toggle" type="button" onclick="togglePasswordField('account-confirm-password-input', this)">Show</button>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-full" id="account-password-btn" type="submit">Save password</button>
+        </form>
+        <div class="auth-inline-actions">
+          <button class="btn" type="button" onclick="signOutUser()">Sign out</button>
+        </div>
       </div>
     `;
   } else {
     actionMarkup = `
-      <div class="input-group" style="margin-bottom:12px">
-        <label class="input-label">Email sign-in</label>
-        <div class="auth-email-row">
+      <form class="auth-form-grid" onsubmit="event.preventDefault(); signInWithPassword();">
+        <div class="input-group">
+          <label class="input-label">Email</label>
           <input type="email" id="auth-email-input" placeholder="you@example.com" autocomplete="email">
-          <button class="btn btn-primary" id="auth-email-link-btn" type="button" onclick="sendSignInLink()">Email link</button>
         </div>
+        <div class="input-group">
+          <label class="input-label">Password</label>
+          <div class="auth-password-row">
+            <input type="password" id="auth-password-input" autocomplete="current-password">
+            <button class="btn auth-password-toggle" type="button" onclick="togglePasswordField('auth-password-input', this)">Show</button>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full" id="auth-password-btn" type="submit">Sign in</button>
+        <div class="auth-form-status" id="auth-form-status"></div>
+      </form>
+      <div class="auth-secondary-actions">
+        <button class="auth-link-button" id="auth-reset-btn" type="button" onclick="sendPasswordReset()">Reset password</button>
       </div>
     `;
   }
@@ -3885,16 +3931,10 @@ function getAuthCardMarkup() {
   return `
     <div class="card" style="margin-bottom:18px">
       <div class="auth-card-row">
-        <div class="auth-card-title">Access</div>
-        <div class="auth-card-status">${escapeHtml(getAuthCardStatusText())}</div>
+        <div class="auth-card-title">${escapeHtml(title)}</div>
       </div>
-      <div class="auth-card-note">${escapeHtml(authStatus.detail)}</div>
-      <div class="auth-context-note">Use the same browser or Home Screen app window for requesting and opening sign-in links. If a mobile link opens somewhere else and this app stays signed out, use the browser that opened the link for that session.</div>
-      ${signedInEmail ? `<div class="auth-inline-meta" style="margin-bottom:10px">Signed-in email: ${escapeHtml(signedInEmail)}</div>` : ''}
-      ${mappingMeta}
+      <div class="auth-card-note">${escapeHtml(note)}</div>
       ${actionMarkup}
-      <div class="auth-inline-meta">Magic link redirect: ${escapeHtml(AUTH_REDIRECT_URL)}</div>
-      <div class="auth-inline-meta">Current resolved app user: ${escapeHtml(getActiveUserId() || 'none')}</div>
     </div>
   `;
 }
@@ -3918,7 +3958,6 @@ function resetUserScopedState(force = false) {
   cachedSessions = null;
   weekQueue = [];
   selectedDayIdx = null;
-  selectedSessionKey = null;
   extraWorkouts = loadExtraDrafts();
   programCache = null;
   programTabLabelFallbackCache = null;
@@ -4301,21 +4340,280 @@ async function saveProfile() {
   }
 }
 
-async function sendSignInLink() {
-  const email = document.getElementById('auth-email-input')?.value?.trim();
-  const btn = document.getElementById('auth-email-link-btn');
-  if (!email) {
-    setStatus('Enter an email first', true);
+function setAuthFormStatus(message, isError = false) {
+  const el = document.getElementById('auth-form-status');
+  if (!el) {
+    setStatus(message, isError);
+    return;
+  }
+  el.textContent = message;
+  el.className = `auth-form-status active ${isError ? 'error' : 'success'}`;
+}
+
+function togglePasswordField(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const nextType = input.type === 'password' ? 'text' : 'password';
+  input.type = nextType;
+  if (btn) btn.textContent = nextType === 'password' ? 'Show' : 'Hide';
+}
+
+function toggleAccountPasswordPanel() {
+  const panel = document.getElementById('account-password-panel');
+  const btn = document.getElementById('account-change-password-toggle');
+  if (!panel) return;
+  const isOpen = panel.classList.toggle('active');
+  if (btn) btn.textContent = isOpen ? 'Cancel password change' : 'Change password';
+}
+
+function getAuthEmailValue() {
+  return document.getElementById('auth-email-input')?.value?.trim()
+    || document.getElementById('account-email-input')?.value?.trim()
+    || authSession?.user?.email
+    || '';
+}
+
+async function signInWithPassword() {
+  const email = getAuthEmailValue();
+  const password = document.getElementById('auth-password-input')?.value || '';
+  const btn = document.getElementById('auth-password-btn');
+  if (!email || !password) {
+    setAuthFormStatus('Enter your email and password.', true);
     return;
   }
 
   const client = getAuthClient();
   if (!client) {
-    setStatus('Auth client unavailable', true);
+    setAuthFormStatus('Auth client unavailable.', true);
     return;
   }
   if (!isExpectedAuthPageUrl()) {
-    setStatus(`Open ${AUTH_REDIRECT_URL} before sending an email link`, true);
+    setAuthFormStatus(`Open ${AUTH_REDIRECT_URL} before signing in.`, true);
+    return;
+  }
+
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Signing in...';
+    }
+    const { error } = await withTimeout(
+      client.auth.signInWithPassword({ email, password }),
+      10000,
+      'Password sign-in'
+    );
+    if (error) throw error;
+    authRecoveryMode = false;
+    setAuthFormStatus('Signed in.');
+    await refreshAppForAuthChange();
+  } catch (e) {
+    console.error('Password sign-in failed:', e);
+    setAuthFormStatus(e?.message || 'Sign-in failed.', true);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Sign in';
+    }
+  }
+}
+
+async function sendPasswordReset() {
+  const email = getAuthEmailValue();
+  const btn = document.getElementById('auth-reset-btn');
+  if (!email) {
+    setAuthFormStatus('Enter your email, then use Reset password.', true);
+    document.getElementById('auth-email-input')?.focus();
+    return;
+  }
+
+  const client = getAuthClient();
+  if (!client) {
+    setAuthFormStatus('Auth client unavailable.', true);
+    return;
+  }
+  if (!isExpectedAuthPageUrl()) {
+    setAuthFormStatus(`Open ${AUTH_REDIRECT_URL} before requesting a reset.`, true);
+    return;
+  }
+
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+    }
+    const { error } = await withTimeout(
+      client.auth.resetPasswordForEmail(email, { redirectTo: AUTH_REDIRECT_URL }),
+      10000,
+      'Password reset request'
+    );
+    if (error) throw error;
+    setAuthFormStatus('Password reset email sent. Open it to create or change your password.');
+  } catch (e) {
+    console.error('Password reset request failed:', e);
+    setAuthFormStatus(e?.message || 'Password reset failed.', true);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Reset password';
+    }
+  }
+}
+
+async function updateRecoveredPassword() {
+  const password = document.getElementById('auth-new-password-input')?.value || '';
+  const confirmation = document.getElementById('auth-confirm-password-input')?.value || '';
+  const btn = document.getElementById('auth-update-password-btn');
+  if (!password || !confirmation) {
+    setAuthFormStatus('Enter and confirm your new password.', true);
+    return;
+  }
+  if (password.length < 8) {
+    setAuthFormStatus('Use at least 8 characters.', true);
+    return;
+  }
+  if (password !== confirmation) {
+    setAuthFormStatus('Passwords do not match.', true);
+    return;
+  }
+
+  const client = getAuthClient();
+  if (!client || !authSession) {
+    setAuthFormStatus('Recovery session unavailable. Request another reset email.', true);
+    return;
+  }
+
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+    }
+    const { error } = await withTimeout(
+      client.auth.updateUser({ password }),
+      10000,
+      'Password update'
+    );
+    if (error) throw error;
+    authRecoveryMode = false;
+    setAuthFormStatus('Password saved.');
+    await refreshAppForAuthChange();
+  } catch (e) {
+    console.error('Password update failed:', e);
+    setAuthFormStatus(e?.message || 'Password update failed.', true);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Save password';
+    }
+  }
+}
+
+async function updateAccountEmail() {
+  const email = document.getElementById('account-email-input')?.value?.trim() || '';
+  const currentEmail = authSession?.user?.email || '';
+  const btn = document.getElementById('account-email-btn');
+  if (!email) {
+    setAuthFormStatus('Enter an email address.', true);
+    return;
+  }
+  if (email === currentEmail) {
+    setAuthFormStatus('Email is already up to date.');
+    return;
+  }
+
+  const client = getAuthClient();
+  if (!client || !authSession) {
+    setAuthFormStatus('Sign in again before changing your email.', true);
+    return;
+  }
+
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+    }
+    const { error } = await withTimeout(
+      client.auth.updateUser({ email }),
+      10000,
+      'Email update'
+    );
+    if (error) throw error;
+    setAuthFormStatus('Check the new email address to confirm the change.');
+  } catch (e) {
+    console.error('Email update failed:', e);
+    setAuthFormStatus(e?.message || 'Email update failed.', true);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Save email';
+    }
+  }
+}
+
+async function updateAccountPassword() {
+  const password = document.getElementById('account-new-password-input')?.value || '';
+  const confirmation = document.getElementById('account-confirm-password-input')?.value || '';
+  const btn = document.getElementById('account-password-btn');
+  if (!password || !confirmation) {
+    setAuthFormStatus('Enter and confirm your new password.', true);
+    return;
+  }
+  if (password.length < 8) {
+    setAuthFormStatus('Use at least 8 characters.', true);
+    return;
+  }
+  if (password !== confirmation) {
+    setAuthFormStatus('Passwords do not match.', true);
+    return;
+  }
+
+  const client = getAuthClient();
+  if (!client || !authSession) {
+    setAuthFormStatus('Sign in again before changing your password.', true);
+    return;
+  }
+
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+    }
+    const { error } = await withTimeout(
+      client.auth.updateUser({ password }),
+      10000,
+      'Password update'
+    );
+    if (error) throw error;
+    const newPasswordInput = document.getElementById('account-new-password-input');
+    const confirmPasswordInput = document.getElementById('account-confirm-password-input');
+    if (newPasswordInput) newPasswordInput.value = '';
+    if (confirmPasswordInput) confirmPasswordInput.value = '';
+    setAuthFormStatus('Password saved.');
+  } catch (e) {
+    console.error('Password update failed:', e);
+    setAuthFormStatus(e?.message || 'Password update failed.', true);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Save password';
+    }
+  }
+}
+
+async function sendSignInLink() {
+  const email = document.getElementById('auth-email-input')?.value?.trim();
+  const btn = document.getElementById('auth-email-link-btn');
+  if (!email) {
+    setAuthFormStatus('Enter an email first.', true);
+    return;
+  }
+
+  const client = getAuthClient();
+  if (!client) {
+    setAuthFormStatus('Auth client unavailable.', true);
+    return;
+  }
+  if (!isExpectedAuthPageUrl()) {
+    setAuthFormStatus(`Open ${AUTH_REDIRECT_URL} before sending an email link.`, true);
     return;
   }
 
@@ -4332,10 +4630,10 @@ async function sendSignInLink() {
       }
     });
     if (error) throw error;
-    setStatus('Magic link sent. Check your email.');
+    setAuthFormStatus('Email link sent. Check your email.');
   } catch (e) {
     console.error('Sign-in link failed:', e);
-    setStatus(e?.message || 'Sign-in link failed', true);
+    setAuthFormStatus(e?.message || 'Sign-in link failed.', true);
   } finally {
     if (btn) {
       btn.disabled = false;
@@ -4350,6 +4648,7 @@ async function signOutUser() {
   try {
     const { error } = await client.auth.signOut();
     if (error) throw error;
+    authRecoveryMode = false;
     window.location.reload();
   } catch (e) {
     console.error('Sign-out failed:', e);
@@ -4380,6 +4679,14 @@ document.addEventListener('click', function(evt) {
 });
 
 getAuthClient()?.auth.onAuthStateChange((event) => {
+  if (event === 'PASSWORD_RECOVERY') {
+    authRecoveryMode = true;
+    refreshAppForAuthChange();
+    return;
+  }
+  if (event === 'SIGNED_OUT') {
+    authRecoveryMode = false;
+  }
   if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
     refreshAppForAuthChange();
   }
