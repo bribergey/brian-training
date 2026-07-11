@@ -25,8 +25,8 @@ Read these files before non-trivial work:
 
 As of 2026-06-19, Phase 3 multi-user auth is complete:
 
-- Production URL: `https://bribergey.github.io/brian-training/`
-- Staging URL: `https://bribergey.github.io/brian-training/staging/`
+- Production URL: `https://briqtraining.com/`
+- Staging URL: `https://briqtraining.com/staging/`
 - Supabase project: `brian-training`, ref `mimvmaotzmacgiziovvi`
 - Production strict auth is live; legacy Brian fallback is disabled.
 - Brian's auth user maps to app `user_id = brian`.
@@ -41,4 +41,3 @@ For future work, act as:
 - Engineer: inspect existing code first, make conservative changes, verify behavior.
 - QA: test staging before production, check both UI and Supabase/RLS behavior when relevant.
 - Release manager: know which branch deploys what, confirm deploy status, and summarize residual risk.
-
