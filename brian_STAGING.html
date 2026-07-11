@@ -887,14 +887,29 @@ select {
 }
 .auth-account-grid {
   display: grid;
-  gap: 14px;
+  gap: 10px;
 }
-.auth-divider {
-  border-top: 1px solid var(--border);
-  margin: 4px 0 2px;
+.auth-account-row {
+  display: flex;
+  gap: 10px;
+  align-items: end;
 }
-.auth-readonly-field {
-  opacity: 0.7;
+.auth-account-row .input-group {
+  flex: 1;
+  min-width: 0;
+}
+.auth-account-row .btn {
+  width: auto;
+  min-width: 76px;
+  padding-left: 14px;
+  padding-right: 14px;
+}
+.auth-password-panel {
+  display: none;
+  margin-top: 2px;
+}
+.auth-password-panel.active {
+  display: block;
 }
 .auth-inline-actions {
   display: flex;
@@ -3804,7 +3819,6 @@ let activeUserScopeToken = null;
 
 function getAuthCardMarkup() {
   const signedInEmail = authSession?.user?.email || authAppUser?.email || '';
-  const appUserId = authAppUser?.user_id || getActiveUserId() || '';
 
   let title = 'Sign in';
   let note = 'Use your email and password to open your training app.';
@@ -3836,25 +3850,22 @@ function getAuthCardMarkup() {
       </div>
     `;
   } else if (authSession) {
-    title = 'Access';
+    title = 'Account';
     note = authAppUser
       ? 'You are signed in to your training account.'
       : 'This email is signed in, but it is not connected to a training profile yet.';
     actionMarkup = `
       <div class="auth-account-grid">
-        <form class="auth-form-grid" onsubmit="event.preventDefault(); updateAccountEmail();">
+        <form class="auth-account-row" onsubmit="event.preventDefault(); updateAccountEmail();">
           <div class="input-group">
             <label class="input-label">Email</label>
             <input type="email" id="account-email-input" value="${escapeHtml(signedInEmail)}" autocomplete="email">
           </div>
-          <div class="input-group">
-            <label class="input-label">User ID</label>
-            <input class="auth-readonly-field" type="text" id="account-user-id-input" value="${escapeHtml(appUserId || 'Pending setup')}" readonly>
-          </div>
-          <button class="btn btn-primary btn-full" id="account-email-btn" type="submit">Save email</button>
+          <button class="btn btn-primary" id="account-email-btn" type="submit">Save</button>
         </form>
-        <div class="auth-divider"></div>
-        <form class="auth-form-grid" onsubmit="event.preventDefault(); updateAccountPassword();">
+        <div class="auth-form-status" id="auth-form-status"></div>
+        <button class="auth-link-button" id="account-change-password-toggle" type="button" onclick="toggleAccountPasswordPanel()">Change password</button>
+        <form class="auth-form-grid auth-password-panel" id="account-password-panel" onsubmit="event.preventDefault(); updateAccountPassword();">
           <div class="input-group">
             <label class="input-label">New password</label>
             <div class="auth-password-row">
@@ -3869,9 +3880,8 @@ function getAuthCardMarkup() {
               <button class="btn auth-password-toggle" type="button" onclick="togglePasswordField('account-confirm-password-input', this)">Show</button>
             </div>
           </div>
-          <button class="btn btn-primary btn-full" id="account-password-btn" type="submit">Change password</button>
+          <button class="btn btn-primary btn-full" id="account-password-btn" type="submit">Save password</button>
         </form>
-        <div class="auth-form-status" id="auth-form-status"></div>
         <div class="auth-inline-actions">
           <button class="btn" type="button" onclick="signOutUser()">Sign out</button>
         </div>
@@ -4330,6 +4340,14 @@ function togglePasswordField(inputId, btn) {
   if (btn) btn.textContent = nextType === 'password' ? 'Show' : 'Hide';
 }
 
+function toggleAccountPasswordPanel() {
+  const panel = document.getElementById('account-password-panel');
+  const btn = document.getElementById('account-change-password-toggle');
+  if (!panel) return;
+  const isOpen = panel.classList.toggle('active');
+  if (btn) btn.textContent = isOpen ? 'Cancel password change' : 'Change password';
+}
+
 function getAuthEmailValue() {
   return document.getElementById('auth-email-input')?.value?.trim()
     || document.getElementById('account-email-input')?.value?.trim()
@@ -4558,7 +4576,7 @@ async function updateAccountPassword() {
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.textContent = 'Change password';
+      btn.textContent = 'Save password';
     }
   }
 }
