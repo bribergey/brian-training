@@ -22,10 +22,10 @@ jobs:
           ref: gh-pages
           path: gh-pages
 
-      - name: Copy staging HTML to legacy and app routes
+      - name: Copy staging marketing and app routes
         run: |
           mkdir -p gh-pages/staging/app gh-pages/staging/home
-          cp brian_STAGING.html gh-pages/staging/index.html
+          cp marketing_STAGING.html gh-pages/staging/index.html
           cp brian_STAGING.html gh-pages/staging/app/index.html
           cp marketing_STAGING.html gh-pages/staging/home/index.html
 

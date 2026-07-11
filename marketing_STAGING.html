@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#0f0f0e">
   <title>Briq Training</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -79,7 +80,7 @@
       line-height: 1;
     }
 
-    .logo-word .iq { color: var(--green); font-family: var(--mono); font-weight: 500; }
+    .logo-word .iq { color: var(--green); font-family: var(--mono); font-weight: 500; margin-right: 2px; }
 
     .nav-login {
       align-items: center;
@@ -108,7 +109,7 @@
       z-index: 3;
     }
 
-    .hero-copy { max-width: 850px; position: relative; z-index: 4; }
+    .hero-copy { max-width: 850px; min-width: 0; position: relative; width: 100%; z-index: 4; }
     .hero-kicker { color: var(--green); font: 500 12px/1.4 var(--mono); margin: 0 0 18px; text-transform: uppercase; }
     h1 { font-size: 76px; font-weight: 900; letter-spacing: 0; line-height: 0.98; margin: 0; max-width: 830px; }
 
@@ -198,51 +199,120 @@
     .system-item p { color: #474742; font-size: 15px; line-height: 1.55; margin: 0; max-width: 300px; }
 
     .product-band { background: var(--white); padding: 0 32px 100px; }
-    .product-shell {
+    .phones-stage {
+      align-items: end;
       background: var(--ink);
-      color: var(--white);
+      display: flex;
+      gap: 70px;
+      justify-content: center;
       margin: 0 auto;
       max-width: 1216px;
-      min-height: 620px;
+      min-height: 760px;
+      overflow: hidden;
+      padding: 62px 54px 0;
+      position: relative;
+    }
+    .phones-caption { color: var(--white); left: 34px; position: absolute; top: 28px; }
+    .phones-caption strong { display: block; font-size: 20px; margin-bottom: 5px; }
+    .phones-caption span { color: rgba(255,255,255,0.5); font: 400 10px/1.5 var(--mono); }
+    .iphone {
+      background: #2a2a28;
+      border: 2px solid #4a4a46;
+      border-bottom: 0;
+      border-radius: 44px 44px 0 0;
+      flex: 0 0 322px;
+      height: 682px;
+      overflow: hidden;
+      padding: 9px 9px 0;
+      position: relative;
+    }
+    .iphone.secondary { height: 642px; }
+    .iphone-screen {
+      background: var(--paper);
+      border-radius: 35px 35px 0 0;
+      height: 100%;
       overflow: hidden;
       position: relative;
     }
-
-    .product-head { align-items: center; border-bottom: 1px solid rgba(255,255,255,0.15); display: flex; justify-content: space-between; padding: 22px 26px; }
-    .product-head strong { font-size: 17px; }
-    .product-head span { color: var(--green); font: 500 10px/1 var(--mono); text-transform: uppercase; }
-    .product-layout { display: grid; grid-template-columns: 0.85fr 1.4fr 0.9fr; min-height: 545px; }
-    .product-pane { padding: 28px; }
-    .product-pane + .product-pane { border-left: 1px solid rgba(255,255,255,0.15); }
-    .pane-label { color: rgba(255,255,255,0.45); font: 500 10px/1.4 var(--mono); text-transform: uppercase; }
-    .week-day { border-bottom: 1px solid rgba(255,255,255,0.13); padding: 20px 0; }
-    .week-day.active { border-left: 3px solid var(--green); padding-left: 12px; }
-    .week-day small { color: rgba(255,255,255,0.45); display: block; font: 400 10px/1.4 var(--mono); margin-bottom: 5px; }
-    .week-day strong { font-size: 16px; }
-
-    .exercise { border-bottom: 1px solid rgba(255,255,255,0.14); padding: 24px 0; }
-    .exercise-head { align-items: baseline; display: flex; justify-content: space-between; }
-    .exercise-head strong { font-size: 18px; }
-    .exercise-head span { color: var(--green); font: 500 10px/1 var(--mono); text-transform: uppercase; }
-    .set-grid { display: grid; gap: 8px; grid-template-columns: 25px repeat(3, 1fr); margin-top: 18px; }
-    .set-grid span { background: #242422; border-radius: 4px; font: 400 11px/34px var(--mono); height: 34px; text-align: center; }
-    .set-grid span:first-child { background: transparent; color: rgba(255,255,255,0.45); }
-    .set-grid .done { background: var(--green); color: var(--ink); font-weight: 500; }
-
-    .coach-message { border-left: 3px solid var(--gold); margin-top: 40px; padding-left: 16px; }
-    .coach-message p { font-size: 18px; font-weight: 700; line-height: 1.4; margin: 0; }
-    .coach-message small { color: rgba(255,255,255,0.5); display: block; font: 400 10px/1.5 var(--mono); margin-top: 12px; }
-    .coach-stat { border-top: 1px solid rgba(255,255,255,0.14); margin-top: 38px; padding-top: 22px; }
-    .coach-stat strong { color: var(--green); display: block; font-size: 36px; }
-    .coach-stat span { color: rgba(255,255,255,0.5); font: 400 10px/1.5 var(--mono); text-transform: uppercase; }
+    .dynamic-island { background: #000; border-radius: 14px; height: 25px; left: 50%; position: absolute; top: 10px; transform: translateX(-50%); width: 84px; z-index: 3; }
+    .phone-header {
+      align-items: end;
+      background: var(--ink);
+      color: var(--white);
+      display: flex;
+      height: 74px;
+      justify-content: space-between;
+      padding: 0 14px 11px;
+    }
+    .phone-logo { align-items: center; display: flex; font-size: 12px; font-weight: 800; }
+    .phone-logo .iq { color: var(--green); font-family: var(--mono); font-weight: 500; margin-right: 1px; }
+    .phone-logo-mark { display: grid; gap: 2px; grid-template-columns: 5px 11px; grid-template-rows: 8px 8px; height: 18px; margin-right: 5px; width: 18px; }
+    .phone-logo-mark i { background: var(--white); border-radius: 1px; }
+    .phone-logo-mark i:first-child { background: var(--green); grid-row: 1 / 3; }
+    .phone-session { background: rgba(26,219,78,0.13); border: 1px solid rgba(26,219,78,0.28); border-radius: 5px; color: var(--green); font: 500 8px/1 var(--mono); padding: 6px 7px; }
+    .phone-body { height: calc(100% - 126px); overflow: hidden; padding: 15px 13px 20px; }
+    .phone-tabs { background: #efefec; border-radius: 5px; display: grid; grid-template-columns: repeat(3,1fr); height: 34px; padding: 3px; }
+    .phone-tabs span { align-items: center; color: #777771; display: flex; font: 500 7px/1 var(--mono); justify-content: center; text-transform: uppercase; }
+    .phone-tabs .active { background: var(--white); border-radius: 4px; color: var(--ink); }
+    .phone-days { display: grid; gap: 6px; grid-template-columns: repeat(3,1fr); margin: 14px 0; }
+    .phone-day { background: var(--white); border: 1px solid var(--line); border-radius: 7px; min-height: 64px; padding: 9px 5px; text-align: center; }
+    .phone-day small { color: #777771; display: block; font: 400 6px/1.3 var(--mono); text-transform: uppercase; }
+    .phone-day strong { display: block; font-size: 11px; margin-top: 5px; }
+    .phone-day.active { background: var(--ink); color: var(--white); }
+    .phone-day.active small { color: var(--green); }
+    .phone-exercise { background: var(--white); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; padding: 12px 11px; }
+    .phone-exercise-head { align-items: center; display: flex; justify-content: space-between; }
+    .phone-exercise-head strong { font-size: 12px; }
+    .phone-exercise-head span { color: var(--green-dark); font: 500 6px/1 var(--mono); text-transform: uppercase; }
+    .phone-set-row { display: grid; gap: 4px; grid-template-columns: 14px 1fr 1fr 28px; margin-top: 9px; }
+    .phone-set-row span { background: #f0f0ed; border-radius: 4px; font: 400 7px/24px var(--mono); height: 24px; text-align: center; }
+    .phone-set-row span:first-child { background: transparent; color: #888882; }
+    .phone-set-row .check { background: var(--ink); color: var(--green); }
+    .phone-nav { align-items: center; background: var(--white); border-top: 1px solid var(--line); bottom: 0; display: grid; grid-template-columns: repeat(3,1fr); height: 52px; left: 0; position: absolute; right: 0; }
+    .phone-nav span { color: #aaa9a2; font-size: 8px; font-weight: 600; text-align: center; }
+    .phone-nav .active { color: var(--ink); }
+    .phone-nav .active::before { background: var(--green); border-radius: 2px; content: ""; display: block; height: 3px; margin: 0 auto 7px; width: 16px; }
+    .phone-section-title { font: 500 8px/1.4 var(--mono); margin: 16px 0 10px; text-transform: uppercase; }
+    .phone-stats { display: grid; gap: 7px; grid-template-columns: repeat(3,1fr); }
+    .phone-stat { background: var(--white); border: 1px solid var(--line); border-radius: 7px; min-height: 74px; padding: 10px 7px; }
+    .phone-stat strong { display: block; font-size: 20px; }
+    .phone-stat span { color: #777771; display: block; font: 400 6px/1.35 var(--mono); margin-top: 8px; }
+    .phone-panel { background: var(--white); border: 1px solid var(--line); border-left: 3px solid var(--gold); border-radius: 8px; margin-top: 9px; padding: 12px 11px; }
+    .phone-panel.green { border-left-color: var(--green); }
+    .phone-panel-head { align-items: center; display: flex; font-size: 11px; font-weight: 800; justify-content: space-between; }
+    .phone-panel-head span { color: #777771; font: 400 6px/1 var(--mono); }
+    .phone-lift { align-items: center; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr 44px 58px; margin-top: 10px; padding-top: 9px; }
+    .phone-lift strong { font-size: 9px; }
+    .phone-lift b { color: var(--green-dark); font-size: 12px; text-align: right; }
+    .spark { align-items: end; display: flex; gap: 3px; height: 22px; justify-content: flex-end; }
+    .spark i { background: var(--gold); display: block; width: 4px; }
+    .spark i:nth-child(1) { height: 7px; }.spark i:nth-child(2) { height: 11px; }.spark i:nth-child(3) { height: 14px; }.spark i:nth-child(4) { height: 19px; }.spark i:nth-child(5) { height: 22px; }
+    .measure-row { display: grid; gap: 7px; grid-template-columns: 1fr 1fr; margin-top: 10px; }
+    .measure { background: #f0f0ed; border-radius: 5px; padding: 9px; }
+    .measure small { color: #777771; display: block; font: 400 6px/1 var(--mono); text-transform: uppercase; }
+    .measure strong { display: block; font-size: 16px; margin-top: 5px; }
 
     .statement { background: var(--green); padding: 92px 32px; }
     .statement-inner { margin: 0 auto; max-width: 1216px; }
     .statement p { font-size: 58px; font-weight: 900; letter-spacing: 0; line-height: 1; margin: 0; max-width: 980px; }
 
-    .footer { align-items: center; background: var(--ink); color: var(--white); display: flex; justify-content: space-between; min-height: 130px; padding: 28px 32px; }
+    .footer { background: var(--ink); color: var(--white); padding: 70px 32px; }
+    .footer-inner { align-items: start; display: grid; gap: 70px; grid-template-columns: 0.8fr 1.2fr; margin: 0 auto; max-width: 1216px; }
     .footer .logo-word { font-size: 19px; }
-    .footer-link { color: var(--green); font: 500 12px/1.4 var(--mono); text-decoration: none; }
+    .footer-login { color: var(--green); display: inline-block; font: 500 12px/1.4 var(--mono); margin-top: 30px; text-decoration: none; }
+    .invite-title { font-size: 28px; margin: 0 0 9px; }
+    .invite-copy { color: rgba(255,255,255,0.62); font-size: 14px; line-height: 1.5; margin: 0 0 22px; max-width: 520px; }
+    .invite-form { display: grid; gap: 10px; grid-template-columns: 0.75fr 1fr auto; }
+    .invite-field { min-width: 0; }
+    .invite-field label { color: rgba(255,255,255,0.56); display: block; font: 500 9px/1.4 var(--mono); margin-bottom: 6px; text-transform: uppercase; }
+    .invite-field input { background: #222220; border: 1px solid rgba(255,255,255,0.24); border-radius: 6px; color: var(--white); font: 500 15px/1 var(--sans); height: 46px; outline: none; padding: 0 12px; width: 100%; }
+    .invite-field input:focus { border-color: var(--green); }
+    .invite-submit { align-self: end; background: var(--green); border: 0; border-radius: 6px; color: var(--ink); cursor: pointer; font: 800 13px/1 var(--sans); height: 46px; padding: 0 17px; }
+    .invite-submit:disabled { cursor: wait; opacity: 0.55; }
+    .invite-status { color: rgba(255,255,255,0.68); font: 400 11px/1.5 var(--mono); grid-column: 1 / -1; min-height: 17px; }
+    .invite-status.success { color: var(--green); }
+    .invite-status.error { color: #ff8f8f; }
+    .invite-honeypot { height: 0; left: -10000px; overflow: hidden; position: absolute; width: 0; }
     .staging-flag { background: var(--gold); bottom: 12px; color: var(--ink); font: 500 9px/1 var(--mono); padding: 5px 8px; position: fixed; right: 12px; text-transform: uppercase; z-index: 10; }
 
     @media (max-width: 900px) {
@@ -253,8 +323,8 @@
       .system-item { min-height: 190px; padding: 28px 0; }
       .system-item + .system-item { border-left: 0; border-top: 1px solid var(--line); padding-left: 0; }
       .system-item h3 { margin-top: 44px; }
-      .product-layout { grid-template-columns: 1fr 1.35fr; }
-      .product-pane:last-child { border-left: 0; border-top: 1px solid rgba(255,255,255,0.15); grid-column: 1 / 3; }
+      .phones-stage { gap: 28px; padding-left: 28px; padding-right: 28px; }
+      .iphone { flex-basis: 292px; }
     }
 
     @media (max-width: 620px) {
@@ -275,25 +345,27 @@
       .section h2 { font-size: 38px; }
       .system-grid { margin-top: 42px; }
       .product-band { padding: 0 0 72px; }
-      .product-shell { min-height: 0; }
-      .product-layout { grid-template-columns: 1fr; }
-      .product-pane { padding: 24px 20px; }
-      .product-pane + .product-pane { border-left: 0; border-top: 1px solid rgba(255,255,255,0.15); }
-      .product-pane:last-child { grid-column: auto; }
+      .phones-stage { align-items: end; gap: 18px; justify-content: flex-start; min-height: 690px; overflow-x: auto; padding: 58px 18px 0; scroll-snap-type: x mandatory; }
+      .phones-caption { left: 18px; top: 20px; }
+      .iphone { flex-basis: 282px; height: 620px; scroll-snap-align: center; }
+      .iphone.secondary { height: 590px; }
       .statement { padding: 72px 18px; }
       .statement p { font-size: 40px; }
-      .footer { align-items: flex-start; flex-direction: column; gap: 24px; padding: 34px 18px; }
+      .footer { padding: 54px 18px; }
+      .footer-inner { gap: 48px; grid-template-columns: 1fr; }
+      .invite-form { grid-template-columns: 1fr; }
+      .invite-submit { width: 100%; }
     }
   </style>
 </head>
 <body>
   <section class="hero">
     <nav class="nav" aria-label="Main navigation">
-      <a class="logo" href="./" aria-label="Briq Training home">
+      <a class="logo" href="/staging/" aria-label="Briq Training home">
         <span class="logo-mark" aria-hidden="true"><i></i><i></i><i></i></span>
         <span class="logo-word"><span>br</span><span class="iq">iq</span><span>training</span></span>
       </a>
-      <a class="nav-login" href="../app/">Log in</a>
+      <a class="nav-login" href="/staging/app/">Log in</a>
     </nav>
 
     <div class="scene" aria-hidden="true">
@@ -317,9 +389,9 @@
     <div class="hero-inner">
       <div class="hero-copy">
         <p class="hero-kicker">Briq Training</p>
-        <h1>structured strength + intelligent coaching</h1>
+        <h1>structured strength training + intelligent coaching</h1>
         <div class="hero-actions">
-          <a class="open-app" href="../app/">Open Briq&nbsp; &rarr;</a>
+          <a class="open-app" href="/staging/app/">Open Briq&nbsp; &rarr;</a>
         </div>
       </div>
     </div>
@@ -351,37 +423,68 @@
     </section>
 
     <section class="product-band" aria-label="Briq Training product preview">
-      <div class="product-shell">
-        <div class="product-head"><strong>Training</strong><span>Live session</span></div>
-        <div class="product-layout">
-          <div class="product-pane">
-            <div class="pane-label">This week</div>
-            <div class="week-day"><small>Monday</small><strong>Upper strength</strong></div>
-            <div class="week-day active"><small>Wednesday</small><strong>Lower strength</strong></div>
-            <div class="week-day"><small>Saturday</small><strong>Full body</strong></div>
+      <div class="phones-stage">
+        <div class="phones-caption"><strong>The real training UI</strong><span>Shown with synthetic example data.</span></div>
+        <div class="iphone">
+          <div class="iphone-screen">
+            <div class="dynamic-island"></div>
+            <div class="phone-header">
+              <div class="phone-logo"><span class="phone-logo-mark"><i></i><i></i><i></i></span><span>br</span><span class="iq">iq</span><span>training</span></div>
+              <span class="phone-session">18 sessions</span>
+            </div>
+            <div class="phone-body">
+              <div class="phone-tabs"><span class="active">This week</span><span>Program</span><span>History</span></div>
+              <div class="phone-days">
+                <div class="phone-day"><small>Monday</small><strong>Upper</strong></div>
+                <div class="phone-day active"><small>Wednesday</small><strong>Lower</strong></div>
+                <div class="phone-day"><small>Saturday</small><strong>Full body</strong></div>
+              </div>
+              <div class="phone-exercise">
+                <div class="phone-exercise-head"><strong>Back squat</strong><span>Strength</span></div>
+                <div class="phone-set-row"><span>1</span><span>100 kg</span><span>6 reps</span><span class="check">Done</span></div>
+                <div class="phone-set-row"><span>2</span><span>100 kg</span><span>6 reps</span><span class="check">Done</span></div>
+              </div>
+              <div class="phone-exercise">
+                <div class="phone-exercise-head"><strong>Romanian deadlift</strong><span>Posterior</span></div>
+                <div class="phone-set-row"><span>1</span><span>82.5 kg</span><span>8 reps</span><span class="check">Done</span></div>
+              </div>
+              <div class="phone-exercise">
+                <div class="phone-exercise-head"><strong>Walking lunge</strong><span>Unilateral</span></div>
+                <div class="phone-set-row"><span>1</span><span>24 kg</span><span>10 reps</span><span>Next</span></div>
+              </div>
+            </div>
+            <div class="phone-nav"><span class="active">Training</span><span>Analytics</span><span>Me</span></div>
           </div>
-          <div class="product-pane">
-            <div class="pane-label">In progress</div>
-            <div class="exercise">
-              <div class="exercise-head"><strong>Back squat</strong><span>Strength</span></div>
-              <div class="set-grid"><span>1</span><span>100 kg</span><span>6 reps</span><span class="done">Done</span></div>
+        </div>
+        <div class="iphone secondary">
+          <div class="iphone-screen">
+            <div class="dynamic-island"></div>
+            <div class="phone-header">
+              <div class="phone-logo"><span class="phone-logo-mark"><i></i><i></i><i></i></span><span>br</span><span class="iq">iq</span><span>training</span></div>
+              <span class="phone-session">18 sessions</span>
             </div>
-            <div class="exercise">
-              <div class="exercise-head"><strong>Romanian deadlift</strong><span>Posterior</span></div>
-              <div class="set-grid"><span>2</span><span>82.5 kg</span><span>8 reps</span><span class="done">Done</span></div>
+            <div class="phone-body">
+              <div class="phone-section-title">Training analytics</div>
+              <div class="phone-stats">
+                <div class="phone-stat"><strong>18</strong><span>Sessions by coach</span></div>
+                <div class="phone-stat"><strong>64</strong><span>Total sessions</span></div>
+                <div class="phone-stat"><strong>7</strong><span>Weekly streak</span></div>
+              </div>
+              <div class="phone-panel">
+                <div class="phone-panel-head">Anchor lifts <span>Best logged</span></div>
+                <div class="phone-lift"><strong>Back squat</strong><div class="spark"><i></i><i></i><i></i><i></i><i></i></div><b>105 kg</b></div>
+                <div class="phone-lift"><strong>Bench press</strong><div class="spark"><i></i><i></i><i></i><i></i><i></i></div><b>82.5 kg</b></div>
+                <div class="phone-lift"><strong>Deadlift</strong><div class="spark"><i></i><i></i><i></i><i></i><i></i></div><b>145 kg</b></div>
+              </div>
+              <div class="phone-panel green">
+                <div class="phone-panel-head">Body composition <span>Latest</span></div>
+                <div class="measure-row">
+                  <div class="measure"><small>Weight</small><strong>78.4 kg</strong></div>
+                  <div class="measure"><small>Body fat</small><strong>14.8%</strong></div>
+                </div>
+              </div>
             </div>
-            <div class="exercise">
-              <div class="exercise-head"><strong>Walking lunge</strong><span>Unilateral</span></div>
-              <div class="set-grid"><span>3</span><span>24 kg</span><span>10 reps</span><span>Next</span></div>
-            </div>
-          </div>
-          <div class="product-pane">
-            <div class="pane-label">Coach signal</div>
-            <div class="coach-message">
-              <p>Keep the load. Make the last two reps cleaner.</p>
-              <small>Based on your last three lower-strength sessions.</small>
-            </div>
-            <div class="coach-stat"><strong>+7.5%</strong><span>12-week squat trend</span></div>
+            <div class="phone-nav"><span>Training</span><span class="active">Analytics</span><span>Me</span></div>
           </div>
         </div>
       </div>
@@ -393,12 +496,84 @@
   </main>
 
   <footer class="footer">
-    <a class="logo" href="./" aria-label="Briq Training home">
-      <span class="logo-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-      <span class="logo-word"><span>br</span><span class="iq">iq</span><span>training</span></span>
-    </a>
-    <a class="footer-link" href="../app/">Log in to Briq &rarr;</a>
+    <div class="footer-inner">
+      <div>
+        <a class="logo" href="/staging/" aria-label="Briq Training home">
+          <span class="logo-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="logo-word"><span>br</span><span class="iq">iq</span><span>training</span></span>
+        </a>
+        <br>
+        <a class="footer-login" href="/staging/app/">Already invited? Log in to Briq &rarr;</a>
+      </div>
+      <div class="invite-block">
+        <h2 class="invite-title">Request an invitation</h2>
+        <p class="invite-copy">Briq Training is currently invitation only. Leave your details and we will let you know when access is available.</p>
+        <form class="invite-form" id="invite-form">
+          <div class="invite-field"><label for="invite-name">Name</label><input id="invite-name" name="name" autocomplete="name" maxlength="120" required></div>
+          <div class="invite-field"><label for="invite-email">Email</label><input id="invite-email" name="email" type="email" autocomplete="email" maxlength="320" required></div>
+          <div class="invite-honeypot" aria-hidden="true"><label for="invite-company">Company</label><input id="invite-company" name="company" tabindex="-1" autocomplete="off"></div>
+          <button class="invite-submit" id="invite-submit" type="submit">Request invite</button>
+          <div class="invite-status" id="invite-status" role="status" aria-live="polite"></div>
+        </form>
+      </div>
+    </div>
   </footer>
   <div class="staging-flag">Marketing preview</div>
+  <script>
+    const INVITE_SB_URL = 'https://mimvmaotzmacgiziovvi.supabase.co';
+    const INVITE_SB_KEY = 'sb_publishable_UWo_V9HvcpmFngntVrUINQ_zzvUDu_T';
+    const inviteForm = document.getElementById('invite-form');
+    const inviteStatus = document.getElementById('invite-status');
+    const inviteSubmit = document.getElementById('invite-submit');
+
+    inviteForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const name = document.getElementById('invite-name').value.trim();
+      const email = document.getElementById('invite-email').value.trim().toLowerCase();
+      const company = document.getElementById('invite-company').value.trim();
+      inviteStatus.className = 'invite-status';
+
+      if (company) {
+        inviteStatus.textContent = 'Thanks. Your request has been recorded.';
+        inviteStatus.classList.add('success');
+        inviteForm.reset();
+        return;
+      }
+
+      inviteSubmit.disabled = true;
+      inviteSubmit.textContent = 'Sending...';
+      inviteStatus.textContent = '';
+
+      try {
+        const response = await fetch(`${INVITE_SB_URL}/rest/v1/invitation_requests`, {
+          method: 'POST',
+          headers: {
+            apikey: INVITE_SB_KEY,
+            'Content-Type': 'application/json',
+            'Content-Profile': 'training',
+            Prefer: 'return=minimal'
+          },
+          body: JSON.stringify({ name, email, source: 'marketing_home' })
+        });
+
+        if (response.status === 409) {
+          inviteStatus.textContent = 'You are already on the invitation list.';
+          inviteStatus.classList.add('success');
+          return;
+        }
+        if (!response.ok) throw new Error('Request could not be saved');
+
+        inviteStatus.textContent = 'Thanks. Your invitation request is recorded.';
+        inviteStatus.classList.add('success');
+        inviteForm.reset();
+      } catch (error) {
+        inviteStatus.textContent = 'We could not save your request. Please try again.';
+        inviteStatus.classList.add('error');
+      } finally {
+        inviteSubmit.disabled = false;
+        inviteSubmit.textContent = 'Request invite';
+      }
+    });
+  </script>
 </body>
 </html>
