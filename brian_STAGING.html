@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Training Hub">
-<title>Brian's Training Hub</title>
+<meta name="apple-mobile-web-app-title" content="Briq Training">
+<title>Briq Training</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -59,25 +59,52 @@ body {
 /* HEADER */
 .app-header {
   flex-shrink: 0;
-  padding: 20px 24px 18px;
+  padding: 17px 20px 16px;
   background: var(--text);
   border-bottom: none;
   display: flex; justify-content: space-between; align-items: center;
+  gap: 10px;
 }
-.header-left {}
+.header-left { min-width: 0; }
 .app-title {
-  font-family: var(--display);
-  font-weight: 900;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
 }
-.app-title-name {
-  font-size: 20px;
+.briq-mark {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: 9px 21px;
+  grid-template-rows: 14px 14px;
+  gap: 4px;
+  height: 32px;
+  width: 34px;
+}
+.briq-mark span {
+  background: #ffffff;
+  border-radius: 2px;
+  display: block;
+}
+.briq-mark span:first-child {
+  background: var(--green);
+  grid-row: 1 / 3;
+}
+.briq-wordmark {
   color: #ffffff;
-}
-.app-title-sub {
+  display: flex;
+  align-items: baseline;
+  font-family: var(--display);
   font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+  white-space: nowrap;
+}
+.briq-wordmark .briq-iq {
   color: var(--green);
+  font-family: var(--mono);
+  font-weight: 500;
 }
 .header-badge {
   background: rgba(26,219,78,0.15);
@@ -108,6 +135,13 @@ body {
   text-transform: uppercase; color: rgba(255,255,255,0.5);
 }
 .wake-lock-btn.active .wake-lock-label { color: var(--green); }
+@media (max-width: 390px) {
+  .app-header { padding-left: 14px; padding-right: 14px; gap: 7px; }
+  .app-title { gap: 7px; }
+  .briq-wordmark { font-size: 17px; }
+  .header-badge { padding-left: 9px; padding-right: 9px; }
+  .header-badge-val { font-size: 21px; }
+}
 
 /* BOTTOM NAV */
 .bottom-nav {
@@ -946,7 +980,10 @@ select {
 
 <div class="app-header">
   <div class="header-left">
-    <div class="app-title"><span class="app-title-name">BRIAN'S</span><br><span class="app-title-sub">TRAINING HUB</span></div>
+    <div class="app-title" aria-label="Briq Training">
+      <span class="briq-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+      <span class="briq-wordmark"><span>br</span><span class="briq-iq">iq</span><span>training</span></span>
+    </div>
   </div>
   <button class="wake-lock-btn active" id="wake-lock-btn" onclick="toggleWakeLock()" title="Screen wake lock">
     <span class="wake-lock-icon" id="wake-lock-icon">🔆</span>
@@ -1076,8 +1113,11 @@ const ENV = 'staging';
 const SB_URL  = 'https://mimvmaotzmacgiziovvi.supabase.co';
 const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pbXZtYW90em1hY2dpemlvdnZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNTMzNzYsImV4cCI6MjA4OTYyOTM3Nn0.dJMw37a4m9fBOmZQQOayZ8jKY28p10y_cSca4Sfoqe4';
 const AUTH_REDIRECT_URL = ENV === 'production'
-  ? 'https://briqtraining.com/'
-  : 'https://briqtraining.com/staging/';
+  ? 'https://briqtraining.com/app/'
+  : 'https://briqtraining.com/staging/app/';
+const AUTH_ALLOWED_PAGE_URLS = ENV === 'production'
+  ? [AUTH_REDIRECT_URL, 'https://briqtraining.com/']
+  : [AUTH_REDIRECT_URL, 'https://briqtraining.com/staging/'];
 const APP_USERS_TABLE = ENV === 'production' ? 'app_users' : 'app_users_staging';
 const ALLOW_LEGACY_IDENTITY_FALLBACK = false;
 const LEGACY_USER_FALLBACK_ID = 'brian';
@@ -3739,7 +3779,7 @@ async function shareAllLifts() {
 
     ctx.fillStyle = txt; ctx.globalAlpha = 0.35;
     ctx.font = "700 9px monospace";
-    ctx.fillText("BRIAN'S TRAINING HUB  ·  ANCHOR LIFTS", PAD, PAD + 10);
+    ctx.fillText("BRIQTRAINING  ·  ANCHOR LIFTS", PAD, PAD + 10);
     ctx.globalAlpha = 1;
 
     let y = PAD + 24 + 8;
@@ -3941,10 +3981,12 @@ function getAuthCardMarkup() {
 
 function isExpectedAuthPageUrl() {
   try {
-    const expected = new URL(AUTH_REDIRECT_URL);
-    const expectedPath = expected.pathname.endsWith('/') ? expected.pathname : expected.pathname + '/';
     const currentPath = window.location.pathname.endsWith('/') ? window.location.pathname : window.location.pathname + '/';
-    return window.location.origin === expected.origin && currentPath === expectedPath;
+    return AUTH_ALLOWED_PAGE_URLS.some(url => {
+      const expected = new URL(url);
+      const expectedPath = expected.pathname.endsWith('/') ? expected.pathname : expected.pathname + '/';
+      return window.location.origin === expected.origin && currentPath === expectedPath;
+    });
   } catch (e) {
     return false;
   }
