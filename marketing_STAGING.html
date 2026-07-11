@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f0f0e">
+  <title>Briq Training</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&amp;family=Inter:wght@500;600;700;800;900&amp;display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #0f0f0e;
+      --paper: #f7f7f5;
+      --white: #ffffff;
+      --green: #1adb4e;
+      --green-dark: #0a7a28;
+      --gold: #f5b800;
+      --muted: #e8e8e4;
+      --line: rgba(15, 15, 14, 0.14);
+      --mono: "DM Mono", monospace;
+      --sans: Inter, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--paper); scroll-behavior: smooth; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); }
+    a { color: inherit; }
+
+    .hero {
+      background: var(--ink);
+      color: var(--white);
+      height: 90svh;
+      min-height: 650px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .nav {
+      align-items: center;
+      display: flex;
+      height: 76px;
+      justify-content: space-between;
+      left: 0;
+      margin: 0 auto;
+      max-width: 1280px;
+      padding: 0 32px;
+      position: relative;
+      right: 0;
+      z-index: 5;
+    }
+
+    .logo {
+      align-items: center;
+      display: inline-flex;
+      text-decoration: none;
+    }
+
+    .logo-mark {
+      display: grid;
+      flex: 0 0 auto;
+      gap: 4px;
+      grid-template-columns: 10px 24px;
+      grid-template-rows: 16px 16px;
+      height: 36px;
+      margin-right: 10px;
+      width: 38px;
+    }
+
+    .logo-mark i { background: var(--white); border-radius: 2px; display: block; }
+    .logo-mark i:first-child { background: var(--green); grid-row: 1 / 3; }
+
+    .logo-word {
+      align-items: baseline;
+      display: flex;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 0;
+      line-height: 1;
+    }
+
+    .logo-word .iq { color: var(--green); font-family: var(--mono); font-weight: 500; }
+
+    .nav-login {
+      align-items: center;
+      border: 1px solid rgba(255,255,255,0.42);
+      border-radius: 6px;
+      display: inline-flex;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      justify-content: center;
+      min-height: 40px;
+      padding: 0 16px;
+      text-decoration: none;
+    }
+
+    .nav-login:hover, .nav-login:focus-visible { background: var(--white); color: var(--ink); outline: none; }
+
+    .hero-inner {
+      align-items: end;
+      display: grid;
+      height: calc(100% - 76px);
+      margin: 0 auto;
+      max-width: 1280px;
+      padding: 42px 32px 68px;
+      position: relative;
+      z-index: 3;
+    }
+
+    .hero-copy { max-width: 850px; position: relative; z-index: 4; }
+    .hero-kicker { color: var(--green); font: 500 12px/1.4 var(--mono); margin: 0 0 18px; text-transform: uppercase; }
+    h1 { font-size: 76px; font-weight: 900; letter-spacing: 0; line-height: 0.98; margin: 0; max-width: 830px; }
+
+    .hero-actions { align-items: center; display: flex; gap: 18px; margin-top: 30px; }
+    .open-app {
+      align-items: center;
+      background: var(--green);
+      border-radius: 6px;
+      color: var(--ink);
+      display: inline-flex;
+      font-size: 15px;
+      font-weight: 800;
+      justify-content: center;
+      min-height: 50px;
+      padding: 0 21px;
+      text-decoration: none;
+    }
+    .open-app:hover, .open-app:focus-visible { background: var(--white); outline: none; }
+
+    .scene {
+      inset: 76px 0 0;
+      overflow: hidden;
+      pointer-events: none;
+      position: absolute;
+    }
+
+    .scene-grid {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(9, 86px);
+      grid-template-rows: repeat(7, 58px);
+      opacity: 0.72;
+      position: absolute;
+      right: -64px;
+      top: 36px;
+      transform: rotate(-7deg);
+    }
+
+    .scene-grid span { background: #1b1b19; border: 1px solid #30302d; border-radius: 3px; }
+    .scene-grid span:nth-child(5n),
+    .scene-grid span:nth-child(13),
+    .scene-grid span:nth-child(31),
+    .scene-grid span:nth-child(47) { background: var(--green); border-color: var(--green); }
+    .scene-grid span:nth-child(17),
+    .scene-grid span:nth-child(42) { background: var(--gold); border-color: var(--gold); }
+
+    .session-signal {
+      bottom: 64px;
+      position: absolute;
+      right: 44px;
+      transform: rotate(-4deg);
+      width: 510px;
+    }
+
+    .signal-label { color: rgba(255,255,255,0.5); font: 500 10px/1.4 var(--mono); margin-bottom: 10px; text-transform: uppercase; }
+    .signal-row {
+      align-items: center;
+      border-top: 1px solid rgba(255,255,255,0.18);
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 30px 1fr 60px 76px;
+      min-height: 49px;
+    }
+    .signal-set, .signal-load, .signal-state { font: 500 11px/1 var(--mono); }
+    .signal-set { color: rgba(255,255,255,0.45); }
+    .signal-name { font-size: 14px; font-weight: 700; }
+    .signal-load { color: rgba(255,255,255,0.75); }
+    .signal-state { color: var(--green); text-align: right; }
+
+    .section { padding: 100px 32px; }
+    .section-inner { margin: 0 auto; max-width: 1216px; }
+    .section-label { font: 500 11px/1.4 var(--mono); margin-bottom: 20px; text-transform: uppercase; }
+    .section h2 { font-size: 52px; letter-spacing: 0; line-height: 1.02; margin: 0; max-width: 760px; }
+
+    .system-grid {
+      border-bottom: 1px solid var(--line);
+      border-top: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      margin-top: 56px;
+    }
+
+    .system-item { min-height: 240px; padding: 28px 28px 34px 0; }
+    .system-item + .system-item { border-left: 1px solid var(--line); padding-left: 28px; }
+    .system-number { color: var(--green-dark); font: 500 12px/1 var(--mono); }
+    .system-item h3 { font-size: 23px; letter-spacing: 0; margin: 70px 0 10px; }
+    .system-item p { color: #474742; font-size: 15px; line-height: 1.55; margin: 0; max-width: 300px; }
+
+    .product-band { background: var(--white); padding: 0 32px 100px; }
+    .product-shell {
+      background: var(--ink);
+      color: var(--white);
+      margin: 0 auto;
+      max-width: 1216px;
+      min-height: 620px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .product-head { align-items: center; border-bottom: 1px solid rgba(255,255,255,0.15); display: flex; justify-content: space-between; padding: 22px 26px; }
+    .product-head strong { font-size: 17px; }
+    .product-head span { color: var(--green); font: 500 10px/1 var(--mono); text-transform: uppercase; }
+    .product-layout { display: grid; grid-template-columns: 0.85fr 1.4fr 0.9fr; min-height: 545px; }
+    .product-pane { padding: 28px; }
+    .product-pane + .product-pane { border-left: 1px solid rgba(255,255,255,0.15); }
+    .pane-label { color: rgba(255,255,255,0.45); font: 500 10px/1.4 var(--mono); text-transform: uppercase; }
+    .week-day { border-bottom: 1px solid rgba(255,255,255,0.13); padding: 20px 0; }
+    .week-day.active { border-left: 3px solid var(--green); padding-left: 12px; }
+    .week-day small { color: rgba(255,255,255,0.45); display: block; font: 400 10px/1.4 var(--mono); margin-bottom: 5px; }
+    .week-day strong { font-size: 16px; }
+
+    .exercise { border-bottom: 1px solid rgba(255,255,255,0.14); padding: 24px 0; }
+    .exercise-head { align-items: baseline; display: flex; justify-content: space-between; }
+    .exercise-head strong { font-size: 18px; }
+    .exercise-head span { color: var(--green); font: 500 10px/1 var(--mono); text-transform: uppercase; }
+    .set-grid { display: grid; gap: 8px; grid-template-columns: 25px repeat(3, 1fr); margin-top: 18px; }
+    .set-grid span { background: #242422; border-radius: 4px; font: 400 11px/34px var(--mono); height: 34px; text-align: center; }
+    .set-grid span:first-child { background: transparent; color: rgba(255,255,255,0.45); }
+    .set-grid .done { background: var(--green); color: var(--ink); font-weight: 500; }
+
+    .coach-message { border-left: 3px solid var(--gold); margin-top: 40px; padding-left: 16px; }
+    .coach-message p { font-size: 18px; font-weight: 700; line-height: 1.4; margin: 0; }
+    .coach-message small { color: rgba(255,255,255,0.5); display: block; font: 400 10px/1.5 var(--mono); margin-top: 12px; }
+    .coach-stat { border-top: 1px solid rgba(255,255,255,0.14); margin-top: 38px; padding-top: 22px; }
+    .coach-stat strong { color: var(--green); display: block; font-size: 36px; }
+    .coach-stat span { color: rgba(255,255,255,0.5); font: 400 10px/1.5 var(--mono); text-transform: uppercase; }
+
+    .statement { background: var(--green); padding: 92px 32px; }
+    .statement-inner { margin: 0 auto; max-width: 1216px; }
+    .statement p { font-size: 58px; font-weight: 900; letter-spacing: 0; line-height: 1; margin: 0; max-width: 980px; }
+
+    .footer { align-items: center; background: var(--ink); color: var(--white); display: flex; justify-content: space-between; min-height: 130px; padding: 28px 32px; }
+    .footer .logo-word { font-size: 19px; }
+    .footer-link { color: var(--green); font: 500 12px/1.4 var(--mono); text-decoration: none; }
+    .staging-flag { background: var(--gold); bottom: 12px; color: var(--ink); font: 500 9px/1 var(--mono); padding: 5px 8px; position: fixed; right: 12px; text-transform: uppercase; z-index: 10; }
+
+    @media (max-width: 900px) {
+      h1 { font-size: 58px; max-width: 670px; }
+      .scene-grid { opacity: 0.48; right: -280px; }
+      .session-signal { opacity: 0.5; right: -130px; }
+      .system-grid { grid-template-columns: 1fr; }
+      .system-item { min-height: 190px; padding: 28px 0; }
+      .system-item + .system-item { border-left: 0; border-top: 1px solid var(--line); padding-left: 0; }
+      .system-item h3 { margin-top: 44px; }
+      .product-layout { grid-template-columns: 1fr 1.35fr; }
+      .product-pane:last-child { border-left: 0; border-top: 1px solid rgba(255,255,255,0.15); grid-column: 1 / 3; }
+    }
+
+    @media (max-width: 620px) {
+      .hero { height: 91svh; min-height: 620px; }
+      .nav { height: 68px; padding: 0 18px; }
+      .logo-mark { gap: 3px; grid-template-columns: 8px 19px; grid-template-rows: 13px 13px; height: 29px; margin-right: 8px; width: 30px; }
+      .logo-word { font-size: 18px; }
+      .nav-login { min-height: 38px; padding: 0 13px; }
+      .hero-inner { height: calc(100% - 68px); padding: 30px 18px 50px; }
+      .hero-kicker { font-size: 10px; }
+      h1 { font-size: 46px; line-height: 1; }
+      .hero-actions { align-items: flex-start; flex-direction: column; gap: 10px; margin-top: 24px; }
+      .open-app { min-height: 48px; }
+      .scene { inset: 68px 0 0; }
+      .scene-grid { grid-template-columns: repeat(9, 62px); grid-template-rows: repeat(7, 43px); right: -325px; top: 28px; }
+      .session-signal { bottom: 34px; opacity: 0.3; right: -235px; width: 450px; }
+      .section { padding: 74px 18px; }
+      .section h2 { font-size: 38px; }
+      .system-grid { margin-top: 42px; }
+      .product-band { padding: 0 0 72px; }
+      .product-shell { min-height: 0; }
+      .product-layout { grid-template-columns: 1fr; }
+      .product-pane { padding: 24px 20px; }
+      .product-pane + .product-pane { border-left: 0; border-top: 1px solid rgba(255,255,255,0.15); }
+      .product-pane:last-child { grid-column: auto; }
+      .statement { padding: 72px 18px; }
+      .statement p { font-size: 40px; }
+      .footer { align-items: flex-start; flex-direction: column; gap: 24px; padding: 34px 18px; }
+    }
+  </style>
+</head>
+<body>
+  <section class="hero">
+    <nav class="nav" aria-label="Main navigation">
+      <a class="logo" href="./" aria-label="Briq Training home">
+        <span class="logo-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="logo-word"><span>br</span><span class="iq">iq</span><span>training</span></span>
+      </a>
+      <a class="nav-login" href="../app/">Log in</a>
+    </nav>
+
+    <div class="scene" aria-hidden="true">
+      <div class="scene-grid">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div class="session-signal">
+        <div class="signal-label">Today / Lower strength</div>
+        <div class="signal-row"><span class="signal-set">01</span><strong class="signal-name">Back squat</strong><span class="signal-load">100 kg</span><span class="signal-state">Complete</span></div>
+        <div class="signal-row"><span class="signal-set">02</span><strong class="signal-name">Romanian deadlift</strong><span class="signal-load">82.5 kg</span><span class="signal-state">Complete</span></div>
+        <div class="signal-row"><span class="signal-set">03</span><strong class="signal-name">Walking lunge</strong><span class="signal-load">24 kg</span><span class="signal-state">Next</span></div>
+      </div>
+    </div>
+
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <p class="hero-kicker">Briq Training</p>
+        <h1>structured strength + intelligent coaching</h1>
+        <div class="hero-actions">
+          <a class="open-app" href="../app/">Open Briq&nbsp; &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <section class="section">
+      <div class="section-inner">
+        <div class="section-label">A training system that stays with you</div>
+        <h2>Built around the work, not the noise.</h2>
+        <div class="system-grid">
+          <article class="system-item">
+            <span class="system-number">01</span>
+            <h3>Program</h3>
+            <p>Your training week stays organized, visible, and ready when you are.</p>
+          </article>
+          <article class="system-item">
+            <span class="system-number">02</span>
+            <h3>Progress</h3>
+            <p>Every set, note, measurement, and milestone becomes useful history.</p>
+          </article>
+          <article class="system-item">
+            <span class="system-number">03</span>
+            <h3>Coach</h3>
+            <p>Guidance reflects what you planned, what you did, and what should come next.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="product-band" aria-label="Briq Training product preview">
+      <div class="product-shell">
+        <div class="product-head"><strong>Training</strong><span>Live session</span></div>
+        <div class="product-layout">
+          <div class="product-pane">
+            <div class="pane-label">This week</div>
+            <div class="week-day"><small>Monday</small><strong>Upper strength</strong></div>
+            <div class="week-day active"><small>Wednesday</small><strong>Lower strength</strong></div>
+            <div class="week-day"><small>Saturday</small><strong>Full body</strong></div>
+          </div>
+          <div class="product-pane">
+            <div class="pane-label">In progress</div>
+            <div class="exercise">
+              <div class="exercise-head"><strong>Back squat</strong><span>Strength</span></div>
+              <div class="set-grid"><span>1</span><span>100 kg</span><span>6 reps</span><span class="done">Done</span></div>
+            </div>
+            <div class="exercise">
+              <div class="exercise-head"><strong>Romanian deadlift</strong><span>Posterior</span></div>
+              <div class="set-grid"><span>2</span><span>82.5 kg</span><span>8 reps</span><span class="done">Done</span></div>
+            </div>
+            <div class="exercise">
+              <div class="exercise-head"><strong>Walking lunge</strong><span>Unilateral</span></div>
+              <div class="set-grid"><span>3</span><span>24 kg</span><span>10 reps</span><span>Next</span></div>
+            </div>
+          </div>
+          <div class="product-pane">
+            <div class="pane-label">Coach signal</div>
+            <div class="coach-message">
+              <p>Keep the load. Make the last two reps cleaner.</p>
+              <small>Based on your last three lower-strength sessions.</small>
+            </div>
+            <div class="coach-stat"><strong>+7.5%</strong><span>12-week squat trend</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="statement">
+      <div class="statement-inner"><p>Your program gets smarter every time you train.</p></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <a class="logo" href="./" aria-label="Briq Training home">
+      <span class="logo-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="logo-word"><span>br</span><span class="iq">iq</span><span>training</span></span>
+    </a>
+    <a class="footer-link" href="../app/">Log in to Briq &rarr;</a>
+  </footer>
+  <div class="staging-flag">Marketing preview</div>
+</body>
+</html>
