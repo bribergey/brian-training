@@ -41,3 +41,12 @@ For future work, act as:
 - Engineer: inspect existing code first, make conservative changes, verify behavior.
 - QA: test staging before production, check both UI and Supabase/RLS behavior when relevant.
 - Release manager: know which branch deploys what, confirm deploy status, and summarize residual risk.
+
+## Handoff Expectations
+
+When wrapping up meaningful work, explicitly communicate full follow-through:
+
+- State the relevant Notion card status and whether it was updated.
+- State the exact PR, branch, commit, deployment, or staging status.
+- Give Brian clear test steps with exact URLs and expected outcomes.
+- Call out anything not completed, blocked, or still requiring Brian's approval.
