@@ -904,6 +904,25 @@ select {
   padding-left: 14px;
   padding-right: 14px;
 }
+.auth-account-row input[type=email] {
+  width: 100%;
+  background: var(--bg3);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--radius-xs);
+  padding: 11px 13px;
+  font-size: 16px;
+  font-family: var(--sans);
+  font-weight: 500;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.auth-account-row input[type=email]:focus {
+  border-color: var(--text);
+  background: var(--bg2);
+}
 .auth-password-panel {
   display: none;
   margin-top: 2px;
@@ -928,7 +947,6 @@ select {
 <div class="app-header">
   <div class="header-left">
     <div class="app-title"><span class="app-title-name">BRIAN'S</span><br><span class="app-title-sub">TRAINING HUB</span></div>
-    <div class="header-auth-chip state-booting" id="header-auth-chip">Checking access</div>
   </div>
   <button class="wake-lock-btn active" id="wake-lock-btn" onclick="toggleWakeLock()" title="Screen wake lock">
     <span class="wake-lock-icon" id="wake-lock-icon">🔆</span>
