@@ -832,6 +832,59 @@ select {
   width: auto;
   min-width: 132px;
 }
+
+/* DAILY LOG */
+.daily-scale { margin-top: 8px; }
+.daily-scale-options { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.daily-scale-btn {
+  min-height: 42px; border: 1.5px solid var(--border2); border-radius: 9px;
+  background: var(--bg2); color: var(--text); font-family: var(--mono);
+  font-size: 13px; font-weight: 700; cursor: pointer; touch-action: manipulation;
+}
+.daily-scale-btn.active { border-color: var(--green); background: rgba(26,219,78,0.10); color: var(--green-dark); }
+.daily-scale-ends { display:flex; justify-content:space-between; gap:12px; margin-top:7px; }
+.daily-scale-end { font-size:11px; line-height:1.35; color:var(--text); opacity:0.52; max-width:45%; }
+.daily-scale-end:last-child { text-align:right; }
+.daily-scale-help { min-height:18px; margin-top:7px; font-size:12px; line-height:1.4; color:var(--text); opacity:0.72; }
+.daily-flags { display:flex; flex-wrap:wrap; gap:8px; }
+.daily-flag, .daily-stool-btn {
+  border:1.5px solid var(--border2); background:var(--bg2); color:var(--text);
+  border-radius:18px; padding:8px 12px; font-family:var(--mono); font-size:11px;
+  font-weight:600; cursor:pointer; touch-action:manipulation;
+}
+.daily-flag.active, .daily-stool-btn.active { border-color:var(--green); background:rgba(26,219,78,0.10); color:var(--green-dark); }
+.daily-food-entry { display:grid; grid-template-columns:92px 1fr 36px; gap:8px; align-items:center; margin-bottom:9px; }
+.daily-food-entry input { min-width:0; }
+.daily-remove-btn {
+  height:40px; border:none; border-radius:8px; background:var(--bg3); color:var(--text);
+  opacity:0.55; font-size:18px; cursor:pointer;
+}
+.daily-add-btn {
+  width:100%; border:1.5px dashed var(--border2); border-radius:10px; background:none;
+  color:var(--text); padding:11px; font-family:var(--mono); font-size:11px;
+  font-weight:700; letter-spacing:.04em; text-transform:uppercase; cursor:pointer;
+}
+.daily-history-card { cursor:pointer; transition:border-color .15s, transform .15s; }
+.daily-history-card:active { transform:scale(.99); border-color:var(--green); }
+.daily-history-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+.daily-history-date { font-family:var(--display); font-size:20px; font-weight:800; color:var(--text); }
+.daily-history-edit { font-family:var(--mono); font-size:10px; color:var(--green-dark); text-transform:uppercase; letter-spacing:.06em; }
+.daily-history-metrics { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
+.daily-history-pill { background:var(--bg3); border-radius:14px; padding:5px 9px; font-family:var(--mono); font-size:10px; color:var(--text); }
+.daily-info-btn {
+  border:1px solid var(--border2); background:none; color:var(--text); width:22px; height:22px;
+  border-radius:50%; font-family:var(--mono); font-size:12px; font-weight:700; cursor:pointer;
+}
+.daily-modal-backdrop { position:fixed; inset:0; z-index:12000; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; padding:20px; }
+.daily-modal { width:min(460px,100%); max-height:82vh; overflow:auto; background:var(--bg2); border:1px solid var(--border2); border-radius:16px; padding:20px; box-shadow:0 18px 50px rgba(0,0,0,.28); }
+.daily-modal-row { padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; line-height:1.45; color:var(--text); }
+.daily-modal-row:last-of-type { border-bottom:none; }
+.daily-save-row { display:flex; align-items:center; gap:12px; margin-bottom:32px; }
+.daily-status { font-family:var(--mono); font-size:11px; color:var(--green-dark); white-space:nowrap; }
+@media (max-width:380px) {
+  .daily-food-entry { grid-template-columns:78px 1fr 34px; }
+  .daily-scale-options { gap:4px; }
+}
 </style>
 </head>
 <body>
@@ -920,6 +973,18 @@ select {
   </div>
 </div>
 
+<!-- DAILY LOG TAB -->
+<div class="panel" id="tab-daily">
+  <div class="panel-inner">
+    <div class="nut-subtab-bar">
+      <button class="nut-subtab active" id="daily-sub-log" onclick="dailyShowTab('log',this)">Log</button>
+      <button class="nut-subtab" id="daily-sub-history" onclick="dailyShowTab('history',this)">History</button>
+    </div>
+    <div id="daily-page-log"><div style="color:var(--text);font-size:14px;opacity:0.5;padding:8px 0">Loading...</div></div>
+    <div id="daily-page-history" style="display:none"></div>
+  </div>
+</div>
+
 <!-- GUIDE TAB -->
 <!-- PROGRAM TAB -->
 <div class="panel" id="tab-me">
@@ -954,6 +1019,18 @@ select {
       </svg>
     </div>
     Analytics
+  </button>
+  <button class="nav-btn" onclick="showTab('daily',this)">
+    <div class="nav-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="18" height="17" rx="2"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="3" y1="9" x2="21" y2="9"/>
+        <polyline points="8 15 11 18 16 13"/>
+      </svg>
+    </div>
+    Daily
   </button>
   <button class="nav-btn" onclick="showTab('me',this)">
     <div class="nav-icon">
@@ -1271,6 +1348,7 @@ const TABLES = {
   monthlyProgram: ENV === 'production' ? 'monthly_program_full' : 'monthly_program_staging_full',
   profile: ENV === 'production' ? 'user_profile' : 'user_profile_staging',
   measurements: ENV === 'production' ? 'user_measurements' : 'user_measurements_staging',
+  dailyLogs: ENV === 'production' ? 'daily_logs' : 'daily_logs_staging',
 };
 
 // ─── SESSIONS: SUPABASE + localStorage CACHE ─────────────────────────────
@@ -2700,6 +2778,7 @@ function showTab(t, btn) {
     if (trainingActiveSubTab === 'program')  renderProgram();
     if (trainingActiveSubTab === 'history')  renderSessionList();
   }
+  if (t === 'daily')     renderDaily();
   if (t === 'me')        renderMe();
 }
 
@@ -3846,6 +3925,458 @@ async function shareAllLifts() {
   }
 }
 
+// ─── DAILY LOG TAB ────────────────────────────────────────────────────────
+const DAILY_SCALE_OPTIONS = {
+  energy: [
+    'Depleted — hard to function',
+    'Low — dragging through the day',
+    'Normal — your typical energy',
+    'High — strong and energized',
+    'Endless — unusually energized'
+  ],
+  stress: [
+    'Calm — no meaningful stress',
+    'Mild — present but easy to manage',
+    'Moderate — noticeable or distracting',
+    'High — hard to switch off',
+    'Overwhelming — severe stress or anxiety'
+  ],
+  mood: [
+    'Very low — a bad day emotionally',
+    'Low — below your normal mood',
+    'Neutral — neither good nor bad',
+    'Good — positive overall',
+    'Excellent — unusually positive'
+  ],
+  soreness: [
+    'None — body feels fresh',
+    'Mild — noticeable only when checked',
+    'Noticeable — present but manageable',
+    'High — affects some movement',
+    'Severe — limits normal activity'
+  ]
+};
+
+const DAILY_STOOL_TYPES = [
+  'Separate hard lumps',
+  'Lumpy, sausage-shaped',
+  'Sausage-shaped with surface cracks',
+  'Smooth, soft, sausage-shaped',
+  'Soft blobs with clear edges',
+  'Mushy or fluffy pieces',
+  'Watery, no solid pieces'
+];
+
+let dailyLogs = null;
+let dailyActiveSubTab = 'log';
+let dailySelectedDate = null;
+let dailyEditingId = null;
+let dailyDraftTimer = null;
+let dailyDraftDirty = false;
+let dailyFlashMessage = '';
+
+function dailyLocalDate(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + d;
+}
+
+function dailyFormatDate(value, long = true) {
+  if (!value) return '';
+  const d = new Date(value + 'T00:00:00');
+  return d.toLocaleDateString(undefined, long
+    ? { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }
+    : { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function dailyDraftKey(date) {
+  return getUserScopedStorageKey('daily_log_draft', date);
+}
+
+function dailyNumber(value) {
+  if (value == null || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+async function loadDailyLogs(force = false) {
+  if (dailyLogs && !force) return dailyLogs;
+  dailyLogs = await sbGet(TABLES.dailyLogs, withUserScope('select=*&order=log_date.desc,updated_at.desc'));
+  return dailyLogs;
+}
+
+function dailyScaleMarkup(name, label, value) {
+  const options = DAILY_SCALE_OPTIONS[name];
+  const buttons = options.map((description, i) => {
+    const number = i + 1;
+    return '<button type="button" class="daily-scale-btn' + (value === number ? ' active' : '') +
+      '" data-value="' + number + '" onclick="dailySetScale(\'' + name + '\',' + number + ',this)">' +
+      number + '</button>';
+  }).join('');
+  const selected = value ? options[value - 1] : 'Select the number that best matches this day.';
+  return '<div class="input-group" style="margin-bottom:18px">' +
+    '<label class="input-label">' + label + '</label>' +
+    '<div class="daily-scale" id="daily-scale-' + name + '">' +
+      '<div class="daily-scale-options">' + buttons + '</div>' +
+      '<div class="daily-scale-ends"><span class="daily-scale-end">1 — ' + options[0].split(' — ')[0] +
+      '</span><span class="daily-scale-end">5 — ' + options[4].split(' — ')[0] + '</span></div>' +
+      '<div class="daily-scale-help" id="daily-scale-help-' + name + '">' + selected + '</div>' +
+    '</div></div>';
+}
+
+function dailyFlagMarkup(id, label, active) {
+  return '<button type="button" class="daily-flag' + (active ? ' active' : '') +
+    '" id="daily-flag-' + id + '" onclick="dailyToggleFlag(this)">' + label + '</button>';
+}
+
+function dailyFoodEntriesMarkup(entries) {
+  if (!entries.length) {
+    return '<div id="daily-food-empty" style="font-size:13px;color:var(--text);opacity:.5;margin-bottom:10px">No food or drinks added yet.</div>';
+  }
+  return entries.map(entry => {
+    const id = escapeHtml(entry.id || ('food-' + Date.now() + '-' + Math.random().toString(16).slice(2)));
+    return '<div class="daily-food-entry" data-entry-id="' + id + '">' +
+      '<input type="time" class="daily-food-time" value="' + escapeHtml(entry.time || '') + '" onchange="dailyScheduleDraft()">' +
+      '<input type="text" class="daily-food-description" value="' + escapeHtml(entry.description || '') +
+        '" placeholder="What did you eat or drink?" oninput="dailyScheduleDraft()">' +
+      '<button type="button" class="daily-remove-btn" aria-label="Remove entry" onclick="dailyRemoveFood(this)">×</button>' +
+    '</div>';
+  }).join('');
+}
+
+function dailyCurrentData() {
+  const date = document.getElementById('daily-date')?.value || dailySelectedDate || dailyLocalDate();
+  const scaleValue = name => dailyNumber(document.querySelector('#daily-scale-' + name + ' .daily-scale-btn.active')?.dataset.value);
+  const stool = document.querySelector('#daily-stool-options .daily-stool-btn.active')?.dataset.value || '';
+  const foodEntries = Array.from(document.querySelectorAll('.daily-food-entry')).map(row => ({
+    id: row.dataset.entryId,
+    time: row.querySelector('.daily-food-time')?.value || '',
+    description: row.querySelector('.daily-food-description')?.value?.trim() || ''
+  })).filter(entry => entry.time || entry.description);
+  const sleepHours = dailyNumber(document.getElementById('daily-sleep-duration')?.value);
+
+  return {
+    log_date: date,
+    sleep_score: dailyNumber(document.getElementById('daily-sleep-score')?.value),
+    sleep_duration_minutes: sleepHours == null ? null : Math.round(sleepHours * 60),
+    energy: scaleValue('energy'),
+    stress: scaleValue('stress'),
+    mood: scaleValue('mood'),
+    soreness: scaleValue('soreness'),
+    work_hours: dailyNumber(document.getElementById('daily-work-hours')?.value),
+    stool_type: stool && stool !== 'none' ? Number(stool) : null,
+    no_bowel_movement: stool === 'none',
+    had_alcohol: document.getElementById('daily-flag-alcohol')?.classList.contains('active') || false,
+    had_caffeine: document.getElementById('daily-flag-caffeine')?.classList.contains('active') || false,
+    took_magnesium: document.getElementById('daily-flag-magnesium')?.classList.contains('active') || false,
+    traveled: document.getElementById('daily-flag-travel')?.classList.contains('active') || false,
+    illness: document.getElementById('daily-flag-illness')?.classList.contains('active') || false,
+    first_calories_at: document.getElementById('daily-first-calories')?.value || null,
+    last_calories_at: document.getElementById('daily-last-calories')?.value || null,
+    food_entries: foodEntries,
+    notes: document.getElementById('daily-notes')?.value?.trim() || null
+  };
+}
+
+function dailySaveDraftNow(dateOverride = null) {
+  if (!dailyDraftDirty || !getActiveUserId() || !document.getElementById('daily-date')) return;
+  const data = dailyCurrentData();
+  if (dateOverride) data.log_date = dateOverride;
+  localStorage.setItem(dailyDraftKey(data.log_date), JSON.stringify(data));
+  dailyDraftDirty = false;
+}
+
+function dailyScheduleDraft() {
+  dailyDraftDirty = true;
+  clearTimeout(dailyDraftTimer);
+  dailyDraftTimer = setTimeout(dailySaveDraftNow, 250);
+}
+
+function dailySetScale(name, value, btn) {
+  document.querySelectorAll('#daily-scale-' + name + ' .daily-scale-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('daily-scale-help-' + name).textContent = DAILY_SCALE_OPTIONS[name][value - 1];
+  dailyScheduleDraft();
+}
+
+function dailyToggleFlag(btn) {
+  btn.classList.toggle('active');
+  dailyScheduleDraft();
+}
+
+function dailySetStool(value, btn) {
+  document.querySelectorAll('#daily-stool-options .daily-stool-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  dailyScheduleDraft();
+}
+
+function dailyAddFood() {
+  document.getElementById('daily-food-empty')?.remove();
+  const now = new Date();
+  const time = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  const entry = { id: 'food-' + Date.now() + '-' + Math.random().toString(16).slice(2), time, description: '' };
+  document.getElementById('daily-food-entries').insertAdjacentHTML('beforeend', dailyFoodEntriesMarkup([entry]));
+  document.querySelector('.daily-food-entry:last-child .daily-food-description')?.focus();
+  dailyScheduleDraft();
+}
+
+function dailyRemoveFood(btn) {
+  btn.closest('.daily-food-entry')?.remove();
+  const container = document.getElementById('daily-food-entries');
+  if (container && !container.querySelector('.daily-food-entry')) {
+    container.innerHTML = dailyFoodEntriesMarkup([]);
+  }
+  dailyScheduleDraft();
+}
+
+function dailyOpenStoolGuide() {
+  const modal = document.getElementById('daily-stool-guide');
+  if (modal) modal.style.display = 'flex';
+}
+
+function dailyCloseStoolGuide(event) {
+  if (event && event.target !== event.currentTarget) return;
+  const modal = document.getElementById('daily-stool-guide');
+  if (modal) modal.style.display = 'none';
+}
+
+async function dailyChangeDate(value) {
+  dailySaveDraftNow(dailySelectedDate);
+  dailySelectedDate = value || dailyLocalDate();
+  renderDailyLogForm();
+}
+
+function dailyFormSource(row) {
+  let draft = null;
+  try {
+    draft = JSON.parse(localStorage.getItem(dailyDraftKey(dailySelectedDate)) || 'null');
+  } catch (e) {
+    draft = null;
+  }
+  return draft || row || { log_date: dailySelectedDate, food_entries: [] };
+}
+
+function renderDailyLogForm() {
+  const container = document.getElementById('daily-page-log');
+  if (!container) return;
+  dailySelectedDate = dailySelectedDate || dailyLocalDate();
+  const row = (dailyLogs || []).find(log => log.log_date === dailySelectedDate) || null;
+  dailyEditingId = row?.id || null;
+  const data = dailyFormSource(row);
+  const foodEntries = Array.isArray(data.food_entries) ? data.food_entries : [];
+  const stoolValue = data.no_bowel_movement ? 'none' : (data.stool_type ? String(data.stool_type) : '');
+  const stoolButtons = '<button type="button" class="daily-stool-btn' + (stoolValue === 'none' ? ' active' : '') +
+    '" data-value="none" onclick="dailySetStool(\'none\',this)">No bowel movement</button>' +
+    DAILY_STOOL_TYPES.map((description, i) => {
+      const value = String(i + 1);
+      return '<button type="button" class="daily-stool-btn' + (stoolValue === value ? ' active' : '') +
+        '" data-value="' + value + '" onclick="dailySetStool(\'' + value + '\',this)">Type ' + value + '</button>';
+    }).join('');
+  const sleepHours = data.sleep_duration_minutes == null ? '' : Math.round((data.sleep_duration_minutes / 60) * 10) / 10;
+  const flash = dailyFlashMessage;
+  dailyFlashMessage = '';
+  dailyDraftDirty = false;
+
+  container.innerHTML =
+    '<div class="card" style="margin-bottom:18px">' +
+      '<div class="card-section-title">Daily Log</div>' +
+      '<div class="input-group"><label class="input-label">Date</label>' +
+        '<input type="date" id="daily-date" value="' + escapeHtml(dailySelectedDate) +
+        '" class="date-picker-input" style="display:block;width:100%" onchange="dailyChangeDate(this.value)">' +
+      '</div>' +
+    '</div>' +
+    '<div class="card" style="margin-bottom:18px">' +
+      '<div class="card-section-title">Sleep &amp; recovery</div>' +
+      '<div class="log-input-grid lig-2" style="margin-bottom:18px">' +
+        '<div class="input-group"><label class="input-label">Apple sleep score <span style="opacity:.45;font-weight:400">(optional)</span></label>' +
+          '<input type="number" inputmode="numeric" id="daily-sleep-score" min="0" max="100" value="' +
+          escapeHtml(data.sleep_score ?? '') + '" placeholder="0–100" oninput="dailyScheduleDraft()"></div>' +
+        '<div class="input-group"><label class="input-label">Sleep duration <span style="opacity:.45;font-weight:400">(hours)</span></label>' +
+          '<input type="number" inputmode="decimal" id="daily-sleep-duration" min="0" max="24" step="0.1" value="' +
+          escapeHtml(sleepHours) + '" placeholder="e.g. 7.5" oninput="dailyScheduleDraft()"></div>' +
+      '</div>' +
+      dailyScaleMarkup('energy', 'Energy', data.energy) +
+      dailyScaleMarkup('soreness', 'Muscle soreness', data.soreness) +
+    '</div>' +
+    '<div class="card" style="margin-bottom:18px">' +
+      '<div class="card-section-title">Mind &amp; work</div>' +
+      dailyScaleMarkup('stress', 'Stress', data.stress) +
+      dailyScaleMarkup('mood', 'Mood', data.mood) +
+      '<div class="input-group"><label class="input-label">Hours worked <span style="opacity:.45;font-weight:400">(optional)</span></label>' +
+        '<input type="number" inputmode="decimal" id="daily-work-hours" min="0" max="24" step="0.5" value="' +
+        escapeHtml(data.work_hours ?? '') + '" placeholder="e.g. 9.5" oninput="dailyScheduleDraft()"></div>' +
+    '</div>' +
+    '<div class="card" style="margin-bottom:18px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><div class="card-section-title" style="margin:0">Morning stool</div>' +
+        '<button type="button" class="daily-info-btn" aria-label="Bristol stool guide" onclick="dailyOpenStoolGuide()">i</button></div>' +
+      '<div class="daily-flags" id="daily-stool-options">' + stoolButtons + '</div>' +
+    '</div>' +
+    '<div class="card" style="margin-bottom:18px">' +
+      '<div class="card-section-title">Daily context</div>' +
+      '<div class="daily-flags">' +
+        dailyFlagMarkup('alcohol', 'Alcohol', data.had_alcohol) +
+        dailyFlagMarkup('caffeine', 'Caffeine', data.had_caffeine) +
+        dailyFlagMarkup('magnesium', 'Magnesium', data.took_magnesium) +
+        dailyFlagMarkup('travel', 'Travel', data.traveled) +
+        dailyFlagMarkup('illness', 'Illness', data.illness) +
+      '</div>' +
+    '</div>' +
+    '<div class="card" style="margin-bottom:18px">' +
+      '<div class="card-section-title">Food &amp; drinks</div>' +
+      '<div class="log-input-grid lig-2" style="margin-bottom:16px">' +
+        '<div class="input-group"><label class="input-label">First calories</label>' +
+          '<input type="time" id="daily-first-calories" value="' + escapeHtml((data.first_calories_at || '').slice(0,5)) +
+          '" onchange="dailyScheduleDraft()"></div>' +
+        '<div class="input-group"><label class="input-label">Last calories</label>' +
+          '<input type="time" id="daily-last-calories" value="' + escapeHtml((data.last_calories_at || '').slice(0,5)) +
+          '" onchange="dailyScheduleDraft()"></div>' +
+      '</div>' +
+      '<div id="daily-food-entries">' + dailyFoodEntriesMarkup(foodEntries) + '</div>' +
+      '<button type="button" class="daily-add-btn" onclick="dailyAddFood()">+ Add food or drink</button>' +
+    '</div>' +
+    '<div class="card" style="margin-bottom:18px">' +
+      '<div class="card-section-title">Notes</div>' +
+      '<textarea id="daily-notes" rows="4" placeholder="Anything unusual or worth remembering…" oninput="dailyScheduleDraft()">' +
+        escapeHtml(data.notes || '') + '</textarea>' +
+    '</div>' +
+    '<div class="daily-save-row">' +
+      '<button class="btn btn-primary btn-full" id="daily-save-btn" onclick="saveDailyLog()">' +
+        (dailyEditingId ? 'Update Daily Log' : 'Save Daily Log') + '</button>' +
+      '<span class="daily-status" id="daily-save-status">' + escapeHtml(flash) + '</span>' +
+    '</div>' +
+    '<div class="daily-modal-backdrop" id="daily-stool-guide" style="display:none" onclick="dailyCloseStoolGuide(event)" role="dialog" aria-modal="true" aria-label="Bristol stool guide">' +
+      '<div class="daily-modal">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px">' +
+          '<div class="card-section-title" style="margin:0">Bristol Stool Guide</div>' +
+          '<button type="button" class="daily-remove-btn" style="width:36px" onclick="dailyCloseStoolGuide()">×</button>' +
+        '</div>' +
+        '<p style="font-size:13px;line-height:1.5;color:var(--text);opacity:.68;margin:0 0 8px">Use the closest match. Types 3–4 are generally considered the typical range; this guide is for consistent tracking, not diagnosis.</p>' +
+        DAILY_STOOL_TYPES.map((description, i) =>
+          '<div class="daily-modal-row"><strong>Type ' + (i + 1) + '</strong> — ' + description +
+          ((i + 1 === 3 || i + 1 === 4) ? ' <span style="color:var(--green-dark);font-weight:700">Typical</span>' : '') + '</div>'
+        ).join('') +
+        '<button type="button" class="btn btn-primary btn-full" style="margin-top:16px" onclick="dailyCloseStoolGuide()">Got it</button>' +
+      '</div>' +
+    '</div>';
+}
+
+async function saveDailyLog() {
+  const btn = document.getElementById('daily-save-btn');
+  const status = document.getElementById('daily-save-status');
+  if (!btn || !getActiveUserId()) return;
+  clearTimeout(dailyDraftTimer);
+  const body = dailyCurrentData();
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  status.textContent = '';
+
+  try {
+    if (dailyEditingId) {
+      await sbPatch(TABLES.dailyLogs, dailyEditingId, body, withUserScope());
+    } else {
+      await sbPost(TABLES.dailyLogs, { ...body, user_id: getActiveUserIdOrThrow() });
+    }
+    localStorage.removeItem(dailyDraftKey(body.log_date));
+    dailyDraftDirty = false;
+    dailySelectedDate = body.log_date;
+    await loadDailyLogs(true);
+    dailyFlashMessage = '✓ Saved';
+    renderDailyLogForm();
+  } catch (e) {
+    console.error('Daily Log save failed:', e);
+    btn.disabled = false;
+    btn.textContent = dailyEditingId ? 'Update Daily Log' : 'Save Daily Log';
+    status.textContent = '⚠ Error saving';
+  }
+}
+
+function renderDailyHistory() {
+  const container = document.getElementById('daily-page-history');
+  if (!container) return;
+  if (!dailyLogs?.length) {
+    container.innerHTML = '<div class="card"><div class="card-section-title">No Daily Logs yet</div>' +
+      '<p style="font-size:14px;line-height:1.55;color:var(--text);opacity:.65;margin:0">Save your first Daily Log, then it will appear here for review and editing.</p></div>';
+    return;
+  }
+  container.innerHTML = dailyLogs.map(log => {
+    const metrics = [];
+    if (log.sleep_score != null) metrics.push('Sleep ' + log.sleep_score);
+    if (log.energy != null) metrics.push('Energy ' + log.energy + '/5');
+    if (log.stress != null) metrics.push('Stress ' + log.stress + '/5');
+    if (log.mood != null) metrics.push('Mood ' + log.mood + '/5');
+    if (log.soreness != null) metrics.push('Soreness ' + log.soreness + '/5');
+    const foodCount = Array.isArray(log.food_entries) ? log.food_entries.length : 0;
+    if (foodCount) metrics.push(foodCount + ' food entr' + (foodCount === 1 ? 'y' : 'ies'));
+    return '<div class="card daily-history-card" style="margin-bottom:12px" onclick="dailyEditHistory(\'' +
+      escapeHtml(log.id) + '\')">' +
+      '<div class="daily-history-head"><div><div class="daily-history-date">' + escapeHtml(dailyFormatDate(log.log_date)) +
+      '</div><div style="font-family:var(--mono);font-size:10px;color:var(--text);opacity:.4;margin-top:4px">Updated ' +
+      escapeHtml(new Date(log.updated_at || log.created_at).toLocaleString()) + '</div></div>' +
+      '<div class="daily-history-edit">Edit →</div></div>' +
+      '<div class="daily-history-metrics">' +
+        (metrics.length ? metrics.map(metric => '<span class="daily-history-pill">' + escapeHtml(metric) + '</span>').join('') :
+          '<span class="daily-history-pill">Partial log</span>') +
+      '</div></div>';
+  }).join('');
+}
+
+function dailyEditHistory(id) {
+  const row = (dailyLogs || []).find(log => log.id === id);
+  if (!row) return;
+  dailySelectedDate = row.log_date;
+  dailyActiveSubTab = 'log';
+  document.getElementById('daily-sub-log')?.classList.add('active');
+  document.getElementById('daily-sub-history')?.classList.remove('active');
+  document.getElementById('daily-page-log').style.display = '';
+  document.getElementById('daily-page-history').style.display = 'none';
+  renderDailyLogForm();
+  document.getElementById('tab-daily')?.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function dailyShowTab(sub, btn) {
+  dailySaveDraftNow();
+  dailyActiveSubTab = sub;
+  document.querySelectorAll('#tab-daily .nut-subtab').forEach(b => b.classList.remove('active'));
+  btn?.classList.add('active');
+  document.getElementById('daily-page-log').style.display = sub === 'log' ? '' : 'none';
+  document.getElementById('daily-page-history').style.display = sub === 'history' ? '' : 'none';
+  try {
+    await loadDailyLogs(sub === 'history');
+    if (sub === 'log') renderDailyLogForm();
+    else renderDailyHistory();
+  } catch (e) {
+    const target = document.getElementById(sub === 'log' ? 'daily-page-log' : 'daily-page-history');
+    target.innerHTML = '<div class="card"><div class="card-section-title">Daily Log unavailable</div>' +
+      '<p style="font-size:14px;color:var(--text);opacity:.65;margin:0">Could not load Daily Logs. Please try again.</p></div>';
+  }
+}
+
+async function renderDaily() {
+  const logPage = document.getElementById('daily-page-log');
+  const historyPage = document.getElementById('daily-page-history');
+  if (!getActiveUserId()) {
+    logPage.innerHTML = getAuthCardMarkup();
+    historyPage.innerHTML = '';
+    return;
+  }
+  logPage.innerHTML = '<div style="color:var(--text);font-size:14px;opacity:0.5;padding:8px 0">Loading...</div>';
+  try {
+    await loadDailyLogs(true);
+    dailySelectedDate = dailySelectedDate || dailyLocalDate();
+    document.getElementById('daily-page-log').style.display = dailyActiveSubTab === 'log' ? '' : 'none';
+    document.getElementById('daily-page-history').style.display = dailyActiveSubTab === 'history' ? '' : 'none';
+    document.getElementById('daily-sub-log')?.classList.toggle('active', dailyActiveSubTab === 'log');
+    document.getElementById('daily-sub-history')?.classList.toggle('active', dailyActiveSubTab === 'history');
+    if (dailyActiveSubTab === 'log') renderDailyLogForm();
+    else renderDailyHistory();
+  } catch (e) {
+    console.error('Daily Log load failed:', e);
+    logPage.innerHTML = '<div class="card"><div class="card-section-title">Daily Log unavailable</div>' +
+      '<p style="font-size:14px;color:var(--text);opacity:.65;margin:0">Could not load Daily Logs. Please try again.</p></div>';
+  }
+}
+
 // ─── ME TAB ───────────────────────────────────────────────────────────────
 
 const GOALS_OPTIONS = ['Build strength','Muscle gain','Fat loss','Body recomposition','Improve fitness / endurance','General health','Sport performance'];
@@ -3924,6 +4455,12 @@ function resetUserScopedState(force = false) {
   programTabLabelFallbackCache = null;
   meProfile = null;
   meMeasurements = [];
+  dailyLogs = null;
+  dailySelectedDate = null;
+  dailyEditingId = null;
+  dailyActiveSubTab = 'log';
+  dailyDraftDirty = false;
+  clearTimeout(dailyDraftTimer);
   window._historySessions = null;
   const extraCards = document.getElementById('extra-cards-container');
   if (extraCards) extraCards.innerHTML = '';
