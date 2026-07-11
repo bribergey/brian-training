@@ -979,16 +979,21 @@ select {
 /* DAILY LOG */
 .daily-scale { margin-top: 8px; }
 .daily-scale-options { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.daily-rating-label {
+  font-family: var(--display); font-size: 20px; font-weight: 800;
+  color: var(--text); line-height: 1.15; letter-spacing: -0.02em;
+  margin-bottom: 10px;
+}
 .daily-scale-btn {
-  min-height: 42px; border: 1.5px solid var(--border2); border-radius: 9px;
+  min-height: 48px; border: 1.5px solid var(--border2); border-radius: 9px;
   background: var(--bg2); color: var(--text); font-family: var(--mono);
-  font-size: 13px; font-weight: 700; cursor: pointer; touch-action: manipulation;
+  font-size: 16px; font-weight: 700; cursor: pointer; touch-action: manipulation;
 }
 .daily-scale-btn.active { border-color: var(--green); background: rgba(26,219,78,0.10); color: var(--green-dark); }
 .daily-scale-ends { display:flex; justify-content:space-between; gap:12px; margin-top:7px; }
-.daily-scale-end { font-size:11px; line-height:1.35; color:var(--text); opacity:0.52; max-width:45%; }
+.daily-scale-end { font-size:13px; font-weight:600; line-height:1.35; color:var(--text); opacity:0.62; max-width:45%; }
 .daily-scale-end:last-child { text-align:right; }
-.daily-scale-help { min-height:18px; margin-top:7px; font-size:12px; line-height:1.4; color:var(--text); opacity:0.72; }
+.daily-scale-help { min-height:20px; margin-top:8px; font-size:14px; font-weight:500; line-height:1.4; color:var(--text); opacity:0.76; }
 .daily-flags { display:flex; flex-wrap:wrap; gap:8px; }
 .daily-flag, .daily-stool-btn {
   border:1.5px solid var(--border2); background:var(--bg2); color:var(--text);
@@ -996,8 +1001,14 @@ select {
   font-weight:600; cursor:pointer; touch-action:manipulation;
 }
 .daily-flag.active, .daily-stool-btn.active { border-color:var(--green); background:rgba(26,219,78,0.10); color:var(--green-dark); }
-.daily-food-entry { display:grid; grid-template-columns:92px 1fr 36px; gap:8px; align-items:center; margin-bottom:9px; }
-.daily-food-entry input { min-width:0; }
+.daily-time-input { display:block; width:100%; min-height:44px; }
+.daily-food-entry {
+  display:block; padding:14px; margin-bottom:12px;
+  background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-sm);
+}
+.daily-food-entry-head { display:flex; align-items:flex-end; gap:10px; margin-bottom:10px; }
+.daily-food-time-wrap { flex:1; min-width:0; }
+.daily-food-description { min-height:96px; line-height:1.5; resize:vertical; }
 .daily-remove-btn {
   height:40px; border:none; border-radius:8px; background:var(--bg3); color:var(--text);
   opacity:0.55; font-size:18px; cursor:pointer;
@@ -1025,7 +1036,6 @@ select {
 .daily-save-row { display:flex; align-items:center; gap:12px; margin-bottom:32px; }
 .daily-status { font-family:var(--mono); font-size:11px; color:var(--green-dark); white-space:nowrap; }
 @media (max-width:380px) {
-  .daily-food-entry { grid-template-columns:78px 1fr 34px; }
   .daily-scale-options { gap:4px; }
 }
 </style>
@@ -3993,9 +4003,7 @@ let dailyLogs = null;
 let dailyActiveSubTab = 'log';
 let dailySelectedDate = null;
 let dailyEditingId = null;
-let dailyDraftTimer = null;
 let dailyDraftDirty = false;
-let dailyFlashMessage = '';
 
 function dailyLocalDate(date = new Date()) {
   const y = date.getFullYear();
@@ -4013,7 +4021,7 @@ function dailyFormatDate(value, long = true) {
 }
 
 function dailyDraftKey(date) {
-  return getUserScopedStorageKey('daily_log_draft', date);
+  return getUserScopedStorageKey('daily_log_draft_v2', date);
 }
 
 function dailyNumber(value) {
@@ -4038,7 +4046,7 @@ function dailyScaleMarkup(name, label, value) {
   }).join('');
   const selected = value ? options[value - 1] : 'Select the number that best matches this day.';
   return '<div class="input-group" style="margin-bottom:18px">' +
-    '<label class="input-label">' + label + '</label>' +
+    '<div class="daily-rating-label">' + label + '</div>' +
     '<div class="daily-scale" id="daily-scale-' + name + '">' +
       '<div class="daily-scale-options">' + buttons + '</div>' +
       '<div class="daily-scale-ends"><span class="daily-scale-end">1 — ' + options[0].split(' — ')[0] +
@@ -4059,10 +4067,14 @@ function dailyFoodEntriesMarkup(entries) {
   return entries.map(entry => {
     const id = escapeHtml(entry.id || ('food-' + Date.now() + '-' + Math.random().toString(16).slice(2)));
     return '<div class="daily-food-entry" data-entry-id="' + id + '">' +
-      '<input type="time" class="daily-food-time" value="' + escapeHtml(entry.time || '') + '" onchange="dailyScheduleDraft()">' +
-      '<input type="text" class="daily-food-description" value="' + escapeHtml(entry.description || '') +
-        '" placeholder="What did you eat or drink?" oninput="dailyScheduleDraft()">' +
-      '<button type="button" class="daily-remove-btn" aria-label="Remove entry" onclick="dailyRemoveFood(this)">×</button>' +
+      '<div class="daily-food-entry-head">' +
+        '<div class="input-group daily-food-time-wrap"><label class="input-label">Time</label>' +
+          '<input type="time" class="date-picker-input daily-time-input daily-food-time" value="' +
+            escapeHtml(entry.time || '') + '" onchange="dailyScheduleDraft()"></div>' +
+        '<button type="button" class="daily-remove-btn" aria-label="Remove entry" onclick="dailyRemoveFood(this)">×</button>' +
+      '</div>' +
+      '<textarea rows="4" class="daily-food-description" placeholder="Describe the meal, food, or drink…" oninput="dailyScheduleDraft()">' +
+        escapeHtml(entry.description || '') + '</textarea>' +
     '</div>';
   }).join('');
 }
@@ -4111,9 +4123,13 @@ function dailySaveDraftNow(dateOverride = null) {
 
 function dailyScheduleDraft() {
   dailyDraftDirty = true;
-  clearTimeout(dailyDraftTimer);
-  dailyDraftTimer = setTimeout(dailySaveDraftNow, 250);
+  dailySaveDraftNow();
 }
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') dailySaveDraftNow();
+});
+window.addEventListener('pagehide', () => dailySaveDraftNow());
 
 function dailySetScale(name, value, btn) {
   document.querySelectorAll('#daily-scale-' + name + ' .daily-scale-btn').forEach(b => b.classList.remove('active'));
@@ -4166,17 +4182,25 @@ function dailyCloseStoolGuide(event) {
 async function dailyChangeDate(value) {
   dailySaveDraftNow(dailySelectedDate);
   dailySelectedDate = value || dailyLocalDate();
+  dailyEditingId = null;
   renderDailyLogForm();
 }
 
-function dailyFormSource(row) {
+function dailyLoadDraft(date) {
   let draft = null;
   try {
-    draft = JSON.parse(localStorage.getItem(dailyDraftKey(dailySelectedDate)) || 'null');
+    draft = JSON.parse(localStorage.getItem(dailyDraftKey(date)) || 'null');
   } catch (e) {
     draft = null;
   }
-  return draft || row || { log_date: dailySelectedDate, food_entries: [] };
+  return draft?.log_date === date ? draft : null;
+}
+
+function dailyFormSource(row) {
+  const draft = dailyLoadDraft(dailySelectedDate);
+  if (draft) return draft;
+  if (row?.log_date === dailySelectedDate) return row;
+  return { log_date: dailySelectedDate, food_entries: [] };
 }
 
 function renderDailyLogForm() {
@@ -4196,8 +4220,6 @@ function renderDailyLogForm() {
         '" data-value="' + value + '" onclick="dailySetStool(\'' + value + '\',this)">Type ' + value + '</button>';
     }).join('');
   const sleepHours = data.sleep_duration_minutes == null ? '' : Math.round((data.sleep_duration_minutes / 60) * 10) / 10;
-  const flash = dailyFlashMessage;
-  dailyFlashMessage = '';
   dailyDraftDirty = false;
 
   container.innerHTML =
@@ -4248,10 +4270,10 @@ function renderDailyLogForm() {
       '<div class="card-section-title">Food &amp; drinks</div>' +
       '<div class="log-input-grid lig-2" style="margin-bottom:16px">' +
         '<div class="input-group"><label class="input-label">First calories</label>' +
-          '<input type="time" id="daily-first-calories" value="' + escapeHtml((data.first_calories_at || '').slice(0,5)) +
+          '<input type="time" class="date-picker-input daily-time-input" id="daily-first-calories" value="' + escapeHtml((data.first_calories_at || '').slice(0,5)) +
           '" onchange="dailyScheduleDraft()"></div>' +
         '<div class="input-group"><label class="input-label">Last calories</label>' +
-          '<input type="time" id="daily-last-calories" value="' + escapeHtml((data.last_calories_at || '').slice(0,5)) +
+          '<input type="time" class="date-picker-input daily-time-input" id="daily-last-calories" value="' + escapeHtml((data.last_calories_at || '').slice(0,5)) +
           '" onchange="dailyScheduleDraft()"></div>' +
       '</div>' +
       '<div id="daily-food-entries">' + dailyFoodEntriesMarkup(foodEntries) + '</div>' +
@@ -4265,7 +4287,7 @@ function renderDailyLogForm() {
     '<div class="daily-save-row">' +
       '<button class="btn btn-primary btn-full" id="daily-save-btn" onclick="saveDailyLog()">' +
         (dailyEditingId ? 'Update Daily Log' : 'Save Daily Log') + '</button>' +
-      '<span class="daily-status" id="daily-save-status">' + escapeHtml(flash) + '</span>' +
+      '<span class="daily-status" id="daily-save-status"></span>' +
     '</div>' +
     '<div class="daily-modal-backdrop" id="daily-stool-guide" style="display:none" onclick="dailyCloseStoolGuide(event)" role="dialog" aria-modal="true" aria-label="Bristol stool guide">' +
       '<div class="daily-modal">' +
@@ -4287,7 +4309,6 @@ async function saveDailyLog() {
   const btn = document.getElementById('daily-save-btn');
   const status = document.getElementById('daily-save-status');
   if (!btn || !getActiveUserId()) return;
-  clearTimeout(dailyDraftTimer);
   const body = dailyCurrentData();
   btn.disabled = true;
   btn.textContent = 'Saving…';
@@ -4303,8 +4324,10 @@ async function saveDailyLog() {
     dailyDraftDirty = false;
     dailySelectedDate = body.log_date;
     await loadDailyLogs(true);
-    dailyFlashMessage = '✓ Saved';
-    renderDailyLogForm();
+    dailyActiveSubTab = 'history';
+    dailySetSubTabUI('history');
+    renderDailyHistory();
+    document.getElementById('tab-daily')?.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (e) {
     console.error('Daily Log save failed:', e);
     btn.disabled = false;
@@ -4348,21 +4371,24 @@ function dailyEditHistory(id) {
   if (!row) return;
   dailySelectedDate = row.log_date;
   dailyActiveSubTab = 'log';
-  document.getElementById('daily-sub-log')?.classList.add('active');
-  document.getElementById('daily-sub-history')?.classList.remove('active');
-  document.getElementById('daily-page-log').style.display = '';
-  document.getElementById('daily-page-history').style.display = 'none';
+  dailySetSubTabUI('log');
   renderDailyLogForm();
   document.getElementById('tab-daily')?.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function dailySetSubTabUI(sub) {
+  document.getElementById('daily-sub-log')?.classList.toggle('active', sub === 'log');
+  document.getElementById('daily-sub-history')?.classList.toggle('active', sub === 'history');
+  const logPage = document.getElementById('daily-page-log');
+  const historyPage = document.getElementById('daily-page-history');
+  if (logPage) logPage.style.display = sub === 'log' ? '' : 'none';
+  if (historyPage) historyPage.style.display = sub === 'history' ? '' : 'none';
 }
 
 async function dailyShowTab(sub, btn) {
   dailySaveDraftNow();
   dailyActiveSubTab = sub;
-  document.querySelectorAll('#tab-daily .nut-subtab').forEach(b => b.classList.remove('active'));
-  btn?.classList.add('active');
-  document.getElementById('daily-page-log').style.display = sub === 'log' ? '' : 'none';
-  document.getElementById('daily-page-history').style.display = sub === 'history' ? '' : 'none';
+  dailySetSubTabUI(sub);
   try {
     await loadDailyLogs(sub === 'history');
     if (sub === 'log') renderDailyLogForm();
@@ -4545,7 +4571,6 @@ function resetUserScopedState(force = false) {
   dailyEditingId = null;
   dailyActiveSubTab = 'log';
   dailyDraftDirty = false;
-  clearTimeout(dailyDraftTimer);
   window._historySessions = null;
   const extraCards = document.getElementById('extra-cards-container');
   if (extraCards) extraCards.innerHTML = '';
