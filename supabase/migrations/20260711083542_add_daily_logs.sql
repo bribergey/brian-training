@@ -129,5 +129,3 @@ comment on column training.daily_logs.coach_analysis is
   'Coach-derived structured analysis kept separate from user-entered fields.';
 
 commit;
-
-
