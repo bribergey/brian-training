@@ -1501,23 +1501,26 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-async function sbGet(table, params = '') {
-  const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, { headers: getSupabaseHeaders() });
+async function sbGet(table, params = '', schema = '') {
+  const schemaHeaders = schema ? { 'Accept-Profile': schema } : {};
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`, { headers: getSupabaseHeaders(schemaHeaders) });
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
-async function sbPost(table, body) {
+async function sbPost(table, body, schema = '') {
+  const schemaHeaders = schema ? { 'Content-Profile': schema } : {};
   const r = await fetch(`${SB_URL}/rest/v1/${table}`, {
-    method: 'POST', headers: getSupabaseHeaders({ 'Prefer': 'return=minimal' }),
+    method: 'POST', headers: getSupabaseHeaders({ 'Prefer': 'return=minimal', ...schemaHeaders }),
     body: JSON.stringify(body)
   });
   if (!r.ok) throw new Error(await r.text());
 }
-async function sbPatch(table, id, body, params = '') {
+async function sbPatch(table, id, body, params = '', schema = '') {
   const query = params ? `id=eq.${encodeURIComponent(id)}&${params}` : `id=eq.${encodeURIComponent(id)}`;
+  const schemaHeaders = schema ? { 'Content-Profile': schema } : {};
   const r = await fetch(`${SB_URL}/rest/v1/${table}?${query}`, {
     method: 'PATCH',
-    headers: getSupabaseHeaders({ 'Prefer': 'return=representation' }),
+    headers: getSupabaseHeaders({ 'Prefer': 'return=representation', ...schemaHeaders }),
     body: JSON.stringify(body)
   });
   if (!r.ok) throw new Error(await r.text());
@@ -4021,7 +4024,7 @@ function dailyNumber(value) {
 
 async function loadDailyLogs(force = false) {
   if (dailyLogs && !force) return dailyLogs;
-  dailyLogs = await sbGet(TABLES.dailyLogs, withUserScope('select=*&order=log_date.desc,updated_at.desc'));
+  dailyLogs = await sbGet(TABLES.dailyLogs, withUserScope('select=*&order=log_date.desc,updated_at.desc'), 'training');
   return dailyLogs;
 }
 
@@ -4292,9 +4295,9 @@ async function saveDailyLog() {
 
   try {
     if (dailyEditingId) {
-      await sbPatch(TABLES.dailyLogs, dailyEditingId, body, withUserScope());
+      await sbPatch(TABLES.dailyLogs, dailyEditingId, body, withUserScope(), 'training');
     } else {
-      await sbPost(TABLES.dailyLogs, { ...body, user_id: getActiveUserIdOrThrow() });
+      await sbPost(TABLES.dailyLogs, { ...body, user_id: getActiveUserIdOrThrow() }, 'training');
     }
     localStorage.removeItem(dailyDraftKey(body.log_date));
     dailyDraftDirty = false;
