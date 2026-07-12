@@ -1009,6 +1009,39 @@ select {
 .daily-food-entry-head { display:flex; align-items:flex-end; gap:10px; margin-bottom:10px; }
 .daily-food-time-wrap { flex:1; min-width:0; }
 .daily-food-description { min-height:96px; line-height:1.5; resize:vertical; }
+.daily-photo-tools { display:flex; align-items:center; gap:10px; margin-top:10px; }
+.daily-photo-picker { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+.daily-photo-add {
+  border:1.5px dashed var(--border2); border-radius:9px; background:none; color:var(--text);
+  padding:9px 11px; font-family:var(--mono); font-size:10px; font-weight:700;
+  letter-spacing:.03em; text-transform:uppercase; cursor:pointer;
+}
+.daily-photo-add:disabled { opacity:.4; cursor:default; }
+.daily-photo-count { font-family:var(--mono); font-size:10px; color:var(--text); opacity:.55; }
+.daily-photo-status { min-height:17px; margin-top:7px; font-size:12px; line-height:1.4; color:var(--text); opacity:.68; }
+.daily-photo-status.error { color:var(--red); opacity:1; }
+.daily-photo-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:7px; margin-top:10px; }
+.daily-photo-item {
+  position:relative; aspect-ratio:1; overflow:hidden; border:1px solid var(--border);
+  border-radius:9px; background:var(--bg3);
+}
+.daily-photo-preview { width:100%; height:100%; display:block; object-fit:cover; }
+.daily-photo-preview.is-loading { opacity:.2; }
+.daily-photo-fallback {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  padding:5px; text-align:center; font-family:var(--mono); font-size:8px;
+  line-height:1.25; color:var(--text); opacity:.58;
+}
+.daily-photo-remove {
+  position:absolute; top:3px; right:3px; width:25px; height:25px; border:0;
+  border-radius:50%; background:rgba(0,0,0,.7); color:#fff; font-size:16px;
+  line-height:1; cursor:pointer;
+}
+.daily-photo-item.uploading::after {
+  content:'Uploading'; position:absolute; inset:auto 3px 3px 3px; border-radius:5px;
+  background:rgba(0,0,0,.72); color:#fff; padding:3px; text-align:center;
+  font-family:var(--mono); font-size:7px; text-transform:uppercase;
+}
 .daily-remove-btn {
   height:40px; border:none; border-radius:8px; background:var(--bg3); color:var(--text);
   opacity:0.55; font-size:18px; cursor:pointer;
@@ -1037,6 +1070,7 @@ select {
 .daily-status { font-family:var(--mono); font-size:11px; color:var(--green-dark); white-space:nowrap; }
 @media (max-width:380px) {
   .daily-scale-options { gap:4px; }
+  .daily-photo-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
 }
 </style>
 </head>
@@ -1649,6 +1683,23 @@ async function getExerciseCache() {
 
 let currentDay = 'A';
 let selectedDayIdx = null; // null = not yet set, persists across tab switches
+let selectedSessionKey = null;
+let todayQueueRenderVersion = 0;
+
+function getQueueSelectionKey(session) {
+  if (!session) return null;
+  return normalizeProgramSessionKey(session.sessionKey) || `${session.scheduledDate || ''}-${session.day || ''}`;
+}
+
+function rememberSelectedSession(session) {
+  selectedSessionKey = getQueueSelectionKey(session);
+  saveNavigationState();
+}
+
+function forgetSelectedSession() {
+  selectedSessionKey = null;
+  saveNavigationState();
+}
 
 // ─── EXERCISE HELPERS ─────────────────────────────────────────────────────
 // ─── STEPPER HELPER ──────────────────────────────────────────────────────
@@ -2256,7 +2307,10 @@ function getDaySortValue(day) {
 }
 
 async function renderTodayQueue() {
-  weekQueue = await loadQueue();
+  const renderVersion = ++todayQueueRenderVersion;
+  const nextQueue = await loadQueue();
+  if (renderVersion !== todayQueueRenderVersion) return;
+  weekQueue = nextQueue;
   const selectorEl = document.getElementById('day-selector-container');
   const queueEl    = document.getElementById('today-queue');
 
@@ -2266,13 +2320,21 @@ async function renderTodayQueue() {
     return;
   }
 
-  // Default to today's scheduled day if found, else first
+  // Restore by stable session key. Array positions can change after a refresh.
+  const selectedKeyIdx = selectedSessionKey
+    ? weekQueue.findIndex(session => getQueueSelectionKey(session) === selectedSessionKey)
+    : -1;
+  if (selectedKeyIdx >= 0) selectedDayIdx = selectedKeyIdx;
+
+  // Default to today's scheduled day if found, else first.
   const today = new Date().toISOString().split('T')[0];
   const todayIdx = weekQueue.findIndex(s => s.scheduledDate === today);
   // Only reset day selection on first load or if current index is now out of bounds
   if (selectedDayIdx === null || selectedDayIdx === undefined || selectedDayIdx >= weekQueue.length) {
     selectedDayIdx = todayIdx >= 0 ? todayIdx : 0;
   }
+  selectedSessionKey = getQueueSelectionKey(weekQueue[selectedDayIdx]);
+  saveNavigationState();
 
   renderDaySelector();
   renderSelectedDay();
@@ -2495,8 +2557,11 @@ function reloadExtraDraftsIfNeeded() {
 }
 
 function selectDay(idx) {
+  // Invalidate any older queue request that could otherwise finish after this tap.
+  todayQueueRenderVersion++;
   saveDraft(selectedDayIdx);
   selectedDayIdx = idx;
+  rememberSelectedSession(weekQueue[selectedDayIdx]);
   renderDaySelector();
   renderSelectedDay();
   document.getElementById('tab-today').scrollTop = 0;
@@ -2710,6 +2775,7 @@ async function confirmSkip(si) {
       logged: new Date().toISOString(),
       program_session_key: normalizeProgramSessionKey(session.sessionKey) });
     clearDraft(session);
+    forgetSelectedSession();
     setStatus('Workout skipped — noted for your coach.');
     document.getElementById('tab-today').scrollTop = 0;
     await renderTodayQueue();
@@ -2774,6 +2840,7 @@ async function saveWorkoutFromQueue(si) {
       program_session_key: normalizeProgramSessionKey(session.sessionKey), workout_time: workoutTime });
     clearDraft(session);
     delete _addedExercises[si];
+    forgetSelectedSession();
     document.getElementById('header-sessions').textContent = (cachedSessions||[]).length;
     setStatus('✓ Workout saved to cloud!');
     document.getElementById('tab-today').scrollTop = 0;
@@ -2808,6 +2875,7 @@ function saveNavigationState() {
     localStorage.setItem(navigationStateKey(), JSON.stringify({
       main: activeMainTab,
       training: trainingActiveSubTab,
+      trainingSessionKey: selectedSessionKey,
       daily: dailyActiveSubTab,
       dailyDate: dailySelectedDate
     }));
@@ -2825,6 +2893,7 @@ function loadNavigationState() {
     const saved = JSON.parse(localStorage.getItem(navigationStateKey()) || 'null');
     if (VALID_MAIN_TABS.includes(saved?.main)) activeMainTab = saved.main;
     if (VALID_TRAINING_SUBTABS.includes(saved?.training)) trainingActiveSubTab = saved.training;
+    selectedSessionKey = typeof saved?.trainingSessionKey === 'string' ? saved.trainingSessionKey : null;
     if (VALID_DAILY_SUBTABS.includes(saved?.daily)) dailyActiveSubTab = saved.daily;
     if (/^\d{4}-\d{2}-\d{2}$/.test(saved?.dailyDate || '')) dailySelectedDate = saved.dailyDate;
   } catch (e) {
@@ -3512,8 +3581,8 @@ async function init() {
   const sessions = await loadSessions();
   document.getElementById('header-sessions').textContent = sessions.length;
 
-  // Render the today queue
-  await renderTodayQueue();
+  // Restore the stable workout selection before rendering any queue. Rendering
+  // first would overwrite the saved selection with today's scheduled session.
   restoreNavigationState();
 }
 
@@ -4053,11 +4122,18 @@ const DAILY_STOOL_TYPES = [
   'Watery, no solid pieces'
 ];
 
+const DAILY_PHOTO_BUCKET = 'daily-log-food-photos';
+const DAILY_PHOTO_LIMIT = 5;
+const DAILY_PHOTO_MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+const DAILY_PHOTO_TARGET_BYTES = 1.5 * 1024 * 1024;
+const DAILY_PHOTO_MAX_DIMENSION = 1600;
+
 let dailyLogs = null;
 let dailyActiveSubTab = 'log';
 let dailySelectedDate = null;
 let dailyEditingId = null;
 let dailyDraftDirty = false;
+let dailyPhotoUploadsInFlight = 0;
 
 function dailyLocalDate(date = new Date()) {
   const y = date.getFullYear();
@@ -4114,6 +4190,289 @@ function dailyFlagMarkup(id, label, active) {
     '" id="daily-flag-' + id + '" onclick="dailyToggleFlag(this)">' + label + '</button>';
 }
 
+function dailyPhotoId() {
+  return typeof window.crypto?.randomUUID === 'function'
+    ? window.crypto.randomUUID()
+    : 'photo-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+}
+
+function dailyNormalizePhotoMime(file) {
+  const type = String(file?.type || '').toLowerCase();
+  if (['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'].includes(type)) return type;
+  const name = String(file?.name || '').toLowerCase();
+  if (/\.heic$/.test(name)) return 'image/heic';
+  if (/\.heif$/.test(name)) return 'image/heif';
+  if (/\.png$/.test(name)) return 'image/png';
+  if (/\.webp$/.test(name)) return 'image/webp';
+  return 'image/jpeg';
+}
+
+function dailyPhotoExtension(mime) {
+  if (mime === 'image/png') return 'png';
+  if (mime === 'image/webp') return 'webp';
+  if (mime === 'image/heic') return 'heic';
+  if (mime === 'image/heif') return 'heif';
+  return 'jpg';
+}
+
+function dailyPhotoMarkup(photo) {
+  const mime = photo.mime_type || 'image/jpeg';
+  const formatLabel = /heic|heif/.test(mime) ? 'HEIC' : 'Photo';
+  return '<div class="daily-photo-item" data-photo-id="' + escapeHtml(photo.id || dailyPhotoId()) +
+    '" data-photo-path="' + escapeHtml(photo.path || '') +
+    '" data-photo-mime="' + escapeHtml(mime) +
+    '" data-photo-bytes="' + escapeHtml(photo.bytes || 0) +
+    '" data-photo-width="' + escapeHtml(photo.width || 0) +
+    '" data-photo-height="' + escapeHtml(photo.height || 0) + '">' +
+      '<div class="daily-photo-fallback">' + formatLabel + '</div>' +
+      '<img class="daily-photo-preview is-loading" alt="Food photo" data-path="' + escapeHtml(photo.path || '') + '">' +
+      '<button type="button" class="daily-photo-remove" aria-label="Remove photo" onclick="dailyRemovePhoto(this)">×</button>' +
+    '</div>';
+}
+
+function dailyPhotoControlsMarkup(entry) {
+  const photos = Array.isArray(entry.photos) ? entry.photos.slice(0, DAILY_PHOTO_LIMIT) : [];
+  const disabled = photos.length >= DAILY_PHOTO_LIMIT ? ' disabled' : '';
+  return '<div class="daily-photo-grid">' + photos.map(dailyPhotoMarkup).join('') + '</div>' +
+    '<div class="daily-photo-tools">' +
+      '<input class="daily-photo-picker" type="file" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" onchange="dailyHandlePhotoSelect(this)">' +
+      '<button type="button" class="daily-photo-add" onclick="this.parentElement.querySelector(\'.daily-photo-picker\').click()"' + disabled + '>+ Add photos</button>' +
+      '<span class="daily-photo-count">' + photos.length + ' / ' + DAILY_PHOTO_LIMIT + '</span>' +
+    '</div>' +
+    '<div class="daily-photo-status" aria-live="polite"></div>';
+}
+
+function dailyPhotosFromRow(row) {
+  return Array.from(row.querySelectorAll('.daily-photo-item[data-photo-path]'))
+    .filter(item => item.dataset.photoPath)
+    .map(item => ({
+      id: item.dataset.photoId,
+      path: item.dataset.photoPath,
+      mime_type: item.dataset.photoMime || 'image/jpeg',
+      bytes: Number(item.dataset.photoBytes) || null,
+      width: Number(item.dataset.photoWidth) || null,
+      height: Number(item.dataset.photoHeight) || null
+    }));
+}
+
+function dailyPhotoPathsFromEntries(entries) {
+  return new Set((Array.isArray(entries) ? entries : []).flatMap(entry =>
+    (Array.isArray(entry.photos) ? entry.photos : []).map(photo => photo?.path).filter(Boolean)
+  ));
+}
+
+function dailyPersistedPhotoPaths() {
+  const row = (dailyLogs || []).find(log => log.id === dailyEditingId);
+  return dailyPhotoPathsFromEntries(row?.food_entries);
+}
+
+function dailyRefreshPhotoControls(row) {
+  if (!row) return;
+  const count = row.querySelectorAll('.daily-photo-item[data-photo-path]').length;
+  const button = row.querySelector('.daily-photo-add');
+  const countEl = row.querySelector('.daily-photo-count');
+  if (button) button.disabled = count >= DAILY_PHOTO_LIMIT;
+  if (countEl) countEl.textContent = count + ' / ' + DAILY_PHOTO_LIMIT;
+}
+
+function dailySetPhotoStatus(row, message = '', isError = false) {
+  const status = row?.querySelector('.daily-photo-status');
+  if (!status) return;
+  status.textContent = message;
+  status.classList.toggle('error', isError);
+}
+
+async function dailyDecodePhoto(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.decoding = 'async';
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error('This browser could not decode the image'));
+      image.src = url;
+    });
+    return image;
+  } finally {
+    // The decoded image remains available after its object URL is released.
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+}
+
+function dailyCanvasJpeg(canvas, quality) {
+  return new Promise((resolve, reject) => canvas.toBlob(
+    blob => blob ? resolve(blob) : reject(new Error('Could not create a smaller photo')),
+    'image/jpeg',
+    quality
+  ));
+}
+
+async function dailyPreparePhoto(file) {
+  const originalMime = dailyNormalizePhotoMime(file);
+  try {
+    const image = await dailyDecodePhoto(file);
+    let width = image.naturalWidth || image.width;
+    let height = image.naturalHeight || image.height;
+    const initialScale = Math.min(1, DAILY_PHOTO_MAX_DIMENSION / Math.max(width, height));
+    width = Math.max(1, Math.round(width * initialScale));
+    height = Math.max(1, Math.round(height * initialScale));
+    const canvas = document.createElement('canvas');
+    const qualitySteps = [0.82, 0.72, 0.62, 0.52];
+    let blob = null;
+
+    for (let i = 0; i < qualitySteps.length; i++) {
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext('2d');
+      context.fillStyle = '#fff';
+      context.fillRect(0, 0, width, height);
+      context.drawImage(image, 0, 0, width, height);
+      blob = await dailyCanvasJpeg(canvas, qualitySteps[i]);
+      if (blob.size <= DAILY_PHOTO_TARGET_BYTES) break;
+      if (Math.max(width, height) <= 720) break;
+      width = Math.max(1, Math.round(width * 0.82));
+      height = Math.max(1, Math.round(height * 0.82));
+    }
+
+    if (!blob || blob.size > DAILY_PHOTO_MAX_UPLOAD_BYTES) throw new Error('Processed photo is still too large');
+    return { blob, mime: 'image/jpeg', width: canvas.width, height: canvas.height, usedOriginal: false };
+  } catch (error) {
+    if (file.size > DAILY_PHOTO_MAX_UPLOAD_BYTES) throw error;
+    const fallback = new Blob([file], { type: originalMime });
+    return { blob: fallback, mime: originalMime, width: null, height: null, usedOriginal: true };
+  }
+}
+
+function dailyPhotoStoragePath(row, photoId, mime) {
+  const authUserId = authSession?.user?.id;
+  if (!authUserId) throw new Error('Sign in again before adding photos');
+  const date = document.getElementById('daily-date')?.value || dailySelectedDate || dailyLocalDate();
+  const entryId = row.dataset.entryId || 'food-entry';
+  const safeEntryId = entryId.replace(/[^a-zA-Z0-9_-]/g, '-');
+  return 'staging/' + authUserId + '/' + date + '/' + safeEntryId + '/' + photoId + '.' + dailyPhotoExtension(mime);
+}
+
+async function dailyDeletePhotoPaths(paths) {
+  const uniquePaths = [...new Set((paths || []).filter(Boolean))];
+  if (!uniquePaths.length) return;
+  const { error } = await getAuthClient().storage.from(DAILY_PHOTO_BUCKET).remove(uniquePaths);
+  if (error) throw error;
+}
+
+async function dailyHydratePhotoPreviews(scope = document) {
+  const images = Array.from(scope.querySelectorAll('.daily-photo-preview[data-path]'))
+    .filter(image => image.dataset.path && !image.dataset.hydrated);
+  await Promise.all(images.map(async image => {
+    image.dataset.hydrated = 'true';
+    image.onerror = () => { image.style.display = 'none'; };
+    const { data, error } = await getAuthClient().storage
+      .from(DAILY_PHOTO_BUCKET)
+      .createSignedUrl(image.dataset.path, 3600);
+    if (error || !data?.signedUrl) {
+      image.style.display = 'none';
+      return;
+    }
+    image.onload = () => image.classList.remove('is-loading');
+    image.src = data.signedUrl;
+  }));
+}
+
+async function dailyHandlePhotoSelect(input) {
+  const row = input.closest('.daily-food-entry');
+  if (!row) return;
+  const existingCount = row.querySelectorAll('.daily-photo-item[data-photo-path]').length;
+  const available = Math.max(0, DAILY_PHOTO_LIMIT - existingCount);
+  const selected = Array.from(input.files || []);
+  const files = selected.slice(0, available);
+  input.value = '';
+
+  if (!files.length) {
+    dailySetPhotoStatus(row, 'This entry already has 5 photos.');
+    return;
+  }
+  dailyPhotoUploadsInFlight++;
+  const addButton = row.querySelector('.daily-photo-add');
+  const saveButton = document.getElementById('daily-save-btn');
+  if (addButton) addButton.disabled = true;
+  if (saveButton) {
+    saveButton.disabled = true;
+    saveButton.textContent = 'Uploading photos…';
+  }
+  if (selected.length > files.length) {
+    dailySetPhotoStatus(row, 'Only the first ' + files.length + ' selected photo' + (files.length === 1 ? '' : 's') + ' will be added.');
+  } else {
+    dailySetPhotoStatus(row, 'Preparing ' + files.length + ' photo' + (files.length === 1 ? '' : 's') + '…');
+  }
+
+  const grid = row.querySelector('.daily-photo-grid');
+  let uploaded = 0;
+  let originals = 0;
+  let failed = 0;
+
+  for (const file of files) {
+    const pending = document.createElement('div');
+    pending.className = 'daily-photo-item uploading';
+    pending.innerHTML = '<div class="daily-photo-fallback">Preparing</div>';
+    grid.appendChild(pending);
+    try {
+      const prepared = await dailyPreparePhoto(file);
+      const photoId = dailyPhotoId();
+      const path = dailyPhotoStoragePath(row, photoId, prepared.mime);
+      const { error } = await getAuthClient().storage.from(DAILY_PHOTO_BUCKET).upload(path, prepared.blob, {
+        cacheControl: '3600',
+        contentType: prepared.mime,
+        upsert: false
+      });
+      if (error) throw error;
+      const photo = {
+        id: photoId,
+        path,
+        mime_type: prepared.mime,
+        bytes: prepared.blob.size,
+        width: prepared.width,
+        height: prepared.height
+      };
+      pending.outerHTML = dailyPhotoMarkup(photo);
+      uploaded++;
+      if (prepared.usedOriginal) originals++;
+    } catch (error) {
+      console.warn('Daily Log photo upload failed.', error);
+      pending.remove();
+      failed++;
+    }
+  }
+
+  dailyRefreshPhotoControls(row);
+  dailyScheduleDraft();
+  await dailyHydratePhotoPreviews(row).catch(error => console.warn('Could not load new photo preview.', error));
+  const parts = [];
+  if (uploaded) parts.push(uploaded + ' photo' + (uploaded === 1 ? '' : 's') + ' added');
+  if (originals) parts.push(originals + ' kept in original format because this browser could not resize it');
+  if (failed) parts.push(failed + ' could not upload; the rest of your log is safe');
+  dailySetPhotoStatus(row, parts.join('. ') + (parts.length ? '.' : ''), failed > 0 && uploaded === 0);
+  dailyPhotoUploadsInFlight = Math.max(0, dailyPhotoUploadsInFlight - 1);
+  dailyRefreshPhotoControls(row);
+  if (saveButton && dailyPhotoUploadsInFlight === 0) {
+    saveButton.disabled = false;
+    saveButton.textContent = dailyEditingId ? 'Update Daily Log' : 'Save Daily Log';
+  }
+}
+
+async function dailyRemovePhoto(button) {
+  const item = button.closest('.daily-photo-item');
+  const row = button.closest('.daily-food-entry');
+  const path = item?.dataset.photoPath;
+  if (!item || !row) return;
+  item.remove();
+  dailyRefreshPhotoControls(row);
+  dailyScheduleDraft();
+  if (path && !dailyPersistedPhotoPaths().has(path)) {
+    try { await dailyDeletePhotoPaths([path]); }
+    catch (error) { console.warn('Could not clean up unsaved Daily Log photo.', error); }
+  }
+  dailySetPhotoStatus(row, 'Photo removed. Save the Daily Log to keep this change.');
+}
+
 function dailyFoodEntriesMarkup(entries) {
   if (!entries.length) {
     return '<div id="daily-food-empty" style="font-size:13px;color:var(--text);opacity:.5;margin-bottom:10px">No food or drinks added yet.</div>';
@@ -4129,6 +4488,7 @@ function dailyFoodEntriesMarkup(entries) {
       '</div>' +
       '<textarea rows="4" class="daily-food-description" placeholder="Describe the meal, food, or drink…" oninput="dailyScheduleDraft()">' +
         escapeHtml(entry.description || '') + '</textarea>' +
+      dailyPhotoControlsMarkup(entry) +
     '</div>';
   }).join('');
 }
@@ -4140,8 +4500,9 @@ function dailyCurrentData() {
   const foodEntries = Array.from(document.querySelectorAll('.daily-food-entry')).map(row => ({
     id: row.dataset.entryId,
     time: row.querySelector('.daily-food-time')?.value || '',
-    description: row.querySelector('.daily-food-description')?.value?.trim() || ''
-  })).filter(entry => entry.time || entry.description);
+    description: row.querySelector('.daily-food-description')?.value?.trim() || '',
+    photos: dailyPhotosFromRow(row)
+  })).filter(entry => entry.time || entry.description || entry.photos.length);
   const firstMealTime = foodEntries.map(entry => entry.time).filter(Boolean).sort()[0] || null;
   const sleepHours = dailyNumber(document.getElementById('daily-sleep-duration')?.value);
 
@@ -4208,19 +4569,24 @@ function dailyAddFood() {
   document.getElementById('daily-food-empty')?.remove();
   const now = new Date();
   const time = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-  const entry = { id: 'food-' + Date.now() + '-' + Math.random().toString(16).slice(2), time, description: '' };
+  const entry = { id: 'food-' + Date.now() + '-' + Math.random().toString(16).slice(2), time, description: '', photos: [] };
   document.getElementById('daily-food-entries').insertAdjacentHTML('beforeend', dailyFoodEntriesMarkup([entry]));
   document.querySelector('.daily-food-entry:last-child .daily-food-description')?.focus();
   dailyScheduleDraft();
 }
 
-function dailyRemoveFood(btn) {
-  btn.closest('.daily-food-entry')?.remove();
+async function dailyRemoveFood(btn) {
+  const row = btn.closest('.daily-food-entry');
+  const persistedPaths = dailyPersistedPhotoPaths();
+  const unsavedPaths = dailyPhotosFromRow(row).map(photo => photo.path).filter(path => !persistedPaths.has(path));
+  row?.remove();
   const container = document.getElementById('daily-food-entries');
   if (container && !container.querySelector('.daily-food-entry')) {
     container.innerHTML = dailyFoodEntriesMarkup([]);
   }
   dailyScheduleDraft();
+  try { await dailyDeletePhotoPaths(unsavedPaths); }
+  catch (error) { console.warn('Could not clean up photos from removed food entry.', error); }
 }
 
 function dailyOpenStoolGuide() {
@@ -4354,13 +4720,21 @@ function renderDailyLogForm() {
         '<button type="button" class="btn btn-primary btn-full" style="margin-top:16px" onclick="dailyCloseStoolGuide()">Got it</button>' +
       '</div>' +
     '</div>';
+  dailyHydratePhotoPreviews(container).catch(error => console.warn('Could not load Daily Log photo previews.', error));
 }
 
 async function saveDailyLog() {
   const btn = document.getElementById('daily-save-btn');
   const status = document.getElementById('daily-save-status');
   if (!btn || !getActiveUserId()) return;
+  if (dailyPhotoUploadsInFlight > 0) {
+    status.textContent = 'Please wait for photos to finish uploading.';
+    return;
+  }
   const body = dailyCurrentData();
+  const previousPhotoPaths = dailyPersistedPhotoPaths();
+  const nextPhotoPaths = dailyPhotoPathsFromEntries(body.food_entries);
+  const removedPhotoPaths = [...previousPhotoPaths].filter(path => !nextPhotoPaths.has(path));
   btn.disabled = true;
   btn.textContent = 'Saving…';
   status.textContent = '';
@@ -4371,6 +4745,8 @@ async function saveDailyLog() {
     } else {
       await sbPost(TABLES.dailyLogs, { ...body, user_id: getActiveUserIdOrThrow() }, 'training');
     }
+    try { await dailyDeletePhotoPaths(removedPhotoPaths); }
+    catch (error) { console.warn('Daily Log saved, but an old photo could not be cleaned up.', error); }
     localStorage.removeItem(dailyDraftKey(body.log_date));
     dailyDraftDirty = false;
     dailySelectedDate = body.log_date;
@@ -4615,6 +4991,8 @@ function resetUserScopedState(force = false) {
   cachedSessions = null;
   weekQueue = [];
   selectedDayIdx = null;
+  selectedSessionKey = null;
+  todayQueueRenderVersion++;
   extraWorkouts = loadExtraDrafts();
   programCache = null;
   programTabLabelFallbackCache = null;
@@ -4625,6 +5003,7 @@ function resetUserScopedState(force = false) {
   dailyEditingId = null;
   dailyActiveSubTab = 'log';
   dailyDraftDirty = false;
+  dailyPhotoUploadsInFlight = 0;
   window._historySessions = null;
   const extraCards = document.getElementById('extra-cards-container');
   if (extraCards) extraCards.innerHTML = '';
