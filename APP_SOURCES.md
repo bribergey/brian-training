@@ -1,6 +1,6 @@
 # App source of truth
 
-This branch deploys only these HTML sources:
+The `staging` branch deploys only these HTML sources:
 
 - `marketing_STAGING.html` → `/staging/` and `/staging/home/`
 - `brian_STAGING.html` → `/staging/app/`
