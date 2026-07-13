@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Selected Briq Training logo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@500&amp;family=Inter:wght@800&amp;display=swap" rel="stylesheet">
+  <style>
+    :root { --ink:#0f0f0e; --paper:#f7f7f5; --white:#fff; --green:#1adb4e; --line:rgba(15,15,14,.12); }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font-family:Inter,Arial,sans-serif; }
+    main { width:min(1120px,calc(100% - 36px)); margin:0 auto; padding:48px 0 72px; }
+    .meta { font:500 11px/1.4 "DM Mono",monospace; text-transform:uppercase; }
+    h1 { margin:10px 0 42px; font-size:clamp(32px,6vw,62px); line-height:1; letter-spacing:0; }
+    .panel { border:1px solid var(--line); border-radius:8px; padding:32px; margin-bottom:16px; overflow:hidden; }
+    .panel.light { background:var(--white); }
+    .panel.dark { background:var(--ink); color:var(--white); }
+    .panel.green { background:var(--green); }
+    .lockup { display:flex; align-items:center; gap:22px; min-height:170px; }
+    .mark { width:124px; height:120px; flex:0 0 auto; display:grid; grid-template-columns:34px 78px; grid-template-rows:54px 54px; gap:12px; }
+    .mark i { display:block; border-radius:5px; background:var(--ink); }
+    .mark i:first-child { grid-row:1/3; background:var(--green); }
+    .dark .mark i:not(:first-child) { background:var(--white); }
+    .green .mark i:first-child { background:var(--white); }
+    .wordmark { display:flex; align-items:baseline; white-space:nowrap; font-size:clamp(30px,7.4vw,82px); font-weight:800; line-height:1; letter-spacing:0; }
+    .wordmark .iq { color:var(--green); font-family:"DM Mono",monospace; font-weight:500; }
+    .dark .wordmark .base { color:var(--white); }
+    .green .wordmark .iq { color:var(--white); }
+    .usage { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .usage .panel { margin:0; min-height:220px; }
+    .app-header { margin-top:24px; height:72px; background:var(--ink); border-radius:8px; display:flex; align-items:center; padding:0 18px; }
+    .app-header .mark { width:38px; height:36px; grid-template-columns:10px 24px; grid-template-rows:16px 16px; gap:4px; }
+    .app-header .mark i { border-radius:2px; }
+    .app-header .wordmark { margin-left:9px; font-size:24px; }
+    .icon-wrap { display:flex; align-items:center; justify-content:center; height:160px; }
+    .icon-wrap img { width:116px; height:116px; }
+    p { max-width:760px; font:500 15px/1.55 Inter,Arial,sans-serif; }
+    @media (max-width:720px) {
+      main { padding-top:28px; }
+      .panel { padding:22px; }
+      .lockup { gap:14px; min-height:120px; }
+      .mark { width:72px; height:70px; grid-template-columns:20px 45px; grid-template-rows:31px 31px; gap:7px; }
+      .usage { grid-template-columns:1fr; }
+      .app-header .wordmark { font-size:21px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="meta">Selected logo system / 2026-07-11</div>
+    <h1>Built-B mark + IQ wordmark</h1>
+
+    <section class="panel light">
+      <div class="meta">Primary / light</div>
+      <div class="lockup">
+        <span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="wordmark" aria-label="briqtraining"><span class="base">br</span><span class="iq">iq</span><span class="base">training</span></span>
+      </div>
+    </section>
+
+    <section class="panel dark">
+      <div class="meta">Inverse / dark app header</div>
+      <div class="lockup">
+        <span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="wordmark" aria-label="briqtraining"><span class="base">br</span><span class="iq">iq</span><span class="base">training</span></span>
+      </div>
+    </section>
+
+    <section class="panel green">
+      <div class="meta">Campaign / green</div>
+      <div class="lockup">
+        <span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="wordmark" aria-label="briqtraining"><span class="base">br</span><span class="iq">iq</span><span class="base">training</span></span>
+      </div>
+    </section>
+
+    <div class="usage">
+      <section class="panel light">
+        <div class="meta">Compact app-header test</div>
+        <div class="app-header">
+          <span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="wordmark" aria-label="briqtraining"><span class="base">br</span><span class="iq">iq</span><span class="base">training</span></span>
+        </div>
+      </section>
+      <section class="panel light">
+        <div class="meta">App icon / favicon mark</div>
+        <div class="icon-wrap"><img src="briqtraining-mark.svg" alt="Briq Training B mark"></div>
+      </section>
+    </div>
+
+    <p>The full identity is one continuous lowercase name: black or white <strong>br</strong>, green <strong>iq</strong>, then black or white <strong>training</strong>. The modular B mark can stand alone only where the full name cannot fit, such as the Home Screen icon and favicon.</p>
+  </main>
+</body>
+</html>
