@@ -457,10 +457,12 @@ select {
 .lift-cards { display: flex; flex-direction: column; gap: 12px; }
 .lift-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
 .lift-card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+.lift-card-metric { text-align: right; flex-shrink: 0; }
 .lift-name { font-size: 15px; font-weight: 600; color: var(--text); }
 .lift-val { font-family: var(--display); font-size: 22px; font-weight: 800; color: var(--green); }
 .lift-val-unit { font-family: var(--mono); font-size: 11px; color: var(--text); opacity: 0.5; margin-left: 2px; }
-.lift-sparkline { width: 100%; height: 56px; display: block; }
+.lift-current { font-family: var(--mono); font-size: 10px; color: var(--text); opacity: 0.45; margin-top: 2px; }
+.lift-sparkline { width: 100%; height: 70px; display: block; }
 .lift-spark-labels { display: flex; justify-content: space-between; margin-top: 4px; }
 .lift-spark-label { font-family: var(--mono); font-size: 9px; color: var(--text); opacity: 0.4; }
 .lift-no-data { font-family: var(--mono); font-size: 11px; color: var(--text); opacity: 0.4; padding: 8px 0; }
@@ -1089,7 +1091,7 @@ select {
   </button>
   <div class="header-badge">
     <div class="header-badge-val" id="header-sessions">0</div>
-    <div class="header-badge-label">Sessions</div>
+    <div class="header-badge-label">Workouts</div>
   </div>
 </div>
 
@@ -1142,6 +1144,13 @@ select {
 
     <div class="card card-accent-gold" style="margin-bottom:12px">
       <div class="card-section-title">Anchor lifts — best logged</div>
+      <div class="hist-filters lift-filters">
+        <button class="hist-filter-btn lift-filter-btn" onclick="setLiftFilter('30',this)">30D</button>
+        <button class="hist-filter-btn lift-filter-btn" onclick="setLiftFilter('60',this)">60D</button>
+        <button class="hist-filter-btn lift-filter-btn active" onclick="setLiftFilter('90',this)">90D</button>
+        <button class="hist-filter-btn lift-filter-btn" onclick="setLiftFilter('year',this)">Year</button>
+        <button class="hist-filter-btn lift-filter-btn" onclick="setLiftFilter('all',this)">All</button>
+      </div>
       <div id="lift-tracker"><div style="color:var(--text);font-size:14px">No sessions yet.</div></div>
     </div>
 
@@ -1225,7 +1234,7 @@ select {
   </button>
 </nav>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.2"></script>
 <script>
 // ─── ENVIRONMENT CONFIG ────────────────────────────────────────────────────
 // ENV: 'staging' hits sessions_staging / program_staging
@@ -1493,6 +1502,10 @@ const TABLES = {
 
 // ─── SESSIONS: SUPABASE + localStorage CACHE ─────────────────────────────
 let cachedSessions = null;
+
+function getCompletedWorkoutCount(sessions = cachedSessions || []) {
+  return sessions.filter(session => !session.skipped).length;
+}
 
 async function loadSessions() {
   try {
@@ -1786,44 +1799,58 @@ function getWeekKey(dateStr) {
   return `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
 }
 
-function buildSparkline(points, weeks, unit) {
+function formatShortDateLabel(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T12:00:00');
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function buildSparkline(points, labels, unit) {
   unit = unit || 'kg';
-  const W = 300, H = 48, PAD = 10;
+  const W = 300, H = 64, PAD_X = 10, PAD_TOP = 16, PAD_BOT = 12;
   const n = points.length;
   const minV = Math.min(...points);
   const maxV = Math.max(...points);
   const range = maxV - minV || 1;
 
-  const toX = i => PAD + (i / Math.max(n - 1, 1)) * (W - PAD * 2);
-  const toY = v => PAD + (1 - (v - minV) / range) * (H - PAD * 2);
+  const toX = i => PAD_X + (i / Math.max(n - 1, 1)) * (W - PAD_X * 2);
+  const toY = v => PAD_TOP + (1 - (v - minV) / range) * (H - PAD_TOP - PAD_BOT);
 
   const pathD = n > 1 ? points.map((v, i) => `${i === 0 ? 'M' : 'L'}${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ') : '';
+  const bestVal = Math.max(...points);
+  const firstBestIdx = points.findIndex(v => v === bestVal);
+  const lastIdx = points.length - 1;
 
   const dots = points.map((v, i) => {
     const isLast = i === points.length - 1;
-    const isBest = v === Math.max(...points);
+    const isBest = i === firstBestIdx;
     const r    = isLast ? 4 : 3;
     const fill = (isBest || isLast) ? 'var(--green)' : 'var(--bg2)';
-    return `<circle cx="${toX(i).toFixed(1)}" cy="${toY(v).toFixed(1)}" r="${r}" fill="${fill}" stroke="var(--green)" stroke-width="2"/>`;
+    const title = `${labels[i] || ''}: ${v}${unit}`;
+    return `<circle cx="${toX(i).toFixed(1)}" cy="${toY(v).toFixed(1)}" r="${r}" fill="${fill}" stroke="var(--green)" stroke-width="2"><title>${title}</title></circle>`;
   }).join('');
 
-  // Label all dots except the last (current val is already shown at top)
-  const valueLabels = points.slice(0, -1).map((v, i) => {
-    const labelY = (toY(v) - 7).toFixed(1);
+  const labelIndexes = points.length <= 4
+    ? points.map((_, i) => i)
+    : Array.from(new Set([firstBestIdx, lastIdx])).filter(i => i >= 0);
+  const valueLabels = labelIndexes.map(i => {
+    const v = points[i];
+    const labelY = Math.max(9, toY(v) - 7).toFixed(1);
     return `<text x="${toX(i).toFixed(1)}" y="${labelY}" text-anchor="middle" font-size="9" fill="var(--text)" opacity="0.5" font-family="monospace">${v}${unit}</text>`;
   }).join('');
 
-  const firstWeek = weeks.length ? `Wk 1` : '';
-  const lastWeek  = weeks.length > 1 ? `Wk ${weeks.length}` : '';
+  const firstLabel = labels.length ? labels[0] : '';
+  const lastLabel  = labels.length > 1 ? labels[labels.length - 1] : '';
 
-  return `<svg class="lift-sparkline" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+  return `<svg class="lift-sparkline" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
     ${pathD ? `<path d="${pathD}" fill="none" stroke="var(--green)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.6"/>` : ''}
     ${dots}
     ${valueLabels}
   </svg>
   <div class="lift-spark-labels">
-    <span class="lift-spark-label">${firstWeek}</span>
-    <span class="lift-spark-label">${lastWeek}</span>
+    <span class="lift-spark-label">${firstLabel}</span>
+    <span class="lift-spark-label">${lastLabel}</span>
   </div>`;
 }
 
@@ -2841,7 +2868,7 @@ async function saveWorkoutFromQueue(si) {
     clearDraft(session);
     delete _addedExercises[si];
     forgetSelectedSession();
-    document.getElementById('header-sessions').textContent = (cachedSessions||[]).length;
+    document.getElementById('header-sessions').textContent = getCompletedWorkoutCount();
     setStatus('✓ Workout saved to cloud!');
     document.getElementById('tab-today').scrollTop = 0;
     // Invalidate history cache so History tab shows the new session immediately
@@ -2958,12 +2985,20 @@ function showTab(t, btn) {
 
 // ─── RENDER HISTORY ───────────────────────────────────────────────────────
 let histFilter = '30'; // default
+let liftFilter = '90';
 
 function setHistFilter(f, btn) {
   histFilter = f;
-  document.querySelectorAll('.hist-filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.hist-filter-btn:not(.lift-filter-btn)').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderSessionList();
+}
+
+function setLiftFilter(f, btn) {
+  liftFilter = f;
+  document.querySelectorAll('.lift-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderHistory();
 }
 
 function getFilterRange(f) {
@@ -2975,6 +3010,7 @@ function getFilterRange(f) {
     return { from: mon, to: null };
   }
   if (f === '30')  { const d = new Date(today); d.setDate(d.getDate() - 30); return { from: d, to: null }; }
+  if (f === '60')  { const d = new Date(today); d.setDate(d.getDate() - 60); return { from: d, to: null }; }
   if (f === '90')  { const d = new Date(today); d.setDate(d.getDate() - 90); return { from: d, to: null }; }
   if (f === 'year') { return { from: new Date(today.getFullYear(), 0, 1), to: null }; }
   if (f === 'lastyear') {
@@ -2982,6 +3018,15 @@ function getFilterRange(f) {
     return { from: new Date(y, 0, 1), to: new Date(y, 11, 31) };
   }
   return { from: null, to: null };
+}
+
+function dateIsInRange(dateStr, range) {
+  if (!dateStr) return false;
+  const date = new Date(dateStr + (dateStr.includes('T') ? '' : 'T12:00:00'));
+  if (Number.isNaN(date.getTime())) return false;
+  if (range.from && date < range.from) return false;
+  if (range.to && date > range.to) return false;
+  return true;
 }
 
 function formatSessionDate(dateStr) {
@@ -3033,9 +3078,9 @@ async function renderHistory() {
   }
 
   document.getElementById('stat-sessions').textContent = coachSessions.length;
-  document.getElementById('stat-weeks').textContent    = realSessions.length;
+  document.getElementById('stat-weeks').textContent    = getCompletedWorkoutCount(sessions);
   document.getElementById('stat-streak').textContent   = weeklyStreak;
-  document.getElementById('header-sessions').textContent = realSessions.length;
+  document.getElementById('header-sessions').textContent = getCompletedWorkoutCount(sessions);
 
   // Lift tracker — build weekly bests per anchor GROUP
   await loadAnchorGroups();
@@ -3048,9 +3093,12 @@ async function renderHistory() {
 
   const weeklyBests = {};
   Object.keys(ANCHOR_GROUPS).forEach(g => { weeklyBests[g] = {}; });
+  const liftRange = getFilterRange(liftFilter);
 
   realSessions.forEach(s => {
-    const weekKey = getWeekKey(s.date);
+    const sessionDate = s.date || (s.logged_at || '').slice(0, 10);
+    if (!dateIsInRange(sessionDate, liftRange)) return;
+    const weekKey = getWeekKey(sessionDate);
     (s.exercises||[]).forEach(ex => {
       const group = nameToGroup[ex.name];
       if (!group) return;
@@ -3068,8 +3116,8 @@ async function renderHistory() {
           : Math.abs(parseFloat(ex.topWeight || ex.weight || 0));
       }
       if (v > 0) {
-        if (!weeklyBests[group][weekKey] || v > weeklyBests[group][weekKey])
-          weeklyBests[group][weekKey] = v;
+        if (!weeklyBests[group][weekKey] || v > weeklyBests[group][weekKey].value)
+          weeklyBests[group][weekKey] = { value: v, date: sessionDate };
       }
     });
   });
@@ -3079,21 +3127,23 @@ async function renderHistory() {
     const weekMap    = weeklyBests[group];
     const weeks      = Object.keys(weekMap).sort();
     const isRepBased = cfg.isRepBased;
-    const curVal     = weeks.length ? weekMap[weeks[weeks.length - 1]] : null;
+    const latest     = weeks.length ? weekMap[weeks[weeks.length - 1]].value : null;
+    const best       = weeks.length ? Math.max(...weeks.map(w => weekMap[w].value)) : null;
     const unit       = isRepBased ? 'reps' : 'kg';
 
     const liftId = group.replace(/[^a-z0-9]/gi,'_');
     liftHtml += `<div class="lift-card" id="liftcard-${liftId}">
       <div class="lift-card-header">
         <span class="lift-name">${group}</span>
-        <span><span class="lift-val">${curVal !== null ? curVal : '—'}</span><span class="lift-val-unit">${curVal !== null ? unit : ''}</span></span>
+        <span class="lift-card-metric"><span><span class="lift-val">${best !== null ? best : '—'}</span><span class="lift-val-unit">${best !== null ? unit : ''}</span></span>${best !== null && latest !== best ? `<span class="lift-current">Latest ${latest}${unit}</span>` : ''}</span>
       </div>`;
 
     if (weeks.length === 0) {
-      liftHtml += `<div class="lift-no-data">No data yet — log a session to start tracking</div>`;
+      liftHtml += `<div class="lift-no-data">No anchor data in this range</div>`;
     } else {
-      const points = weeks.map(w => weekMap[w]);
-      liftHtml += buildSparkline(points, weeks, unit);
+      const points = weeks.map(w => weekMap[w].value);
+      const labels = weeks.map(w => formatShortDateLabel(weekMap[w].date));
+      liftHtml += buildSparkline(points, labels, unit);
     }
 
     liftHtml += `</div>`;
@@ -3131,7 +3181,9 @@ async function renderHistory() {
       var toY = function(v) { return PAD_TOP + (1 - (v - minV) / range) * (H - PAD_TOP - PAD_BOT); };
       var pathD = vs.map(function(v, i) { return (i === 0 ? 'M' : 'L') + toX(i).toFixed(1) + ',' + toY(v).toFixed(1); }).join(' ');
       // Value labels above each dot
-      var valLabels = vals.map(function(pt, i) {
+      var labelIndexes = vals.length <= 4 ? vals.map(function(_, i) { return i; }) : [0, vals.length - 1];
+      var valLabels = labelIndexes.map(function(i) {
+        var pt = vals[i];
         return '<text x="' + toX(i).toFixed(1) + '" y="' + (toY(pt.v) - 8).toFixed(1) + '" text-anchor="middle" font-size="9" fill="var(--text)" opacity="0.4" font-family="monospace">' + pt.v + unit + '</text>';
       }).join('');
       // Clickable dots — tap shows tooltip with date
@@ -3565,28 +3617,33 @@ function toggleArchive() {
 // ─── INIT ─────────────────────────────────────────────────────────────────
 
 async function init() {
-  await refreshAuthState();
-  resetUserScopedState(true);
-  const userId = getActiveUserId();
-  if (authRecoveryMode) {
-    document.getElementById('header-sessions').textContent = '—';
-    document.getElementById('today-queue').innerHTML = getAuthCardMarkup();
-    return;
-  }
-  if (!userId) {
-    document.getElementById('header-sessions').textContent = '—';
-    document.getElementById('today-queue').innerHTML = getAuthCardMarkup();
-    return;
-  }
-  const sessions = await loadSessions();
-  document.getElementById('header-sessions').textContent = sessions.length;
+  try {
+    await refreshAuthState();
+    resetUserScopedState(true);
+    const userId = getActiveUserId();
+    if (authRecoveryMode) {
+      document.getElementById('header-sessions').textContent = '—';
+      document.getElementById('today-queue').innerHTML = getAuthCardMarkup();
+      return;
+    }
+    if (!userId) {
+      document.getElementById('header-sessions').textContent = '—';
+      document.getElementById('today-queue').innerHTML = getAuthCardMarkup();
+      return;
+    }
+    const sessions = await loadSessions();
+    document.getElementById('header-sessions').textContent = getCompletedWorkoutCount(sessions);
 
-  // Restore the stable workout selection before rendering any queue. Rendering
-  // first would overwrite the saved selection with today's scheduled session.
-  restoreNavigationState();
+    // Restore the stable workout selection before rendering any queue. Rendering
+    // first would overwrite the saved selection with today's scheduled session.
+    restoreNavigationState();
+  } finally {
+    appInitialized = true;
+  }
 }
 
 let authStateChangeInFlight = false;
+let appInitialized = false;
 
 async function refreshAppForAuthChange() {
   if (authStateChangeInFlight) return;
@@ -3606,7 +3663,7 @@ async function refreshAppForAuthChange() {
       return;
     }
     const sessions = await loadSessions();
-    document.getElementById('header-sessions').textContent = sessions.length;
+    document.getElementById('header-sessions').textContent = getCompletedWorkoutCount(sessions);
     restoreNavigationState();
   } catch (e) {
     console.warn('Auth state refresh failed.', e);
@@ -3966,7 +4023,7 @@ function restoreSetRows(uid, ex, sets) {
 
 // ─── SHARE LIFT CARD ─────────────────────────────────────────────────────
 async function shareAllLifts() {
-  const cards = document.querySelectorAll('.lift-card');
+  const cards = document.querySelectorAll('#lift-tracker .lift-card');
   if (!cards.length) { setStatus('No lift data yet', true); return; }
 
   const btn = document.getElementById('share-lifts-btn');
@@ -5719,17 +5776,37 @@ document.addEventListener('click', function(evt) {
   if (evt.target.closest && evt.target.closest('.bcsdot')) bodyDotClick(evt);
 });
 
-getAuthClient()?.auth.onAuthStateChange((event) => {
+getAuthClient()?.auth.onAuthStateChange((event, session) => {
+  const currentUserId = authSession?.user?.id || null;
+  const nextUserId = session?.user?.id || null;
+  if (event === 'INITIAL_SESSION') return;
+  if (event === 'TOKEN_REFRESHED') {
+    // Token rotation is routine. Keep the rendered app and navigation state intact.
+    authSession = session || authSession;
+    return;
+  }
   if (event === 'PASSWORD_RECOVERY') {
     authRecoveryMode = true;
-    refreshAppForAuthChange();
+    authSession = session || authSession;
+    if (appInitialized) refreshAppForAuthChange();
     return;
   }
   if (event === 'SIGNED_OUT') {
     authRecoveryMode = false;
+    authSession = null;
+    authAppUser = null;
+    if (appInitialized) refreshAppForAuthChange();
+    return;
   }
-  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+  if (event === 'SIGNED_IN') {
+    authSession = session || authSession;
+    if (!appInitialized || (currentUserId && currentUserId === nextUserId)) return;
     refreshAppForAuthChange();
+    return;
+  }
+  if (event === 'USER_UPDATED') {
+    authSession = session || authSession;
+    if (appInitialized) refreshAppForAuthChange();
   }
 });
 
