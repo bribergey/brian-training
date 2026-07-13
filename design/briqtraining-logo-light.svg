@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="180" viewBox="0 0 940 180" role="img" aria-labelledby="title desc">
+  <title id="title">Briq Training logo</title>
+  <desc id="desc">A modular B mark followed by briqtraining, with IQ highlighted in green.</desc>
+  <g transform="translate(20 30)">
+    <rect width="34" height="120" rx="5" fill="#1adb4e"/>
+    <rect x="46" width="78" height="54" rx="5" fill="#0f0f0e"/>
+    <rect x="46" y="66" width="78" height="54" rx="5" fill="#0f0f0e"/>
+  </g>
+  <text x="170" y="123" font-family="Inter, Arial, sans-serif" font-size="86" font-weight="800" letter-spacing="0">
+    <tspan fill="#0f0f0e">br</tspan><tspan fill="#1adb4e" font-family="DM Mono, monospace" font-weight="500">iq</tspan><tspan fill="#0f0f0e">training</tspan>
+  </text>
+</svg>

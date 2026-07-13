@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-labelledby="title desc">
+  <title id="title">Briq Training mark</title>
+  <desc id="desc">A modular lowercase B assembled from three training blocks.</desc>
+  <rect width="192" height="192" rx="28" fill="#0f0f0e"/>
+  <rect x="34" y="34" width="34" height="124" rx="5" fill="#1adb4e"/>
+  <rect x="80" y="34" width="78" height="56" rx="5" fill="#ffffff"/>
+  <rect x="80" y="102" width="78" height="56" rx="5" fill="#ffffff"/>
+</svg>

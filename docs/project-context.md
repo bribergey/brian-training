@@ -8,31 +8,37 @@ Brian's Training Hub is a personal training app used for real workouts. It inclu
 
 The app is currently a static HTML/Supabase application.
 
-- `index.html`: production app source. Pushing `main` deploys this to GitHub Pages root.
-- `brian_STAGING.html`: staging app source. Pushing `staging` deploys this to `/staging/`.
-- `brian_master.html`: mirror/copy used by earlier workflow; keep aligned when making app-wide HTML changes unless the project is intentionally simplified.
-- `brian_PRODUCTION.html`: older production snapshot. Do not assume it is the active source.
-- `.github/workflows/deploy-production.yml`: copies `index.html` from `main` to `gh-pages/index.html`.
-- `.github/workflows/deploy-staging.yml`: copies `brian_STAGING.html` from `staging` to `gh-pages/staging/index.html`.
+- Local repo path: `/Users/brianlostplate/Projects/Brian Training`.
+- Local migration notes: `docs/local-migration.md`.
+- `index.html`: production marketing source. Pushing `main` deploys it to `/`.
+- `app/index.html`: the only production app source. Pushing `main` deploys it to `/app/`.
+- `marketing_STAGING.html`: staging marketing source. Pushing `staging` deploys it to `/staging/` and `/staging/home/`.
+- `brian_STAGING.html`: the only staging app source. Pushing `staging` deploys it to `/staging/app/`.
+- Parallel app copies such as `brian_master.html` and `brian_PRODUCTION.html` are intentionally removed.
+- `APP_SOURCES.md`: source-of-truth rules enforced by the app-contract workflow.
+- `.github/workflows/deploy-production.yml`: copies production marketing and app routes to `gh-pages`.
+- `.github/workflows/deploy-staging.yml`: copies staging marketing and app routes to `gh-pages`.
 - `supabase/migrations/`: migration history for schema/RLS/auth work.
 
 ## Environments
 
 Production:
 
-- URL: `https://briqtraining.com/`
+- URL: `https://briqtraining.com/app/`
+- Marketing URL: `https://briqtraining.com/`
 - Legacy redirect URL: `https://bribergey.github.io/brian-training/`
 - Source branch: `main`
-- Deployed file: `gh-pages/index.html`
+- Deployed file: `gh-pages/app/index.html`
 - App `ENV`: `production`
 - Production tables include `sessions`, `program`, `monthly_program`, `user_profile`, `user_measurements`, and related views.
 
 Staging:
 
-- URL: `https://briqtraining.com/staging/`
+- URL: `https://briqtraining.com/staging/app/`
+- Marketing URL: `https://briqtraining.com/staging/`
 - Legacy redirect URL: `https://bribergey.github.io/brian-training/staging/`
 - Source branch: `staging`
-- Deployed file: `gh-pages/staging/index.html`
+- Deployed file: `gh-pages/staging/app/index.html`
 - App `ENV`: `staging`
 - Staging tables generally use `_staging` suffixes.
 
