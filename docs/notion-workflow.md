@@ -6,7 +6,7 @@ Primary workspace: Reggie's Workspace.
 
 Primary roadmap database:
 
-- Database: `Ian's Roadmap`
+- Database/data source: `Ian's Training Roadmap`
 - Data source id: `collection://34ce5cb9-20a5-819b-ba8b-000b9e9cec64`
 
 Important cards:
