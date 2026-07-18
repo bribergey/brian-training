@@ -1053,13 +1053,65 @@ select {
   color:var(--text); padding:11px; font-family:var(--mono); font-size:11px;
   font-weight:700; letter-spacing:.04em; text-transform:uppercase; cursor:pointer;
 }
-.daily-history-card { cursor:pointer; transition:border-color .15s, transform .15s; }
-.daily-history-card:active { transform:scale(.99); border-color:var(--green); }
-.daily-history-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
-.daily-history-date { font-family:var(--display); font-size:20px; font-weight:800; color:var(--text); }
-.daily-history-edit { font-family:var(--mono); font-size:10px; color:var(--green-dark); text-transform:uppercase; letter-spacing:.06em; }
-.daily-history-metrics { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
-.daily-history-pill { background:var(--bg3); border-radius:14px; padding:5px 9px; font-family:var(--mono); font-size:10px; color:var(--text); }
+.daily-calendar-card { padding:16px; margin-bottom:18px; overflow:hidden; }
+.daily-calendar-header { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px; }
+.daily-calendar-title { min-width:0; }
+.daily-calendar-month {
+  font-family:var(--display); font-size:24px; font-weight:800; line-height:1.05;
+  letter-spacing:-.03em; color:var(--text);
+}
+.daily-calendar-selected { margin-top:5px; font-family:var(--mono); font-size:10px; color:var(--text); opacity:.52; }
+.daily-calendar-controls { display:flex; align-items:center; gap:6px; }
+.daily-calendar-nav, .daily-calendar-today {
+  border:1px solid var(--border2); background:var(--bg2); color:var(--text); cursor:pointer;
+  touch-action:manipulation; transition:border-color .15s, background .15s, transform .15s;
+}
+.daily-calendar-nav { width:38px; height:38px; border-radius:10px; font-size:25px; line-height:1; }
+.daily-calendar-today {
+  min-height:38px; border-radius:10px; padding:0 10px; font-family:var(--mono);
+  font-size:9px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+}
+.daily-calendar-nav:active, .daily-calendar-today:active { transform:scale(.96); border-color:var(--green); }
+.daily-calendar-nav:focus-visible, .daily-calendar-today:focus-visible, .daily-calendar-day:focus-visible {
+  outline:2px solid var(--green); outline-offset:2px;
+}
+.daily-calendar-weekdays, .daily-calendar-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:5px; }
+.daily-calendar-weekdays { margin-bottom:6px; }
+.daily-calendar-weekday {
+  text-align:center; font-family:var(--mono); font-size:9px; font-weight:700;
+  letter-spacing:.04em; color:var(--text); opacity:.38; text-transform:uppercase;
+}
+.daily-calendar-blank { aspect-ratio:1; }
+.daily-calendar-day {
+  position:relative; aspect-ratio:1; min-width:0; border:1px solid transparent; border-radius:12px;
+  background:transparent; color:var(--text); font-family:var(--mono); font-size:13px;
+  font-weight:700; cursor:pointer; touch-action:manipulation; transition:transform .12s, border-color .15s, background .15s, color .15s;
+}
+.daily-calendar-day:hover { background:var(--bg3); }
+.daily-calendar-day:active { transform:scale(.92); }
+.daily-calendar-day.is-today { border-color:var(--border2); }
+.daily-calendar-day.is-logged { background:rgba(26,219,78,.11); color:var(--green-dark); }
+.daily-calendar-day.is-selected {
+  border-color:var(--text); background:var(--text); color:var(--bg2);
+  box-shadow:0 7px 18px rgba(0,0,0,.14);
+}
+.daily-calendar-day.is-selected.is-logged { border-color:var(--green); background:var(--text); }
+.daily-calendar-check {
+  position:absolute; right:4px; bottom:4px; display:flex; align-items:center; justify-content:center;
+  width:15px; height:15px; border-radius:50%; background:var(--green); color:#09250f;
+  font-family:var(--mono); font-size:10px; font-weight:900; line-height:1;
+}
+.daily-calendar-day.is-selected .daily-calendar-check { box-shadow:0 0 0 2px var(--text); }
+.daily-calendar-footer {
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  margin-top:14px; padding-top:12px; border-top:1px solid var(--border);
+}
+.daily-calendar-legend { display:flex; align-items:center; gap:7px; font-size:12px; font-weight:600; color:var(--text); opacity:.64; }
+.daily-calendar-legend-check {
+  display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px;
+  border-radius:50%; background:var(--green); color:#09250f; font-family:var(--mono); font-size:11px; font-weight:900;
+}
+.daily-calendar-state { font-family:var(--mono); font-size:9px; font-weight:700; letter-spacing:.04em; color:var(--text); opacity:.42; text-transform:uppercase; }
 .daily-info-btn {
   border:1px solid var(--border2); background:none; color:var(--text); width:22px; height:22px;
   border-radius:50%; font-family:var(--mono); font-size:12px; font-weight:700; cursor:pointer;
@@ -1073,6 +1125,10 @@ select {
 @media (max-width:380px) {
   .daily-scale-options { gap:4px; }
   .daily-photo-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .daily-calendar-card { padding:13px; }
+  .daily-calendar-weekdays, .daily-calendar-grid { gap:3px; }
+  .daily-calendar-day { border-radius:10px; }
+  .daily-calendar-today { display:none; }
 }
 </style>
 </head>
@@ -1168,11 +1224,16 @@ select {
 <div class="panel" id="tab-daily">
   <div class="panel-inner">
     <div class="nut-subtab-bar">
-      <button class="nut-subtab active" id="daily-sub-log" onclick="dailyShowTab('log',this)">Log</button>
-      <button class="nut-subtab" id="daily-sub-history" onclick="dailyShowTab('history',this)">History</button>
+      <button class="nut-subtab active" id="daily-sub-log" onclick="dailyShowTab('log',this)">Daily Log</button>
+      <button class="nut-subtab" id="daily-sub-macros" onclick="dailyShowTab('macros',this)">Macros</button>
     </div>
     <div id="daily-page-log"><div style="color:var(--text);font-size:14px;opacity:0.5;padding:8px 0">Loading...</div></div>
-    <div id="daily-page-history" style="display:none"></div>
+    <div id="daily-page-macros" style="display:none">
+      <div class="card">
+        <div class="card-section-title">Macros</div>
+        <p style="font-size:14px;line-height:1.55;color:var(--text);opacity:.65;margin:0">A future home for calories, protein, carbohydrates, and fat. We’ll build this tab in a separate update.</p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2890,7 +2951,6 @@ let activeMainTab = 'today';
 
 const VALID_MAIN_TABS = ['today', 'daily', 'history', 'me'];
 const VALID_TRAINING_SUBTABS = ['thisweek', 'program', 'history'];
-const VALID_DAILY_SUBTABS = ['log', 'history'];
 
 function navigationStateKey() {
   return getUserScopedStorageKey('app_navigation_v1');
@@ -2902,9 +2962,7 @@ function saveNavigationState() {
     localStorage.setItem(navigationStateKey(), JSON.stringify({
       main: activeMainTab,
       training: trainingActiveSubTab,
-      trainingSessionKey: selectedSessionKey,
-      daily: dailyActiveSubTab,
-      dailyDate: dailySelectedDate
+      trainingSessionKey: selectedSessionKey
     }));
   } catch (e) {
     console.warn('Could not save app navigation state.', e);
@@ -2914,15 +2972,14 @@ function saveNavigationState() {
 function loadNavigationState() {
   activeMainTab = 'today';
   trainingActiveSubTab = 'thisweek';
-  dailyActiveSubTab = 'log';
+  dailySelectedDate = dailyLocalDate();
+  dailyCalendarMonth = dailyMonthStart(dailySelectedDate);
   if (!getActiveUserId()) return activeMainTab;
   try {
     const saved = JSON.parse(localStorage.getItem(navigationStateKey()) || 'null');
     if (VALID_MAIN_TABS.includes(saved?.main)) activeMainTab = saved.main;
     if (VALID_TRAINING_SUBTABS.includes(saved?.training)) trainingActiveSubTab = saved.training;
     selectedSessionKey = typeof saved?.trainingSessionKey === 'string' ? saved.trainingSessionKey : null;
-    if (VALID_DAILY_SUBTABS.includes(saved?.daily)) dailyActiveSubTab = saved.daily;
-    if (/^\d{4}-\d{2}-\d{2}$/.test(saved?.dailyDate || '')) dailySelectedDate = saved.dailyDate;
   } catch (e) {
     console.warn('Could not restore app navigation state.', e);
   }
@@ -4188,6 +4245,8 @@ const DAILY_PHOTO_MAX_DIMENSION = 1600;
 let dailyLogs = null;
 let dailyActiveSubTab = 'log';
 let dailySelectedDate = null;
+let dailyCalendarMonth = null;
+let dailyOpenedLocalDate = null;
 let dailyEditingId = null;
 let dailyDraftDirty = false;
 let dailyPhotoUploadsInFlight = 0;
@@ -4205,6 +4264,94 @@ function dailyFormatDate(value, long = true) {
   return d.toLocaleDateString(undefined, long
     ? { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }
     : { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function dailyMonthStart(value) {
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(value || '')
+    ? new Date(value + 'T00:00:00')
+    : new Date();
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function dailyCalendarMarkup() {
+  const month = dailyCalendarMonth || dailyMonthStart(dailySelectedDate || dailyLocalDate());
+  const year = month.getFullYear();
+  const monthIndex = month.getMonth();
+  const selectedDate = dailySelectedDate || dailyLocalDate();
+  const today = dailyLocalDate();
+  const loggedDates = new Set((dailyLogs || []).map(log => log.log_date));
+  const firstWeekday = (new Date(year, monthIndex, 1).getDay() + 6) % 7;
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < firstWeekday; i++) cells.push('<div class="daily-calendar-blank" aria-hidden="true"></div>');
+  for (let day = 1; day <= daysInMonth; day++) {
+    const value = year + '-' + String(monthIndex + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    const isLogged = loggedDates.has(value);
+    const isSelected = value === selectedDate;
+    const isToday = value === today;
+    const classes = ['daily-calendar-day'];
+    if (isToday) classes.push('is-today');
+    if (isLogged) classes.push('is-logged');
+    if (isSelected) classes.push('is-selected');
+    const label = dailyFormatDate(value) + (isToday ? ', today' : '') + (isLogged ? ', logged' : '') + (isSelected ? ', selected' : '');
+    cells.push('<button type="button" class="' + classes.join(' ') + '" aria-label="' + escapeHtml(label) +
+      '" aria-pressed="' + (isSelected ? 'true' : 'false') + '" onclick="dailySelectCalendarDate(\'' + value + '\')">' +
+      '<span>' + day + '</span>' + (isLogged ? '<span class="daily-calendar-check" aria-hidden="true">✓</span>' : '') + '</button>');
+  }
+  const selectedIsLogged = loggedDates.has(selectedDate);
+  return '<div class="daily-calendar-header">' +
+      '<div class="daily-calendar-title"><div class="daily-calendar-month">' +
+        escapeHtml(month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })) + '</div>' +
+        '<div class="daily-calendar-selected">' + escapeHtml(dailyFormatDate(selectedDate)) + '</div></div>' +
+      '<div class="daily-calendar-controls">' +
+        '<button type="button" class="daily-calendar-today" onclick="dailyCalendarGoToday()">Today</button>' +
+        '<button type="button" class="daily-calendar-nav" aria-label="Previous month" onclick="dailyCalendarShift(-1)">‹</button>' +
+        '<button type="button" class="daily-calendar-nav" aria-label="Next month" onclick="dailyCalendarShift(1)">›</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="daily-calendar-weekdays" aria-hidden="true">' +
+      ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(day => '<div class="daily-calendar-weekday">' + day + '</div>').join('') +
+    '</div>' +
+    '<div class="daily-calendar-grid" aria-label="' + escapeHtml(month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })) + '">' + cells.join('') + '</div>' +
+    '<div class="daily-calendar-footer"><div class="daily-calendar-legend"><span class="daily-calendar-legend-check">✓</span> Logged</div>' +
+      '<div class="daily-calendar-state">' + (selectedIsLogged ? 'Editing saved log' : 'New daily log') + '</div></div>';
+}
+
+function renderDailyCalendar() {
+  const calendar = document.getElementById('daily-calendar');
+  if (calendar) calendar.innerHTML = dailyCalendarMarkup();
+}
+
+function dailyCalendarShift(offset) {
+  const month = dailyCalendarMonth || dailyMonthStart(dailySelectedDate || dailyLocalDate());
+  dailyCalendarMonth = new Date(month.getFullYear(), month.getMonth() + offset, 1);
+  renderDailyCalendar();
+}
+
+function dailyCalendarGoToday() {
+  dailySelectCalendarDate(dailyLocalDate());
+}
+
+function dailySelectCalendarDate(value) {
+  dailyCalendarMonth = dailyMonthStart(value);
+  dailyChangeDate(value);
+}
+
+function dailySetSubTabUI(sub) {
+  document.getElementById('daily-sub-log')?.classList.toggle('active', sub === 'log');
+  document.getElementById('daily-sub-macros')?.classList.toggle('active', sub === 'macros');
+  const logPage = document.getElementById('daily-page-log');
+  const macrosPage = document.getElementById('daily-page-macros');
+  if (logPage) logPage.style.display = sub === 'log' ? '' : 'none';
+  if (macrosPage) macrosPage.style.display = sub === 'macros' ? '' : 'none';
+}
+
+function dailyShowTab(sub) {
+  if (sub !== 'log' && sub !== 'macros') return;
+  dailySaveDraftNow();
+  dailyActiveSubTab = sub;
+  dailySetSubTabUI(sub);
+  if (sub === 'log') renderDaily();
 }
 
 function dailyDraftKey(date) {
@@ -4600,7 +4747,15 @@ function dailyScheduleDraft() {
 }
 
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') dailySaveDraftNow();
+  if (document.visibilityState === 'hidden') {
+    dailySaveDraftNow();
+    return;
+  }
+  const today = dailyLocalDate();
+  if (activeMainTab === 'daily' && dailyOpenedLocalDate && dailyOpenedLocalDate !== today) {
+    dailyOpenedLocalDate = today;
+    dailySelectCalendarDate(today);
+  }
 });
 window.addEventListener('pagehide', () => dailySaveDraftNow());
 
@@ -4660,6 +4815,7 @@ function dailyCloseStoolGuide(event) {
 async function dailyChangeDate(value) {
   dailySaveDraftNow(dailySelectedDate);
   dailySelectedDate = value || dailyLocalDate();
+  dailyCalendarMonth = dailyMonthStart(dailySelectedDate);
   dailyEditingId = null;
   renderDailyLogForm();
   saveNavigationState();
@@ -4702,13 +4858,8 @@ function renderDailyLogForm() {
   dailyDraftDirty = false;
 
   container.innerHTML =
-    '<div class="card" style="margin-bottom:18px">' +
-      '<div class="card-section-title">Daily Log</div>' +
-      '<div class="input-group"><label class="input-label">Date</label>' +
-        '<input type="date" id="daily-date" value="' + escapeHtml(dailySelectedDate) +
-        '" class="date-picker-input" style="display:block;width:100%" onchange="dailyChangeDate(this.value)">' +
-      '</div>' +
-    '</div>' +
+    '<div class="card daily-calendar-card" id="daily-calendar">' + dailyCalendarMarkup() + '</div>' +
+    '<input type="hidden" id="daily-date" value="' + escapeHtml(dailySelectedDate) + '">' +
     '<div class="card" style="margin-bottom:18px">' +
       '<div class="card-section-title">Sleep &amp; recovery</div>' +
       '<div class="log-input-grid lig-2" style="margin-bottom:18px">' +
@@ -4808,9 +4959,9 @@ async function saveDailyLog() {
     dailyDraftDirty = false;
     dailySelectedDate = body.log_date;
     await loadDailyLogs(true);
-    dailyActiveSubTab = 'history';
-    dailySetSubTabUI('history');
-    renderDailyHistory();
+    dailyCalendarMonth = dailyMonthStart(dailySelectedDate);
+    renderDailyLogForm();
+    document.getElementById('daily-save-status').textContent = '✓ Saved';
     saveNavigationState();
     document.getElementById('tab-daily')?.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (e) {
@@ -4821,90 +4972,25 @@ async function saveDailyLog() {
   }
 }
 
-function renderDailyHistory() {
-  const container = document.getElementById('daily-page-history');
-  if (!container) return;
-  if (!dailyLogs?.length) {
-    container.innerHTML = '<div class="card"><div class="card-section-title">No Daily Logs yet</div>' +
-      '<p style="font-size:14px;line-height:1.55;color:var(--text);opacity:.65;margin:0">Save your first Daily Log, then it will appear here for review and editing.</p></div>';
-    return;
-  }
-  container.innerHTML = dailyLogs.map(log => {
-    const metrics = [];
-    if (log.sleep_score != null) metrics.push('Sleep ' + log.sleep_score);
-    if (log.energy != null) metrics.push('Energy ' + log.energy + '/5');
-    if (log.stress != null) metrics.push('Stress ' + log.stress + '/5');
-    if (log.mood != null) metrics.push('Mood ' + log.mood + '/5');
-    if (log.soreness != null) metrics.push('Soreness ' + log.soreness + '/5');
-    const foodCount = Array.isArray(log.food_entries) ? log.food_entries.length : 0;
-    if (foodCount) metrics.push(foodCount + ' food entr' + (foodCount === 1 ? 'y' : 'ies'));
-    return '<div class="card daily-history-card" style="margin-bottom:12px" onclick="dailyEditHistory(\'' +
-      escapeHtml(log.id) + '\')">' +
-      '<div class="daily-history-head"><div><div class="daily-history-date">' + escapeHtml(dailyFormatDate(log.log_date)) +
-      '</div><div style="font-family:var(--mono);font-size:10px;color:var(--text);opacity:.4;margin-top:4px">Updated ' +
-      escapeHtml(new Date(log.updated_at || log.created_at).toLocaleString()) + '</div></div>' +
-      '<div class="daily-history-edit">Edit →</div></div>' +
-      '<div class="daily-history-metrics">' +
-        (metrics.length ? metrics.map(metric => '<span class="daily-history-pill">' + escapeHtml(metric) + '</span>').join('') :
-          '<span class="daily-history-pill">Partial log</span>') +
-      '</div></div>';
-  }).join('');
-}
-
-function dailyEditHistory(id) {
-  const row = (dailyLogs || []).find(log => log.id === id);
-  if (!row) return;
-  dailySelectedDate = row.log_date;
-  dailyActiveSubTab = 'log';
-  dailySetSubTabUI('log');
-  renderDailyLogForm();
-  saveNavigationState();
-  document.getElementById('tab-daily')?.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function dailySetSubTabUI(sub) {
-  document.getElementById('daily-sub-log')?.classList.toggle('active', sub === 'log');
-  document.getElementById('daily-sub-history')?.classList.toggle('active', sub === 'history');
-  const logPage = document.getElementById('daily-page-log');
-  const historyPage = document.getElementById('daily-page-history');
-  if (logPage) logPage.style.display = sub === 'log' ? '' : 'none';
-  if (historyPage) historyPage.style.display = sub === 'history' ? '' : 'none';
-}
-
-async function dailyShowTab(sub, btn) {
-  dailySaveDraftNow();
-  dailyActiveSubTab = sub;
-  dailySetSubTabUI(sub);
-  saveNavigationState();
-  try {
-    await loadDailyLogs(sub === 'history');
-    if (sub === 'log') renderDailyLogForm();
-    else renderDailyHistory();
-  } catch (e) {
-    const target = document.getElementById(sub === 'log' ? 'daily-page-log' : 'daily-page-history');
-    target.innerHTML = '<div class="card"><div class="card-section-title">Daily Log unavailable</div>' +
-      '<p style="font-size:14px;color:var(--text);opacity:.65;margin:0">Could not load Daily Logs. Please try again.</p></div>';
-  }
-}
-
 async function renderDaily() {
   const logPage = document.getElementById('daily-page-log');
-  const historyPage = document.getElementById('daily-page-history');
+  dailySetSubTabUI(dailyActiveSubTab);
+  if (dailyActiveSubTab === 'macros') return;
   if (!getActiveUserId()) {
     logPage.innerHTML = getAuthCardMarkup();
-    historyPage.innerHTML = '';
     return;
   }
   logPage.innerHTML = '<div style="color:var(--text);font-size:14px;opacity:0.5;padding:8px 0">Loading...</div>';
   try {
     await loadDailyLogs(true);
-    dailySelectedDate = dailySelectedDate || dailyLocalDate();
-    document.getElementById('daily-page-log').style.display = dailyActiveSubTab === 'log' ? '' : 'none';
-    document.getElementById('daily-page-history').style.display = dailyActiveSubTab === 'history' ? '' : 'none';
-    document.getElementById('daily-sub-log')?.classList.toggle('active', dailyActiveSubTab === 'log');
-    document.getElementById('daily-sub-history')?.classList.toggle('active', dailyActiveSubTab === 'history');
-    if (dailyActiveSubTab === 'log') renderDailyLogForm();
-    else renderDailyHistory();
+    const today = dailyLocalDate();
+    if (!dailySelectedDate || (dailyOpenedLocalDate && dailyOpenedLocalDate !== today)) {
+      dailySelectedDate = today;
+      dailyCalendarMonth = dailyMonthStart(today);
+    }
+    dailyOpenedLocalDate = today;
+    dailyCalendarMonth = dailyCalendarMonth || dailyMonthStart(dailySelectedDate);
+    renderDailyLogForm();
   } catch (e) {
     console.error('Daily Log load failed:', e);
     logPage.innerHTML = '<div class="card"><div class="card-section-title">Daily Log unavailable</div>' +
@@ -5056,9 +5142,11 @@ function resetUserScopedState(force = false) {
   meProfile = null;
   meMeasurements = [];
   dailyLogs = null;
-  dailySelectedDate = null;
-  dailyEditingId = null;
   dailyActiveSubTab = 'log';
+  dailySelectedDate = null;
+  dailyCalendarMonth = null;
+  dailyOpenedLocalDate = null;
+  dailyEditingId = null;
   dailyDraftDirty = false;
   dailyPhotoUploadsInFlight = 0;
   window._historySessions = null;
