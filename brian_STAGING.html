@@ -1060,7 +1060,6 @@ select {
   font-family:var(--display); font-size:24px; font-weight:800; line-height:1.05;
   letter-spacing:-.03em; color:var(--text);
 }
-.daily-calendar-selected { margin-top:5px; font-family:var(--mono); font-size:10px; color:var(--text); opacity:.52; }
 .daily-calendar-controls { display:flex; align-items:center; gap:6px; }
 .daily-calendar-nav, .daily-calendar-today {
   border:1px solid var(--border2); background:var(--bg2); color:var(--text); cursor:pointer;
@@ -1084,6 +1083,7 @@ select {
 .daily-calendar-blank { aspect-ratio:1; }
 .daily-calendar-day {
   position:relative; aspect-ratio:1; min-width:0; border:1px solid transparent; border-radius:12px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; padding:3px 0;
   background:transparent; color:var(--text); font-family:var(--mono); font-size:13px;
   font-weight:700; cursor:pointer; touch-action:manipulation; transition:transform .12s, border-color .15s, background .15s, color .15s;
 }
@@ -1097,9 +1097,9 @@ select {
 }
 .daily-calendar-day.is-selected.is-logged { border-color:var(--green); background:var(--text); }
 .daily-calendar-check {
-  position:absolute; right:4px; bottom:4px; display:flex; align-items:center; justify-content:center;
-  width:15px; height:15px; border-radius:50%; background:var(--green); color:#09250f;
-  font-family:var(--mono); font-size:10px; font-weight:900; line-height:1;
+  position:static; flex:0 0 12px; display:flex; align-items:center; justify-content:center;
+  width:12px; height:12px; border-radius:50%; background:var(--green); color:#09250f;
+  font-family:var(--mono); font-size:8px; font-weight:900; line-height:1;
 }
 .daily-calendar-day.is-selected .daily-calendar-check { box-shadow:0 0 0 2px var(--text); }
 .daily-calendar-footer {
@@ -1112,6 +1112,10 @@ select {
   border-radius:50%; background:var(--green); color:#09250f; font-family:var(--mono); font-size:11px; font-weight:900;
 }
 .daily-calendar-state { font-family:var(--mono); font-size:9px; font-weight:700; letter-spacing:.04em; color:var(--text); opacity:.42; text-transform:uppercase; }
+.daily-log-date-heading {
+  margin:2px 2px 16px; font-family:var(--display); font-size:28px; font-weight:800;
+  line-height:1.08; letter-spacing:-.035em; color:var(--text);
+}
 .daily-info-btn {
   border:1px solid var(--border2); background:none; color:var(--text); width:22px; height:22px;
   border-radius:50%; font-family:var(--mono); font-size:12px; font-weight:700; cursor:pointer;
@@ -4241,6 +4245,7 @@ const DAILY_PHOTO_LIMIT = 5;
 const DAILY_PHOTO_MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 const DAILY_PHOTO_TARGET_BYTES = 1.5 * 1024 * 1024;
 const DAILY_PHOTO_MAX_DIMENSION = 1600;
+const DAILY_MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'];
 
 let dailyLogs = null;
 let dailyActiveSubTab = 'log';
@@ -4301,8 +4306,7 @@ function dailyCalendarMarkup() {
   const selectedIsLogged = loggedDates.has(selectedDate);
   return '<div class="daily-calendar-header">' +
       '<div class="daily-calendar-title"><div class="daily-calendar-month">' +
-        escapeHtml(month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })) + '</div>' +
-        '<div class="daily-calendar-selected">' + escapeHtml(dailyFormatDate(selectedDate)) + '</div></div>' +
+        DAILY_MONTH_LABELS[monthIndex] + ' ' + year + '</div></div>' +
       '<div class="daily-calendar-controls">' +
         '<button type="button" class="daily-calendar-today" onclick="dailyCalendarGoToday()">Today</button>' +
         '<button type="button" class="daily-calendar-nav" aria-label="Previous month" onclick="dailyCalendarShift(-1)">‹</button>' +
@@ -4860,6 +4864,9 @@ function renderDailyLogForm() {
   container.innerHTML =
     '<div class="card daily-calendar-card" id="daily-calendar">' + dailyCalendarMarkup() + '</div>' +
     '<input type="hidden" id="daily-date" value="' + escapeHtml(dailySelectedDate) + '">' +
+    '<h1 class="daily-log-date-heading">' + escapeHtml(new Date(dailySelectedDate + 'T00:00:00').toLocaleDateString(undefined, {
+      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+    })) + '</h1>' +
     '<div class="card" style="margin-bottom:18px">' +
       '<div class="card-section-title">Sleep &amp; recovery</div>' +
       '<div class="log-input-grid lig-2" style="margin-bottom:18px">' +
