@@ -9,7 +9,7 @@ This repo is Brian's training app. Codex is the long-term engineering/PM partner
 - Do not expose, print, commit, or paste service-role keys or one-time auth links.
 - Keep changes scoped. This app is currently a mostly static HTML app with Supabase and GitHub Pages; avoid introducing frameworks or build systems unless the task clearly justifies it.
 - Use Notion as the durable planning/project record. Update the relevant roadmap card when major work starts, blocks, ships, or changes direction.
-- Use GitHub PRs for production-impacting code or schema history whenever possible. Main branch deploys production.
+- Use GitHub PRs for production-impacting code or schema history whenever possible. `main` deploys production; `staging` deploys staging; `gh-pages` is generated deployment output and must not be edited as source.
 
 ## Start Here
 
@@ -23,15 +23,27 @@ Read these files before non-trivial work:
 
 ## Current Production State
 
-As of 2026-06-19, Phase 3 multi-user auth is complete:
+As of 2026-07-18:
 
-- Production URL: `https://briqtraining.com/`
-- Staging URL: `https://briqtraining.com/staging/`
+- Production app: `https://briqtraining.com/app/`
+- Production marketing: `https://briqtraining.com/`
+- Staging app: `https://briqtraining.com/staging/app/`
+- Staging marketing: `https://briqtraining.com/staging/`
 - Supabase project: `brian-training`, ref `mimvmaotzmacgiziovvi`
 - Production strict auth is live; legacy Brian fallback is disabled.
 - Brian's auth user maps to app `user_id = brian`.
 - Production user data is behind authenticated RLS. Anonymous access to user-owned production data is removed.
 - Shared exercise catalog remains readable.
+- Daily Log and private food-photo uploads are live; uploads allow five photos per food entry.
+
+## Branch And File Map
+
+- `main`: production source. Marketing is `index.html`; app is `app/index.html`.
+- `staging`: staging source. Marketing is `marketing_STAGING.html`; app is `brian_STAGING.html`.
+- `gh-pages`: generated deploy target. Production is written to `/` and `/app/`; staging is written to `/staging/`, `/staging/home/`, and `/staging/app/`.
+- Start app changes on `staging`, verify there, then port the tested change intentionally to `main/app/index.html` through a production PR.
+- Do not recreate or use `brian_master.html` or `brian_PRODUCTION.html`.
+- Keep this operating guide and the core `docs/` context synchronized on both `main` and `staging` so instructions remain available in either worktree.
 
 ## Development Posture
 

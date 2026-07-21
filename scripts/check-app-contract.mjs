@@ -1,5 +1,51 @@
 import fs from 'node:fs';
 
+const requiredContextFiles = [
+  'AGENTS.md',
+  'APP_SOURCES.md',
+  'docs/project-context.md',
+  'docs/infrastructure.md',
+  'docs/operating-policy.md',
+  'docs/qa-and-release.md',
+  'docs/notion-workflow.md',
+];
+const forbiddenAppCopies = ['brian_master.html', 'brian_PRODUCTION.html'];
+
+const missingContext = requiredContextFiles.filter(file => !fs.existsSync(file));
+const obsoleteCopies = forbiddenAppCopies.filter(file => fs.existsSync(file));
+
+if (missingContext.length || obsoleteCopies.length) {
+  missingContext.forEach(file => console.error(`Required agent context is missing: ${file}`));
+  obsoleteCopies.forEach(file => console.error(`Obsolete parallel app source exists: ${file}`));
+  process.exit(1);
+}
+
+const workflowContracts = [
+  ['.github/workflows/deploy-production.yml', [
+    'cp index.html gh-pages/index.html',
+    'cp app/index.html gh-pages/app/index.html',
+  ]],
+  ['.github/workflows/deploy-staging.yml', [
+    'cp marketing_STAGING.html gh-pages/staging/index.html',
+    'cp marketing_STAGING.html gh-pages/staging/home/index.html',
+    'cp brian_STAGING.html gh-pages/staging/app/index.html',
+  ]],
+];
+
+for (const [file, markers] of workflowContracts) {
+  if (!fs.existsSync(file)) {
+    console.error(`Deployment workflow is missing: ${file}`);
+    process.exit(1);
+  }
+  const workflow = fs.readFileSync(file, 'utf8');
+  for (const marker of markers) {
+    if (!workflow.includes(marker)) {
+      console.error(`Deployment workflow mapping is missing in ${file}: ${marker}`);
+      process.exit(1);
+    }
+  }
+}
+
 const requestedFile = process.argv[2];
 const appFile = requestedFile || (fs.existsSync('app/index.html') ? 'app/index.html' : 'brian_STAGING.html');
 
@@ -37,4 +83,4 @@ if (missing.length) {
   process.exit(1);
 }
 
-console.log(`App contract passed for ${appFile} (${expected.length} checks).`);
+console.log(`App contract passed for ${appFile} (${expected.length} app checks plus repository source checks).`);

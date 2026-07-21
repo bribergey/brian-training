@@ -29,11 +29,11 @@ The frontend resolves the active app user from the authenticated Supabase sessio
 Supabase Auth URL settings should include:
 
 - Site URL: `https://briqtraining.com/`
-- Redirect allow-list:
-  - `https://briqtraining.com/`
-  - `https://briqtraining.com/staging/`
-  - `https://bribergey.github.io/brian-training/`
-  - `https://bribergey.github.io/brian-training/staging/`
+- Exact redirect allow-list entries used by the app:
+  - `https://briqtraining.com/app/`
+  - `https://briqtraining.com/staging/app/`
+
+Supabase recommends exact production redirect paths. The old `bribergey.github.io` URLs are legacy redirects only and should not be used as new auth return targets.
 
 ## Data Model Notes
 
@@ -44,6 +44,7 @@ Production user-owned tables in `training`:
 - `monthly_program`
 - `user_profile`
 - `user_measurements`
+- `daily_logs`
 
 Staging user-owned tables in `training`:
 
@@ -52,6 +53,7 @@ Staging user-owned tables in `training`:
 - `monthly_program_staging`
 - `user_profile_staging`
 - `user_measurements_staging`
+- `daily_logs_staging`
 
 Shared/global:
 
@@ -61,6 +63,14 @@ Views:
 
 - Production includes `program_full`, `monthly_program_full`.
 - Staging includes `program_staging_full`, `monthly_program_staging_full`.
+
+Storage:
+
+- Private bucket: `daily-log-food-photos`.
+- Production object prefix: `production/<auth-user-id>/<date>/<entry>/<photo>`.
+- Staging object prefix: `staging/<auth-user-id>/<date>/<entry>/<photo>`.
+- Storage RLS scopes reads, uploads, and deletes by bucket, environment prefix, and `auth.uid()`.
+- The app allows at most five photos per food entry and resizes/compresses phone photos before upload, with a bounded original-file fallback.
 
 ## RLS And Grants
 
@@ -80,14 +90,18 @@ Production deploy:
 
 - Push to `main`.
 - Workflow copies `index.html` to `gh-pages/index.html`.
-- Public URL is `https://briqtraining.com/`.
+- Workflow copies `app/index.html` to `gh-pages/app/index.html`.
+- Marketing URL is `https://briqtraining.com/`; app URL is `https://briqtraining.com/app/`.
 - Legacy GitHub Pages URL redirects from `https://bribergey.github.io/brian-training/`.
 
 Staging deploy:
 
 - Push to `staging`.
-- Workflow copies `brian_STAGING.html` to `gh-pages/staging/index.html`.
-- Public URL is `https://briqtraining.com/staging/`.
+- Workflow copies `marketing_STAGING.html` to `gh-pages/staging/index.html` and `gh-pages/staging/home/index.html`.
+- Workflow copies `brian_STAGING.html` to `gh-pages/staging/app/index.html`.
+- Marketing URL is `https://briqtraining.com/staging/`; app URL is `https://briqtraining.com/staging/app/`.
 - Legacy GitHub Pages staging URL redirects from `https://bribergey.github.io/brian-training/staging/`.
+
+`gh-pages` is deployment output. Never patch it directly; fix the canonical file on `main` or `staging` and let the workflow publish it.
 
 GitHub Pages cache can lag briefly. Use cache-buster query strings during QA, for example `?v=qa-YYYYMMDD`.
