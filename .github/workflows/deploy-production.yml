@@ -22,16 +22,18 @@ jobs:
           ref: gh-pages
           path: gh-pages
 
-      - name: Copy production HTML to gh-pages root
+      - name: Copy production marketing and app routes
         run: |
+          mkdir -p gh-pages/app
           cp index.html gh-pages/index.html
+          cp app/index.html gh-pages/app/index.html
 
       - name: Commit and push to gh-pages
         run: |
           cd gh-pages
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html
+          git add index.html app/index.html
           git diff --cached --quiet && echo "No changes to deploy" && exit 0
           git commit -m "Deploy production: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
           git push
