@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Briq Training">
 <title>Briq Training</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='28' fill='%230f0f0e'/%3E%3Crect x='34' y='34' width='34' height='124' rx='5' fill='%231adb4e'/%3E%3Crect x='80' y='34' width='78' height='56' rx='5' fill='%23fff'/%3E%3Crect x='80' y='102' width='78' height='56' rx='5' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -1090,28 +1091,26 @@ select {
 .daily-calendar-day:hover { background:var(--bg3); }
 .daily-calendar-day:active { transform:scale(.92); }
 .daily-calendar-day.is-today { border-color:var(--border2); }
-.daily-calendar-day.is-logged { background:rgba(26,219,78,.11); color:var(--green-dark); }
+.daily-calendar-day.is-started { background:rgba(26,219,78,.05); color:var(--green-dark); }
+.daily-calendar-day.is-morning { background:rgba(26,219,78,.10); color:var(--green-dark); }
+.daily-calendar-day.is-complete { background:rgba(26,219,78,.18); color:var(--green-dark); }
 .daily-calendar-day.is-selected {
   border-color:var(--text); background:var(--text); color:var(--bg2);
   box-shadow:0 7px 18px rgba(0,0,0,.14);
 }
-.daily-calendar-day.is-selected.is-logged { border-color:var(--green); background:var(--text); }
-.daily-calendar-check {
-  position:static; flex:0 0 12px; display:flex; align-items:center; justify-content:center;
-  width:12px; height:12px; border-radius:50%; background:var(--green); color:#09250f;
-  font-family:var(--mono); font-size:8px; font-weight:900; line-height:1;
+.daily-calendar-day.is-selected.is-started,
+.daily-calendar-day.is-selected.is-morning,
+.daily-calendar-day.is-selected.is-complete { border-color:var(--green); background:var(--text); }
+.daily-calendar-progress {
+  --daily-progress:0deg;
+  position:static; flex:0 0 12px; width:12px; height:12px; border-radius:50%;
+  background:conic-gradient(var(--green) var(--daily-progress), var(--bg4) 0);
+  box-shadow:inset 0 0 0 1px rgba(15,15,14,.12);
 }
-.daily-calendar-day.is-selected .daily-calendar-check { box-shadow:0 0 0 2px var(--text); }
-.daily-calendar-footer {
-  display:flex; align-items:center; justify-content:space-between; gap:12px;
-  margin-top:14px; padding-top:12px; border-top:1px solid var(--border);
-}
-.daily-calendar-legend { display:flex; align-items:center; gap:7px; font-size:12px; font-weight:600; color:var(--text); opacity:.64; }
-.daily-calendar-legend-check {
-  display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px;
-  border-radius:50%; background:var(--green); color:#09250f; font-family:var(--mono); font-size:11px; font-weight:900;
-}
-.daily-calendar-state { font-family:var(--mono); font-size:9px; font-weight:700; letter-spacing:.04em; color:var(--text); opacity:.42; text-transform:uppercase; }
+.daily-calendar-day.is-started .daily-calendar-progress { --daily-progress:120deg; }
+.daily-calendar-day.is-morning .daily-calendar-progress { --daily-progress:240deg; }
+.daily-calendar-day.is-complete .daily-calendar-progress { --daily-progress:360deg; }
+.daily-calendar-day.is-selected .daily-calendar-progress { box-shadow:0 0 0 2px var(--text), inset 0 0 0 1px rgba(255,255,255,.24); }
 .daily-info-btn {
   border:1px solid var(--border2); background:none; color:var(--text); width:22px; height:22px;
   border-radius:50%; font-family:var(--mono); font-size:12px; font-weight:700; cursor:pointer;
@@ -1777,15 +1776,16 @@ function forgetSelectedSession() {
 
 // ─── EXERCISE HELPERS ─────────────────────────────────────────────────────
 // ─── STEPPER HELPER ──────────────────────────────────────────────────────
-function stepperHtml(id, value, min, max, placeholder, step) {
+function stepperHtml(id, value, min, max, placeholder, step, oninput) {
   const val  = value !== undefined && value !== '' ? value : '';
   const minAttr = min  !== undefined ? `min="${min}"` : '';
   const maxAttr = max  !== undefined ? `max="${max}"` : '';
   const phAttr  = placeholder ? `placeholder="${placeholder}"` : '';
+  const inputAttr = oninput ? `oninput="${oninput}"` : '';
   const st      = step || 1;
   return `<div class="stepper">
     <button type="button" class="stepper-btn" onclick="stepField('${id}',-${st},${min??0},${max??999},${st})">−</button>
-    <input type="number" inputmode="decimal" id="${id}" value="${val}" ${minAttr} ${maxAttr} ${phAttr} step="${st}">
+    <input type="number" inputmode="decimal" id="${id}" value="${val}" ${minAttr} ${maxAttr} ${phAttr} ${inputAttr} step="${st}">
     <button type="button" class="stepper-btn" onclick="stepField('${id}',${st},${min??0},${max??999},${st})">+</button>
   </div>`;
 }
@@ -4210,13 +4210,6 @@ const DAILY_SCALE_OPTIONS = {
     'High — hard to switch off',
     'Overwhelming — severe stress or anxiety'
   ],
-  mood: [
-    'Very low — a bad day emotionally',
-    'Low — below your normal mood',
-    'Neutral — neither good nor bad',
-    'Good — positive overall',
-    'Excellent — unusually positive'
-  ],
   soreness: [
     'None — body feels fresh',
     'Mild — noticeable only when checked',
@@ -4274,32 +4267,42 @@ function dailyMonthStart(value) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
+function dailyLogStage(log) {
+  if (!log) return { key: '', label: '' };
+  const hasSleep = log.sleep_score != null || log.sleep_duration_minutes != null;
+  const hasStool = log.stool_type != null || log.no_bowel_movement === true;
+  const hasMorning = hasSleep && hasStool;
+  const hasDayRatings = log.energy != null && log.soreness != null && log.stress != null;
+  if (hasMorning && hasDayRatings) return { key: 'complete', label: 'day complete' };
+  if (hasMorning) return { key: 'morning', label: 'morning logged' };
+  return { key: 'started', label: 'log started' };
+}
+
 function dailyCalendarMarkup() {
   const month = dailyCalendarMonth || dailyMonthStart(dailySelectedDate || dailyLocalDate());
   const year = month.getFullYear();
   const monthIndex = month.getMonth();
   const selectedDate = dailySelectedDate || dailyLocalDate();
   const today = dailyLocalDate();
-  const loggedDates = new Set((dailyLogs || []).map(log => log.log_date));
+  const logsByDate = new Map((dailyLogs || []).map(log => [log.log_date, log]));
   const firstWeekday = (new Date(year, monthIndex, 1).getDay() + 6) % 7;
   const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
   const cells = [];
   for (let i = 0; i < firstWeekday; i++) cells.push('<div class="daily-calendar-blank" aria-hidden="true"></div>');
   for (let day = 1; day <= daysInMonth; day++) {
     const value = year + '-' + String(monthIndex + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-    const isLogged = loggedDates.has(value);
+    const stage = dailyLogStage(logsByDate.get(value));
     const isSelected = value === selectedDate;
     const isToday = value === today;
     const classes = ['daily-calendar-day'];
     if (isToday) classes.push('is-today');
-    if (isLogged) classes.push('is-logged');
+    if (stage.key) classes.push('is-' + stage.key);
     if (isSelected) classes.push('is-selected');
-    const label = dailyFormatDate(value) + (isToday ? ', today' : '') + (isLogged ? ', logged' : '') + (isSelected ? ', selected' : '');
+    const label = dailyFormatDate(value) + (isToday ? ', today' : '') + (stage.label ? ', ' + stage.label : ', not logged') + (isSelected ? ', selected' : '');
     cells.push('<button type="button" class="' + classes.join(' ') + '" aria-label="' + escapeHtml(label) +
       '" aria-pressed="' + (isSelected ? 'true' : 'false') + '" onclick="dailySelectCalendarDate(\'' + value + '\')">' +
-      '<span>' + day + '</span>' + (isLogged ? '<span class="daily-calendar-check" aria-hidden="true">✓</span>' : '') + '</button>');
+      '<span>' + day + '</span>' + (stage.key ? '<span class="daily-calendar-progress" aria-hidden="true"></span>' : '') + '</button>');
   }
-  const selectedIsLogged = loggedDates.has(selectedDate);
   return '<div class="daily-calendar-header">' +
       '<div class="daily-calendar-title"><div class="daily-calendar-month">' +
         DAILY_MONTH_LABELS[monthIndex] + ' ' + year + '</div></div>' +
@@ -4312,9 +4315,7 @@ function dailyCalendarMarkup() {
     '<div class="daily-calendar-weekdays" aria-hidden="true">' +
       ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(day => '<div class="daily-calendar-weekday">' + day + '</div>').join('') +
     '</div>' +
-    '<div class="daily-calendar-grid" aria-label="' + escapeHtml(month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })) + '">' + cells.join('') + '</div>' +
-    '<div class="daily-calendar-footer"><div class="daily-calendar-legend"><span class="daily-calendar-legend-check">✓</span> Logged</div>' +
-      '<div class="daily-calendar-state">' + (selectedIsLogged ? 'Editing saved log' : 'New daily log') + '</div></div>';
+    '<div class="daily-calendar-grid" aria-label="' + escapeHtml(month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })) + '">' + cells.join('') + '</div>';
 }
 
 function renderDailyCalendar() {
@@ -4706,7 +4707,7 @@ function dailyCurrentData() {
     time: row.querySelector('.daily-food-time')?.value || '',
     description: row.querySelector('.daily-food-description')?.value?.trim() || '',
     photos: dailyPhotosFromRow(row)
-  })).filter(entry => entry.time || entry.description || entry.photos.length);
+  })).filter(entry => entry.description || entry.photos.length);
   const firstMealTime = foodEntries.map(entry => entry.time).filter(Boolean).sort()[0] || null;
   const sleepHours = dailyNumber(document.getElementById('daily-sleep-duration')?.value);
 
@@ -4716,7 +4717,6 @@ function dailyCurrentData() {
     sleep_duration_minutes: sleepHours == null ? null : Math.round(sleepHours * 60),
     energy: scaleValue('energy'),
     stress: scaleValue('stress'),
-    mood: scaleValue('mood'),
     soreness: scaleValue('soreness'),
     work_hours: dailyNumber(document.getElementById('daily-work-hours')?.value),
     stool_type: stool && stool !== 'none' ? Number(stool) : null,
@@ -4870,24 +4870,19 @@ function renderDailyLogForm() {
           '<input type="number" inputmode="numeric" id="daily-sleep-score" min="0" max="100" value="' +
           escapeHtml(data.sleep_score ?? '') + '" placeholder="0–100" oninput="dailyScheduleDraft()"></div>' +
         '<div class="input-group"><label class="input-label">Sleep duration <span style="opacity:.45;font-weight:400">(hours)</span></label>' +
-          '<input type="number" inputmode="decimal" id="daily-sleep-duration" min="0" max="24" step="0.1" value="' +
-          escapeHtml(sleepHours) + '" placeholder="e.g. 7.5" oninput="dailyScheduleDraft()"></div>' +
+          stepperHtml('daily-sleep-duration', escapeHtml(sleepHours), 0, 24, 'e.g. 7.5', 0.5, 'dailyScheduleDraft()') + '</div>' +
       '</div>' +
-      dailyScaleMarkup('energy', 'Energy', data.energy) +
-      dailyScaleMarkup('soreness', 'Muscle soreness', data.soreness) +
-    '</div>' +
-    '<div class="card" style="margin-bottom:18px">' +
-      '<div class="card-section-title">Mind &amp; work</div>' +
-      dailyScaleMarkup('stress', 'Stress', data.stress) +
-      dailyScaleMarkup('mood', 'Mood', data.mood) +
-      '<div class="input-group"><label class="input-label">Hours worked <span style="opacity:.45;font-weight:400">(optional)</span></label>' +
-        '<input type="number" inputmode="decimal" id="daily-work-hours" min="0" max="24" step="0.5" value="' +
-        escapeHtml(data.work_hours ?? '') + '" placeholder="e.g. 9.5" oninput="dailyScheduleDraft()"></div>' +
-    '</div>' +
-    '<div class="card" style="margin-bottom:18px">' +
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><div class="card-section-title" style="margin:0">Morning stool</div>' +
         '<button type="button" class="daily-info-btn" aria-label="Bristol stool guide" onclick="dailyOpenStoolGuide()">i</button></div>' +
       '<div class="daily-flags" id="daily-stool-options">' + stoolButtons + '</div>' +
+    '</div>' +
+    '<div class="card" style="margin-bottom:18px">' +
+      '<div class="card-section-title">Daily readiness &amp; workload</div>' +
+      dailyScaleMarkup('energy', 'Energy', data.energy) +
+      dailyScaleMarkup('soreness', 'Muscle soreness', data.soreness) +
+      dailyScaleMarkup('stress', 'Stress', data.stress) +
+      '<div class="input-group"><label class="input-label">Hours worked <span style="opacity:.45;font-weight:400">(optional)</span></label>' +
+        stepperHtml('daily-work-hours', escapeHtml(data.work_hours ?? ''), 0, 24, 'e.g. 9.5', 0.5, 'dailyScheduleDraft()') + '</div>' +
     '</div>' +
     '<div class="card" style="margin-bottom:18px">' +
       '<div class="card-section-title">Daily context</div>' +
