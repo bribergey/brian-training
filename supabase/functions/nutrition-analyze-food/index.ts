@@ -16,6 +16,7 @@ type FoodEntry = {
   time: string
   description: string
   photos: FoodPhoto[]
+  memory_id: string
 }
 
 type FoodPhoto = {
@@ -393,6 +394,7 @@ export default {
         id: cleanText(entry?.id, 200),
         time: cleanText(entry?.time, 8),
         description: cleanText(entry?.description, MAX_DESCRIPTION_LENGTH),
+        memory_id: cleanText(entry?.memory_id, 80),
         photos: Array.isArray(entry?.photos)
           ? entry.photos.slice(0, MAX_PHOTOS_PER_ENTRY).map((photo: Record<string, unknown>) => ({
             path: cleanText(photo?.path, 500),
@@ -431,7 +433,7 @@ export default {
       const { data: memories, error: memoryError } = await supabase
         .schema("training")
         .from(memoryTable)
-        .select("id,canonical_name,aliases,description_patterns,serving_description,portion_notes,energy_kcal,protein_g,carbs_g,fat_g,fiber_g,confidence,user_confirmed,times_used")
+        .select("id,canonical_name,display_name,aliases,description_patterns,serving_description,portion_notes,energy_kcal,protein_g,carbs_g,fat_g,fiber_g,confidence,user_confirmed,times_used,needs_reestimate")
         .eq("user_id", appUserId)
         .order("last_used_at", { ascending: false })
         .limit(60)
@@ -439,29 +441,41 @@ export default {
       if (memoryError) console.warn("Food memory lookup failed", memoryError.message)
       const images = await loadImages(supabaseAdmin, entries, authUserId, environment)
       imageCount = images.length
-      const result = await callModel(entries, memories || [], images)
+      const result = await callModel(
+        entries,
+        (memories || []).filter((memory: { needs_reestimate?: boolean }) => memory.needs_reestimate !== true),
+        images,
+      )
       provider = result.provider
       model = result.model
       const outputHash = await sha256(result.estimates)
 
-      for (const estimate of result.estimates.filter((item) => item.memory_eligible)) {
+      for (const estimate of result.estimates.filter((item) =>
+        item.memory_eligible || Boolean(entries.find((entry) => entry.id === item.id)?.memory_id)
+      )) {
         const key = canonicalKey(estimate.canonical_name)
         if (!key) continue
         const original = entries.find((entry) => entry.id === estimate.id)
-        const { data: existing } = await supabaseAdmin
+        let existingQuery = supabaseAdmin
           .schema("training")
           .from(memoryTable)
-          .select("id,times_used,user_confirmed,source,energy_kcal,protein_g,carbs_g,fat_g,fiber_g,assumptions,confidence,serving_description,description_patterns,portion_notes,correction_count")
+          .select("id,canonical_key,display_name,aliases,times_used,user_confirmed,source,energy_kcal,protein_g,carbs_g,fat_g,fiber_g,assumptions,confidence,serving_description,description_patterns,portion_notes,correction_count,needs_reestimate")
           .eq("user_id", appUserId)
-          .eq("canonical_key", key)
-          .maybeSingle()
+        existingQuery = original?.memory_id
+          ? existingQuery.eq("id", original.memory_id)
+          : existingQuery.eq("canonical_key", key)
+        const { data: existing } = await existingQuery.maybeSingle()
 
-        const preserveConfirmed = existing?.user_confirmed === true
-        await supabaseAdmin.schema("training").from(memoryTable).upsert({
+        const preserveConfirmed = existing?.user_confirmed === true && existing?.needs_reestimate !== true
+        const memoryBody = {
           user_id: appUserId,
-          canonical_key: key,
+          canonical_key: existing?.canonical_key || key,
           canonical_name: estimate.canonical_name,
-          aliases: [estimate.canonical_name],
+          display_name: existing?.display_name || null,
+          aliases: Array.from(new Set([
+            ...(existing?.aliases || []),
+            estimate.canonical_name,
+          ])).slice(-12),
           description_patterns: Array.from(new Set([
             ...(existing?.description_patterns || []),
             original?.description || "",
@@ -487,8 +501,18 @@ export default {
           times_used: (existing?.times_used || 0) + 1,
           correction_count: existing?.correction_count || 0,
           user_confirmed: preserveConfirmed,
+          needs_reestimate: false,
           last_used_at: new Date().toISOString(),
-        }, { onConflict: "user_id,canonical_key" })
+        }
+        if (existing?.id) {
+          await supabaseAdmin.schema("training").from(memoryTable)
+            .update(memoryBody)
+            .eq("id", existing.id)
+            .eq("user_id", appUserId)
+        } else {
+          await supabaseAdmin.schema("training").from(memoryTable)
+            .upsert(memoryBody, { onConflict: "user_id,canonical_key" })
+        }
       }
 
       const runTable = environment === "production" ? "nutrition_ai_runs" : "nutrition_ai_runs_staging"
