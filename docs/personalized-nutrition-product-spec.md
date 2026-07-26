@@ -42,7 +42,7 @@ The advisory layer cannot silently change canonical data.
 ```text
 Profile + measurements + goal phase
                     |
-Completed workout sessions
+Completed workout sessions + measurable extra activity
                     v
        Deterministic target engine
         policy version + engine version
@@ -82,9 +82,11 @@ The Daily Log is the primary day-level product, not a chat transcript. Its calen
 
 ### Top section
 
-- Day type such as “Completed workout” or “Rest day.”
+- Day type such as “Completed workout,” “Extra activity,” or “Rest day.”
 - A day begins as rest and changes only when a completed workout is logged for that date; planned or preferred workout days do not count.
-- A short deterministic explanation such as “A completed workout was logged, so the training-day target is active.”
+- The normal coach workout uses the stable training allowance. Logged extra activity such as walking or hiking can add a conservative, weight-scaled allowance when distance, duration, or elevation is available.
+- Never add planned activity or blindly eat back a wearable calorie number. The calculation and its conservative recovery factor must be versioned and shown in the explanation.
+- A short deterministic explanation such as “Coach workout plus 5 km walk” with the applied energy breakdown.
 - Completeness badge: target ready, target provisional, missing current weight, or needs calibration.
 
 ### Progress section
@@ -436,6 +438,7 @@ Invalid schema, impossible units, internal calorie/macro inconsistency, or an ou
 - Let the user rename, revise, and delete a recurring food. Recipe revisions update the same memory row and are re-estimated once on next use.
 - Treat closed past logs with a final-calories time and complete saved estimates as analytically complete unless the user explicitly reopens/excludes them.
 - Build Analytics from saved estimates; never require a separate history-estimation workflow.
+- Mark calendar days when the food log is both complete and fully analyzed.
 - Keep incomplete days explicitly incomplete; missing food is never counted as zero.
 
 Exit: the user can log a normal day, see useful estimated progress immediately, correct it, and receive a better default the next time the food recurs.
@@ -446,6 +449,8 @@ Exit: the user can log a normal day, see useful estimated progress immediately, 
 - Generate bounded adjustment proposals.
 - Require explicit approval.
 - Analyze how food on day N relates to sleep, energy, stool, and other outcomes on day N+1 and over longer windows.
+- For stool, compare prior-day fiber, macros, recurring foods, workout, alcohol, magnesium, stress, and other logged context with the next stool. Keep Bristol form and no-stool frequency distinct; higher Bristol is looser, not automatically better.
+- Use Daily notes as an additional observation source by grouping recurring themes and comparing the prior-day inputs. Require repeated matching and comparison days before showing a pattern.
 - Keep these outcome associations separate from the target calculation and label them as observational rather than causal.
 
 Exit: the system can learn Brian's maintenance while preserving an auditable history.
