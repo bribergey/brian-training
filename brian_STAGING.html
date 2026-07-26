@@ -6352,6 +6352,7 @@ function nutritionNoteThemeInsights(pairs) {
     { label: 'low energy or poor focus', pattern: /\b(low energy|tired|fatigue|weak|poor focus|focus again|off today)\b/i },
     { label: 'disrupted sleep', pattern: /\b(woke|awake|early waking|couldn.t sleep|poor sleep|mind racing)\b/i },
     { label: 'GI or stool difficulty', pattern: /\b(constipat|no stool|no bowel|hard stool|push|poop|bowel)\b/i },
+    { label: 'unusual heat or hydration strain', pattern: /\b(dehydrat|very hot|extreme heat|heavy sweat|sweaty|electrolyte)\b/i },
     { label: 'headache', pattern: /\bheadache\b/i }
   ];
   return themes.map(theme => {
@@ -6547,7 +6548,7 @@ async function renderNutritionAnalytics() {
             ? 'Only one no-stool morning is paired with a complete prior-day food log, so the app will not name a likely food cause yet. '
             : 'No no-stool morning is paired with a complete prior-day food log yet. ')
           : '') +
-          'Hydration is an important missing signal—especially after hot or sweaty activity. Activity, alcohol, magnesium, illness, travel, stress, medications, and meal timing can also affect bowel patterns; the app will only surface them when both comparison groups are large enough.</div>' +
+          'Routine hydration and electrolyte use are treated as stable habits rather than extra Daily fields. Unusual heat, heavy sweating, dehydration, or missed electrolytes can still be detected from Daily and workout notes. Activity, alcohol, magnesium, illness, travel, stress, medications, and meal timing can also affect bowel patterns.</div>' +
       '</div>' +
       '<div class="card" style="margin-bottom:28px"><div class="card-section-title">What seems connected</div>' +
         '<p style="font-size:11px;line-height:1.45;color:var(--text);opacity:.58;margin:0 0 4px">Exploratory associations using the prior day’s nutrition/workout and the next day’s outcomes. They are signals to investigate, not proof of cause.</p>' +
