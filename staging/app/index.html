@@ -1176,12 +1176,20 @@ select {
 .macro-actions .btn { width:auto; flex:1 1 150px; }
 .macro-method { border-top:1px solid var(--border); margin-top:14px; padding-top:12px; font-size:11px; line-height:1.5; color:var(--text); opacity:.58; }
 .daily-usual-foods { margin:0 0 14px; padding:12px; border-radius:10px; background:var(--bg3); }
-.daily-usual-foods-title { font-family:var(--mono); font-size:9px; font-weight:750; letter-spacing:.06em; text-transform:uppercase; color:var(--text); opacity:.58; margin-bottom:8px; }
+.daily-usual-foods-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+.daily-usual-foods-title { font-family:var(--mono); font-size:9px; font-weight:750; letter-spacing:.06em; text-transform:uppercase; color:var(--text); opacity:.58; }
+.daily-usual-foods-manage { border:0; background:none; padding:2px; color:var(--green-dark); font-size:11px; font-weight:750; cursor:pointer; }
 .daily-usual-foods-list { display:flex; gap:7px; flex-wrap:wrap; }
 .daily-usual-food {
   border:1px solid var(--border2); border-radius:999px; background:var(--bg2); color:var(--text);
+  max-width:175px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   padding:7px 10px; font-size:12px; font-weight:650; cursor:pointer;
 }
+.usual-food-manager-item { padding:14px 0; border-bottom:1px solid var(--border); }
+.usual-food-manager-item:last-child { border-bottom:0; }
+.usual-food-manager-actions { display:flex; gap:8px; margin-top:10px; }
+.usual-food-manager-actions .btn { flex:1; width:auto; }
+.usual-food-delete { color:#b42318; border-color:rgba(180,35,24,.28); }
 .analytics-kpis { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin-bottom:14px; }
 .analytics-kpi { padding:14px; border-radius:12px; background:var(--bg3); }
 .analytics-kpi-value { font-family:var(--display); font-size:26px; font-weight:850; letter-spacing:-.03em; color:var(--text); }
@@ -1722,6 +1730,18 @@ async function sbPatch(table, id, body, params = '', schema = '') {
   if (!r.ok) throw new Error(await r.text());
   const rows = await r.json();
   if (!rows.length) throw new Error('No rows updated — record not found or permission denied');
+  return rows[0];
+}
+async function sbDelete(table, id, params = '', schema = '') {
+  const query = params ? `id=eq.${encodeURIComponent(id)}&${params}` : `id=eq.${encodeURIComponent(id)}`;
+  const schemaHeaders = schema ? { 'Content-Profile': schema } : {};
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${query}`, {
+    method: 'DELETE',
+    headers: getSupabaseHeaders({ 'Prefer': 'return=representation', ...schemaHeaders })
+  });
+  if (!r.ok) throw new Error(await r.text());
+  const rows = await r.json();
+  if (!rows.length) throw new Error('No rows deleted — record not found or permission denied');
   return rows[0];
 }
 
@@ -4337,6 +4357,7 @@ let dailyDraftDirty = false;
 let dailyPhotoUploadsInFlight = 0;
 let nutritionMemory = null;
 let nutritionTargetCache = new Map();
+let nutritionAnalysisJobs = new Map();
 const NUTRITION_ENGINE_VERSION = 'stable-target-1.1.0';
 
 function dailyLocalDate(date = new Date()) {
@@ -4830,6 +4851,8 @@ function dailyFoodEntriesMarkup(entries) {
     const id = escapeHtml(entry.id || ('food-' + Date.now() + '-' + Math.random().toString(16).slice(2)));
     const nutrition = entry.nutrition || null;
     return '<div class="daily-food-entry" data-entry-id="' + id +
+      '" data-memory-id="' + escapeHtml(entry.memory_id || '') +
+      '" data-memory-description="' + escapeHtml(entry.memory_source_description || '') +
       '" data-nutrition=\'' + escapeHtml(nutrition ? JSON.stringify(nutrition) : '') + '\'>' +
       '<div class="daily-food-entry-head">' +
         '<div class="input-group daily-food-time-wrap"><label class="input-label">Time</label>' +
@@ -4857,6 +4880,10 @@ function dailyCurrentData() {
       description: row.querySelector('.daily-food-description')?.value?.trim() || '',
       photos: dailyPhotosFromRow(row)
     };
+    if (row.dataset.memoryId) {
+      entry.memory_id = row.dataset.memoryId;
+      entry.memory_source_description = row.dataset.memoryDescription || entry.description;
+    }
     const nutrition = nutritionFromElement(row);
     if (nutrition) entry.nutrition = nutrition;
     return entry;
@@ -4903,26 +4930,43 @@ function nutritionMemoryMatches(query) {
   const normalized = String(query || '').trim().toLowerCase();
   if (normalized.length < 2) return [];
   return (nutritionMemory || []).filter(memory => {
-    const candidates = [memory.canonical_name, memory.latest_raw_description, ...(memory.aliases || [])]
+    const candidates = [memory.display_name, memory.canonical_name, memory.latest_raw_description, ...(memory.aliases || [])]
       .filter(Boolean).map(value => String(value).toLowerCase());
     return candidates.some(value => value.includes(normalized) || normalized.includes(value));
   }).slice(0, 4);
 }
 
+function nutritionMemoryDisplayName(memory) {
+  const chosen = String(memory.display_name || '').trim();
+  if (chosen) return chosen;
+  const canonical = String(memory.canonical_name || 'Usual food').trim();
+  const firstPhrase = canonical.split(/[,(]/)[0].trim();
+  if (/shake/i.test(firstPhrase)) return firstPhrase.slice(0, 32);
+  const items = canonical.split(',').map(item => item.trim()).filter(Boolean);
+  const compact = items.length > 1 ? items.slice(0, 2).join(' + ') : canonical;
+  return compact.length > 34 ? compact.slice(0, 31).trimEnd() + '…' : compact + (items.length > 2 ? '…' : '');
+}
+
 function dailyUsualFoodsMarkup() {
   const usual = (nutritionMemory || []).filter(memory => memory.canonical_name).slice(0, 6);
+  const head = '<div class="daily-usual-foods-head"><div class="daily-usual-foods-title">Usual foods' +
+    (usual.length ? ' · tap to add' : '') + '</div>' +
+    (usual.length ? '<button type="button" class="daily-usual-foods-manage" onclick="dailyOpenUsualFoodsManager()">Manage</button>' : '') +
+    '</div>';
   if (!usual.length) {
-    return '<div class="daily-usual-foods"><div class="daily-usual-foods-title">Usual foods</div>' +
+    return '<div class="daily-usual-foods">' + head +
       '<div style="font-size:12px;line-height:1.45;color:var(--text);opacity:.58">Your repeated or corrected meals will appear here for one-tap logging.</div></div>';
   }
-  return '<div class="daily-usual-foods"><div class="daily-usual-foods-title">Usual foods · tap to add</div>' +
+  return '<div class="daily-usual-foods">' + head +
     '<div class="daily-usual-foods-list">' + usual.map(memory =>
       '<button type="button" class="daily-usual-food" data-memory-id="' + escapeHtml(memory.id) +
-      '" onclick="dailyAddFoodFromMemory(this.dataset.memoryId)">' + escapeHtml(memory.canonical_name) + '</button>'
+      '" title="' + escapeHtml(memory.latest_raw_description || memory.canonical_name) +
+      '" onclick="dailyAddFoodFromMemory(this.dataset.memoryId)">' + escapeHtml(nutritionMemoryDisplayName(memory)) + '</button>'
     ).join('') + '</div></div>';
 }
 
 function dailyNutritionFromMemory(memory, sourceDescription) {
+  if (memory.needs_reestimate) return null;
   return {
     calories: Number(memory.energy_kcal),
     protein_g: Number(memory.protein_g),
@@ -4955,6 +4999,8 @@ function dailyAddFoodFromMemory(memoryId) {
     time,
     description,
     photos: [],
+    memory_id: memory.id,
+    memory_source_description: description,
     nutrition: dailyNutritionFromMemory(memory, description)
   };
   document.getElementById('daily-food-entries')?.insertAdjacentHTML('beforeend', dailyFoodEntriesMarkup([entry]));
@@ -4964,6 +5010,10 @@ function dailyAddFoodFromMemory(memoryId) {
 function dailyFoodDescriptionInput(textarea) {
   const row = textarea.closest('.daily-food-entry');
   if (!row) return;
+  if (row.dataset.memoryId && row.dataset.memoryDescription !== textarea.value.trim()) {
+    delete row.dataset.memoryId;
+    delete row.dataset.memoryDescription;
+  }
   const previous = nutritionFromElement(row);
   if (previous && previous.source_description !== textarea.value.trim()) {
     delete row.dataset.nutrition;
@@ -4975,7 +5025,7 @@ function dailyFoodDescriptionInput(textarea) {
   if (suggestions) {
     suggestions.innerHTML = matches.map(memory =>
       '<button type="button" class="daily-food-suggestion" data-memory-id="' + escapeHtml(memory.id) +
-      '" onclick="dailyApplyFoodMemory(this)">Use ' + escapeHtml(memory.canonical_name) + '</button>'
+      '" onclick="dailyApplyFoodMemory(this)">Use ' + escapeHtml(nutritionMemoryDisplayName(memory)) + '</button>'
     ).join('');
   }
   dailyScheduleDraft();
@@ -4989,11 +5039,106 @@ function dailyApplyFoodMemory(button) {
   if (!textarea) return;
   textarea.value = memory.latest_raw_description || memory.canonical_name;
   const nutrition = dailyNutritionFromMemory(memory, textarea.value.trim());
-  row.dataset.nutrition = JSON.stringify(nutrition);
+  row.dataset.memoryId = memory.id;
+  row.dataset.memoryDescription = textarea.value.trim();
+  if (nutrition) row.dataset.nutrition = JSON.stringify(nutrition);
+  else delete row.dataset.nutrition;
   const slot = row.querySelector('.daily-food-estimate-slot');
   if (slot) slot.outerHTML = dailyFoodEstimateMarkup(nutrition);
   row.querySelector('.daily-food-suggestions').innerHTML = '';
   dailyScheduleDraft();
+}
+
+function dailyUsualFoodManagerMarkup() {
+  const memories = (nutritionMemory || []).filter(memory => memory.canonical_name);
+  if (!memories.length) {
+    return '<p style="font-size:13px;color:var(--text);opacity:.6;margin:0">No usual foods saved yet.</p>';
+  }
+  return memories.map(memory =>
+    '<div class="usual-food-manager-item" data-memory-id="' + escapeHtml(memory.id) + '">' +
+      '<div class="input-group" style="margin-bottom:10px"><label class="input-label">Short name</label>' +
+        '<input class="usual-food-name" maxlength="60" value="' + escapeHtml(memory.display_name || nutritionMemoryDisplayName(memory)) + '" placeholder="e.g. Protein shake"></div>' +
+      '<div class="input-group"><label class="input-label">Full recipe or description</label>' +
+        '<textarea class="usual-food-recipe" rows="3" placeholder="What goes into this usual food?">' +
+          escapeHtml(memory.latest_raw_description || memory.canonical_name) + '</textarea></div>' +
+      (memory.needs_reestimate
+        ? '<div class="macro-status-note">Recipe changed · nutrition will refresh automatically next time you log it.</div>'
+        : '') +
+      '<div class="usual-food-manager-actions">' +
+        '<button type="button" class="btn btn-primary" onclick="dailySaveUsualFood(this)">Save changes</button>' +
+        '<button type="button" class="btn usual-food-delete" onclick="dailyDeleteUsualFood(this)">Delete</button>' +
+      '</div><div class="daily-status usual-food-status" style="white-space:normal;margin-top:8px"></div>' +
+    '</div>'
+  ).join('');
+}
+
+function dailyOpenUsualFoodsManager() {
+  const modal = document.getElementById('daily-usual-food-manager');
+  const list = document.getElementById('daily-usual-food-manager-list');
+  if (list) list.innerHTML = dailyUsualFoodManagerMarkup();
+  if (modal) modal.style.display = 'flex';
+}
+
+function dailyCloseUsualFoodsManager(event) {
+  if (event && event.target !== event.currentTarget) return;
+  const modal = document.getElementById('daily-usual-food-manager');
+  if (modal) modal.style.display = 'none';
+}
+
+function dailyRefreshUsualFoods() {
+  const container = document.getElementById('daily-usual-foods');
+  if (container) container.innerHTML = dailyUsualFoodsMarkup();
+  const list = document.getElementById('daily-usual-food-manager-list');
+  if (list) list.innerHTML = dailyUsualFoodManagerMarkup();
+}
+
+async function dailySaveUsualFood(button) {
+  const item = button.closest('.usual-food-manager-item');
+  const memory = (nutritionMemory || []).find(value => value.id === item?.dataset.memoryId);
+  const status = item?.querySelector('.usual-food-status');
+  if (!item || !memory) return;
+  const displayName = item.querySelector('.usual-food-name')?.value?.trim() || null;
+  const recipe = item.querySelector('.usual-food-recipe')?.value?.trim() || '';
+  if (!recipe) {
+    if (status) status.textContent = 'Add a recipe or description first.';
+    return;
+  }
+  const recipeChanged = recipe !== String(memory.latest_raw_description || '').trim();
+  button.disabled = true;
+  button.textContent = 'Saving…';
+  try {
+    await sbPatch(TABLES.nutritionMemory, memory.id, {
+      display_name: displayName,
+      latest_raw_description: recipe,
+      description_patterns: [...new Set([...(memory.description_patterns || []), recipe])].slice(-12),
+      needs_reestimate: memory.needs_reestimate === true || recipeChanged
+    }, withUserScope(), 'training');
+    await loadNutritionMemory(true);
+    dailyRefreshUsualFoods();
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = 'Save changes';
+    if (status) status.textContent = 'Could not save: ' + error.message;
+  }
+}
+
+async function dailyDeleteUsualFood(button) {
+  const item = button.closest('.usual-food-manager-item');
+  const memory = (nutritionMemory || []).find(value => value.id === item?.dataset.memoryId);
+  if (!item || !memory) return;
+  if (!confirm('Delete “' + nutritionMemoryDisplayName(memory) + '” from Usual Foods? Existing Daily Logs will not be changed.')) return;
+  button.disabled = true;
+  button.textContent = 'Deleting…';
+  try {
+    await sbDelete(TABLES.nutritionMemory, memory.id, withUserScope(), 'training');
+    await loadNutritionMemory(true);
+    dailyRefreshUsualFoods();
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = 'Delete';
+    const status = item.querySelector('.usual-food-status');
+    if (status) status.textContent = 'Could not delete: ' + error.message;
+  }
 }
 
 document.addEventListener('visibilitychange', () => {
@@ -5159,12 +5304,12 @@ function renderDailyLogForm() {
       '<textarea id="daily-notes" rows="4" placeholder="Anything unusual or worth remembering…" oninput="dailyScheduleDraft()">' +
         escapeHtml(data.notes || '') + '</textarea>' +
     '</div>' +
-    '<div id="daily-nutrition-summary"><div class="card" style="margin-bottom:18px"><div style="font-size:13px;color:var(--text);opacity:.55">Calculating nutrition target…</div></div></div>' +
     '<div class="daily-save-row">' +
       '<button class="btn btn-primary btn-full" id="daily-save-btn" onclick="saveDailyLog()">' +
         (dailyEditingId ? 'Update Daily Log' : 'Save Daily Log') + '</button>' +
       '<span class="daily-status" id="daily-save-status"></span>' +
     '</div>' +
+    '<div id="daily-nutrition-summary"><div class="card" style="margin-bottom:18px"><div style="font-size:13px;color:var(--text);opacity:.55">Calculating nutrition target…</div></div></div>' +
     '<div class="daily-modal-backdrop" id="daily-stool-guide" style="display:none" onclick="dailyCloseStoolGuide(event)" role="dialog" aria-modal="true" aria-label="Bristol stool guide">' +
       '<div class="daily-modal">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px">' +
@@ -5177,6 +5322,16 @@ function renderDailyLogForm() {
           ((i + 1 === 3 || i + 1 === 4) ? ' <span style="color:var(--green-dark);font-weight:700">Typical</span>' : '') + '</div>'
         ).join('') +
         '<button type="button" class="btn btn-primary btn-full" style="margin-top:16px" onclick="dailyCloseStoolGuide()">Got it</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="daily-modal-backdrop" id="daily-usual-food-manager" style="display:none" onclick="dailyCloseUsualFoodsManager(event)" role="dialog" aria-modal="true" aria-label="Manage usual foods">' +
+      '<div class="daily-modal">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px">' +
+          '<div class="card-section-title" style="margin:0">Manage Usual Foods</div>' +
+          '<button type="button" class="daily-remove-btn" style="width:36px" onclick="dailyCloseUsualFoodsManager()">×</button>' +
+        '</div>' +
+        '<p style="font-size:12px;line-height:1.5;color:var(--text);opacity:.65;margin:0 0 8px">Rename the short button or revise the full recipe. A changed recipe is re-estimated once, the next time you log it.</p>' +
+        '<div id="daily-usual-food-manager-list">' + dailyUsualFoodManagerMarkup() + '</div>' +
       '</div>' +
     '</div>';
   dailyHydratePhotoPreviews(container).catch(error => console.warn('Could not load Daily Log photo previews.', error));
@@ -5211,14 +5366,22 @@ async function saveDailyLog() {
     dailyDraftDirty = false;
     dailySelectedDate = body.log_date;
     await loadDailyLogs(true);
-    const analysisUpdated = await nutritionAnalyzeSelectedDay({ silent: true, skipRender: true });
+    const savedLog = (dailyLogs || []).find(log => log.log_date === body.log_date);
+    const needsEstimate = (savedLog?.food_entries || []).some(entry =>
+      entry.description && (!entry.nutrition ||
+        entry.nutrition.source_description !== entry.description.trim() ||
+        JSON.stringify(entry.nutrition.photo_paths || []) !== JSON.stringify(nutritionPhotoPaths(entry)))
+    );
+    if (needsEstimate) {
+      nutritionAnalyzeSelectedDay({ date: body.log_date, silent: true, skipRender: true });
+    }
     dailyCalendarMonth = dailyMonthStart(dailySelectedDate);
     renderDailyLogForm();
-    document.getElementById('daily-save-status').textContent = analysisUpdated
-      ? '✓ Saved · food estimates current'
-      : '✓ Saved · estimate retry available below';
+    const nextStatus = document.getElementById('daily-save-status');
+    if (nextStatus) nextStatus.textContent = needsEstimate
+      ? '✓ Saved · estimating new food in background'
+      : '✓ Saved · nutrition current';
     saveNavigationState();
-    document.getElementById('tab-daily')?.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (e) {
     console.error('Daily Log save failed:', e);
     btn.disabled = false;
@@ -5479,6 +5642,27 @@ function nutritionGoToday() {
   saveNavigationState();
 }
 
+function nutritionFoodLogIsComplete(log) {
+  if (!log) return false;
+  const nutrition = log.coach_analysis?.nutrition;
+  if (nutrition && Object.prototype.hasOwnProperty.call(nutrition, 'food_logging_complete')) {
+    return nutrition.food_logging_complete === true;
+  }
+  const entries = (log.food_entries || []).filter(entry => entry.description);
+  return log.log_date < dailyLocalDate() &&
+    Boolean(log.last_calories_at) &&
+    entries.length > 0 &&
+    entries.every(entry => entry.nutrition);
+}
+
+function nutritionFoodLogCompletionSource(log) {
+  if (!nutritionFoodLogIsComplete(log)) return 'incomplete';
+  return log?.coach_analysis?.nutrition &&
+    Object.prototype.hasOwnProperty.call(log.coach_analysis.nutrition, 'food_logging_complete')
+    ? 'manual'
+    : 'closed_past_log';
+}
+
 async function renderDailyNutritionSummary() {
   const container = document.getElementById('daily-nutrition-summary');
   if (!container || !getActiveUserId()) return;
@@ -5492,16 +5676,28 @@ async function renderDailyNutritionSummary() {
       ? current.food_entries
       : (Array.isArray(log?.food_entries) ? log.food_entries : []);
     const totals = nutritionTotals(entries);
-    const complete = log?.coach_analysis?.nutrition?.food_logging_complete === true;
+    const complete = nutritionFoodLogIsComplete(log);
+    const completionSource = nutritionFoodLogCompletionSource(log);
     const lastAnalysis = log?.coach_analysis?.nutrition?.last_analysis || null;
     const unanalyzed = entries.filter(entry => entry.description && !entry.nutrition).length;
+    const persistedUnanalyzed = (log?.food_entries || []).filter(entry => entry.description && !entry.nutrition).length;
+    const analysisRunning = nutritionAnalysisJobs.has(dailySelectedDate);
     const proteinFeedings = entries.filter(entry => Number(entry.nutrition?.protein_g) >= 25).length;
     const targetExplanation = target.day_type === 'training'
       ? 'A completed workout was logged, so today includes 150 kcal of additional training fuel.'
       : 'No completed workout is logged, so this remains a rest-day target.';
     const completenessNote = complete
-      ? 'Food log marked complete; this day can be included in Analytics.'
+      ? (completionSource === 'closed_past_log'
+        ? 'Past food log is complete and included in Analytics.'
+        : 'Food log marked complete and included in Analytics.')
       : 'Logged so far. Unlogged food is unknown, not zero; mark complete when you are done.';
+    const estimateAction = analysisRunning
+      ? '<button type="button" class="btn btn-primary" disabled>Estimating in background…</button>'
+      : persistedUnanalyzed
+        ? '<button type="button" class="btn btn-primary" id="nutrition-analyze-btn" onclick="nutritionAnalyzeSelectedDay()">Retry food estimate</button>'
+        : unanalyzed
+          ? '<button type="button" class="btn btn-primary" disabled>Save to estimate new food</button>'
+          : '';
 
     container.innerHTML =
       '<div class="card macro-hero">' +
@@ -5528,10 +5724,11 @@ async function renderDailyNutritionSummary() {
         '<div class="macro-status-note">' + completenessNote +
           (unanalyzed ? ' ' + unanalyzed + ' food entr' + (unanalyzed === 1 ? 'y needs' : 'ies need') + ' an estimate.' : '') + '</div>' +
         '<div class="macro-actions">' +
-          '<button type="button" class="btn btn-primary" id="nutrition-analyze-btn" onclick="nutritionAnalyzeSelectedDay()">Estimate logged food</button>' +
+          estimateAction +
           '<button type="button" class="btn" onclick="nutritionToggleFoodComplete()"' + (log?.id ? '' : ' disabled') + '>' + (complete ? 'Reopen food log' : 'Done logging food') + '</button>' +
         '</div>' +
-        '<div class="daily-status" id="nutrition-analysis-status" style="white-space:normal;margin-top:10px"></div>' +
+        '<div class="daily-status" id="nutrition-analysis-status" style="white-space:normal;margin-top:10px">' +
+          (analysisRunning ? 'You can change dates or tabs; this estimate will keep running.' : '') + '</div>' +
       '</div>' +
       '<div class="card" style="margin-bottom:14px">' +
         '<div class="card-section-title">Food estimates</div>' +
@@ -5564,101 +5761,155 @@ function nutritionPhotoPaths(entry) {
     .map(photo => photo?.path).filter(Boolean).sort();
 }
 
-async function nutritionAnalyzeSelectedDay(options = {}) {
-  const status = document.getElementById('nutrition-analysis-status') || document.getElementById('daily-save-status');
-  const button = document.getElementById('nutrition-analyze-btn');
-  const log = (dailyLogs || []).find(item => item.log_date === dailySelectedDate) || null;
-  if (!log?.id) {
-    if (status && !options.silent) status.textContent = 'Save the Daily Log first.';
-    return false;
-  }
-  const entries = (log.food_entries || []).filter(entry =>
-    entry.description && (
-      !entry.nutrition ||
-      entry.nutrition.source_description !== entry.description.trim() ||
-      JSON.stringify(entry.nutrition.photo_paths || []) !== JSON.stringify(nutritionPhotoPaths(entry))
-    )
-  );
-  if (!entries.length) {
-    if (status && !options.silent) status.textContent = 'Everything logged already has an estimate.';
-    return true;
-  }
-  if (button) {
-    button.disabled = true;
-    button.textContent = 'Estimating…';
-  }
-  if (status) status.textContent = 'Estimating calories and macros from your descriptions…';
-  try {
-    const payload = await sbFunction('nutrition-analyze-food', {
-      environment: ENV,
-      log_date: dailySelectedDate,
-      entries: entries.map(entry => ({
-        id: entry.id,
-        time: entry.time || '',
-        description: entry.description,
-        photos: Array.isArray(entry.photos) ? entry.photos : []
-      }))
-    });
-    const estimates = new Map(payload.estimates.map(item => [item.id, item]));
-    const foodEntries = (log.food_entries || []).map(entry => {
-      const estimate = estimates.get(entry.id);
-      if (!estimate) return entry;
-      return {
-        ...entry,
-        nutrition: {
-          ...estimate,
-          status: 'estimated',
-          source: 'ai_estimate',
-          source_description: entry.description.trim(),
-          photo_paths: nutritionPhotoPaths(entry),
-          analysis: payload.analysis
-        }
-      };
-    });
-    const existingCoach = log.coach_analysis && typeof log.coach_analysis === 'object' ? log.coach_analysis : {};
-    const nutritionCoach = existingCoach.nutrition && typeof existingCoach.nutrition === 'object' ? existingCoach.nutrition : {};
-    await sbPatch(TABLES.dailyLogs, log.id, {
-      food_entries: foodEntries,
-      coach_analysis: {
-        ...existingCoach,
-        nutrition: {
-          ...nutritionCoach,
-          last_analysis: payload.analysis
-        }
-      }
-    }, withUserScope(), 'training');
-    await Promise.all([loadDailyLogs(true), loadNutritionMemory(true)]);
-    if (status) status.textContent = '✓ Food estimates updated';
-    if (!options.skipRender) renderDailyLogForm();
-    return true;
-  } catch (error) {
-    console.error('Nutrition analysis failed', error);
-    if (status) status.textContent = 'Your log is saved, but food estimates could not update: ' + error.message;
-    if (button) {
-      button.disabled = false;
-      button.textContent = 'Estimate logged food';
+function dailyRefreshNutritionRows(date) {
+  if (dailyActiveSubTab !== 'log' || dailySelectedDate !== date) return;
+  const log = (dailyLogs || []).find(item => item.log_date === date);
+  for (const entry of (log?.food_entries || [])) {
+    const rows = Array.from(document.querySelectorAll('.daily-food-entry'));
+    const row = rows.find(item => item.dataset.entryId === entry.id);
+    if (!row || row.querySelector('.daily-food-description')?.value?.trim() !== entry.description?.trim()) continue;
+    if (entry.nutrition) row.dataset.nutrition = JSON.stringify(entry.nutrition);
+    else delete row.dataset.nutrition;
+    if (entry.memory_id) {
+      row.dataset.memoryId = entry.memory_id;
+      row.dataset.memoryDescription = entry.memory_source_description || entry.description || '';
     }
-    return false;
+    const slot = row.querySelector('.daily-food-estimate-slot');
+    if (slot) slot.outerHTML = dailyFoodEstimateMarkup(entry.nutrition || null);
   }
+  renderDailyNutritionSummary().catch(error => console.warn('Could not refresh nutrition summary.', error));
+}
+
+function nutritionAnalyzeSelectedDay(options = {}) {
+  const analysisDate = options.date || dailySelectedDate || dailyLocalDate();
+  const existingJob = nutritionAnalysisJobs.get(analysisDate);
+  if (existingJob) return existingJob;
+
+  const job = (async () => {
+    const log = (dailyLogs || []).find(item => item.log_date === analysisDate) || null;
+    const visibleStatus = () => dailySelectedDate === analysisDate
+      ? (document.getElementById('nutrition-analysis-status') || document.getElementById('daily-save-status'))
+      : null;
+    if (!log?.id) {
+      const status = visibleStatus();
+      if (status && !options.silent) status.textContent = 'Save the Daily Log first.';
+      return false;
+    }
+    const entries = (log.food_entries || []).filter(entry =>
+      entry.description && (
+        !entry.nutrition ||
+        entry.nutrition.source_description !== entry.description.trim() ||
+        JSON.stringify(entry.nutrition.photo_paths || []) !== JSON.stringify(nutritionPhotoPaths(entry))
+      )
+    );
+    if (!entries.length) {
+      const status = visibleStatus();
+      if (status && !options.silent) status.textContent = 'Everything logged already has an estimate.';
+      return true;
+    }
+
+    if (dailySelectedDate === analysisDate) {
+      renderDailyNutritionSummary().catch(() => {});
+      const status = visibleStatus();
+      if (status) status.textContent = 'Estimating in the background. You can change dates or tabs.';
+    }
+
+    try {
+      const payload = await sbFunction('nutrition-analyze-food', {
+        environment: ENV,
+        log_date: analysisDate,
+        entries: entries.map(entry => ({
+          id: entry.id,
+          time: entry.time || '',
+          description: entry.description,
+          photos: Array.isArray(entry.photos) ? entry.photos : [],
+          memory_id: entry.memory_id || null
+        }))
+      });
+      const estimates = new Map(payload.estimates.map(item => [item.id, item]));
+      const requested = new Map(entries.map(entry => [entry.id, entry]));
+      const latestRows = await sbGet(
+        TABLES.dailyLogs,
+        withUserScope('select=*&log_date=eq.' + encodeURIComponent(analysisDate) + '&limit=1'),
+        'training'
+      );
+      const latestLog = latestRows[0] || log;
+      const foodEntries = (latestLog.food_entries || []).map(entry => {
+        const estimate = estimates.get(entry.id);
+        const original = requested.get(entry.id);
+        const stillMatches = original &&
+          original.description?.trim() === entry.description?.trim() &&
+          JSON.stringify(nutritionPhotoPaths(original)) === JSON.stringify(nutritionPhotoPaths(entry));
+        if (!estimate || !stillMatches) return entry;
+        return {
+          ...entry,
+          nutrition: {
+            ...estimate,
+            status: 'estimated',
+            source: 'ai_estimate',
+            source_description: entry.description.trim(),
+            photo_paths: nutritionPhotoPaths(entry),
+            analysis: payload.analysis
+          }
+        };
+      });
+      const existingCoach = latestLog.coach_analysis && typeof latestLog.coach_analysis === 'object' ? latestLog.coach_analysis : {};
+      const nutritionCoach = existingCoach.nutrition && typeof existingCoach.nutrition === 'object' ? existingCoach.nutrition : {};
+      await sbPatch(TABLES.dailyLogs, latestLog.id, {
+        food_entries: foodEntries,
+        coach_analysis: {
+          ...existingCoach,
+          nutrition: {
+            ...nutritionCoach,
+            last_analysis: payload.analysis
+          }
+        }
+      }, withUserScope(), 'training');
+      await Promise.all([loadDailyLogs(true), loadNutritionMemory(true)]);
+      const status = visibleStatus();
+      if (status) status.textContent = '✓ Food estimates updated and saved';
+      dailyRefreshNutritionRows(analysisDate);
+      if (dailyActiveSubTab === 'analytics') renderNutritionAnalytics();
+      return true;
+    } catch (error) {
+      console.error('Nutrition analysis failed', error);
+      const status = visibleStatus();
+      if (status) status.textContent = 'Your log is saved, but the food estimate failed. Retry below.';
+      return false;
+    }
+  })();
+
+  nutritionAnalysisJobs.set(analysisDate, job);
+  job.finally(() => {
+    nutritionAnalysisJobs.delete(analysisDate);
+    if (dailyActiveSubTab === 'log' && dailySelectedDate === analysisDate) {
+      renderDailyNutritionSummary().catch(() => {});
+    }
+  });
+  return job;
 }
 
 async function nutritionToggleFoodComplete() {
-  const log = (dailyLogs || []).find(item => item.log_date === dailySelectedDate) || null;
+  const toggleDate = dailySelectedDate;
+  const log = (dailyLogs || []).find(item => item.log_date === toggleDate) || null;
   if (!log?.id) return;
   const coach = log.coach_analysis && typeof log.coach_analysis === 'object' ? log.coach_analysis : {};
   const nutrition = coach.nutrition && typeof coach.nutrition === 'object' ? coach.nutrition : {};
+  const wasComplete = nutritionFoodLogIsComplete(log);
   await sbPatch(TABLES.dailyLogs, log.id, {
     coach_analysis: {
       ...coach,
       nutrition: {
         ...nutrition,
-        food_logging_complete: nutrition.food_logging_complete !== true,
-        food_logging_completed_at: nutrition.food_logging_complete === true ? null : new Date().toISOString()
+        food_logging_complete: !wasComplete,
+        food_logging_completed_at: wasComplete ? null : new Date().toISOString(),
+        food_logging_completion_source: wasComplete ? 'manual_exclusion' : 'manual'
       }
     }
   }, withUserScope(), 'training');
   await loadDailyLogs(true);
   renderDailyLogForm();
+  if (!wasComplete) nutritionAnalyzeSelectedDay({ date: toggleDate, silent: true, skipRender: true });
 }
 
 function nutritionCanonicalKey(value) {
@@ -5701,6 +5952,7 @@ async function nutritionRememberCorrection(entry, corrected) {
     prompt_version: corrected.analysis?.prompt_version || null,
     times_used: (matches[0]?.times_used || 0) + 1,
     correction_count: (matches[0]?.correction_count || 0) + 1,
+    needs_reestimate: false,
     user_confirmed: true,
     last_used_at: new Date().toISOString()
   };
@@ -5805,31 +6057,6 @@ function nutritionAssociationInsight(pairs, label, groupA, groupB, outcome, outc
     ' on average (' + a.length + ' vs ' + b.length + ' days).</div>';
 }
 
-async function nutritionAnalyzeHistory() {
-  const button = document.getElementById('nutrition-history-btn');
-  const status = document.getElementById('nutrition-history-status');
-  const originalDate = dailySelectedDate;
-  const candidates = (dailyLogs || []).filter(log =>
-    (log.food_entries || []).some(entry => entry.description && !entry.nutrition)
-  );
-  if (!candidates.length) {
-    if (status) status.textContent = 'All logged foods already have estimates.';
-    return;
-  }
-  if (button) button.disabled = true;
-  let completed = 0;
-  for (const log of candidates) {
-    dailySelectedDate = log.log_date;
-    if (status) status.textContent = 'Estimating ' + (completed + 1) + ' of ' + candidates.length + ' days…';
-    const ok = await nutritionAnalyzeSelectedDay({ silent: true, skipRender: true });
-    if (ok) completed++;
-  }
-  dailySelectedDate = originalDate;
-  if (status) status.textContent = '✓ Estimated ' + completed + ' historical day' + (completed === 1 ? '' : 's') + '.';
-  if (button) button.disabled = false;
-  await renderNutritionAnalytics();
-}
-
 async function renderNutritionAnalytics() {
   const container = document.getElementById('daily-page-analytics');
   if (!container || dailyActiveSubTab !== 'analytics') return;
@@ -5839,12 +6066,18 @@ async function renderNutritionAnalytics() {
   }
   container.innerHTML = '<div style="color:var(--text);font-size:14px;opacity:.5;padding:8px 0">Building nutrition history…</div>';
   try {
-    await Promise.all([loadDailyLogs(true), loadNutritionContext()]);
+    const [, context, targetRows] = await Promise.all([
+      loadDailyLogs(true),
+      loadNutritionContext(),
+      sbGet(TABLES.nutritionTargets, withUserScope('select=*&order=target_date.asc'), 'training')
+    ]);
     const sortedLogs = (dailyLogs || []).slice().sort((a, b) => a.log_date.localeCompare(b.log_date));
-    const completeLogs = sortedLogs.filter(log => log.coach_analysis?.nutrition?.food_logging_complete === true);
-    const targets = new Map();
-    for (const log of completeLogs.slice(-60)) {
-      targets.set(log.log_date, await nutritionEnsureTarget(log.log_date));
+    const completeLogs = sortedLogs.filter(nutritionFoodLogIsComplete);
+    const targets = new Map((targetRows || []).map(target => [target.target_date, target]));
+    for (const log of completeLogs) {
+      if (!targets.has(log.log_date)) {
+        targets.set(log.log_date, calculateNutritionTarget(log.log_date, context.profile, context.measurements));
+      }
     }
     const days = completeLogs.map(log => {
       const entries = Array.isArray(log.food_entries) ? log.food_entries : [];
@@ -5881,7 +6114,7 @@ async function renderNutritionAnalytics() {
     const averageFast = nutritionAverage(fastingDays.map(day => day.fastHours));
     const incompleteCount = sortedLogs.filter(log =>
       (log.food_entries || []).some(entry => entry.description) &&
-      log.coach_analysis?.nutrition?.food_logging_complete !== true
+      !nutritionFoodLogIsComplete(log)
     ).length;
     const unanalyzedHistory = sortedLogs.filter(log =>
       (log.food_entries || []).some(entry => entry.description && !entry.nutrition)
@@ -5923,16 +6156,16 @@ async function renderNutritionAnalytics() {
     container.innerHTML =
       '<div class="card" style="margin-bottom:14px">' +
         '<div class="card-section-title">Nutrition analytics</div>' +
-        '<p style="font-size:13px;line-height:1.5;color:var(--text);opacity:.68;margin:0 0 14px">Only days you mark “Done logging food” are included. This prevents partial days from looking like large deficits.</p>' +
+        '<p style="font-size:13px;line-height:1.5;color:var(--text);opacity:.68;margin:0 0 14px">Past days with a final-calories time and saved food estimates are included automatically. Today stays open until you tap “Done logging food.” You never need to estimate history from this page.</p>' +
         '<div class="analytics-kpis">' +
           '<div class="analytics-kpi"><div class="analytics-kpi-value">' + days.length + '</div><div class="analytics-kpi-label">complete, fully estimated days</div></div>' +
           '<div class="analytics-kpi"><div class="analytics-kpi-value">' + (averageCalorieDifference == null ? '—' : (averageCalorieDifference > 0 ? '+' : '') + Math.round(averageCalorieDifference)) + '</div><div class="analytics-kpi-label">average kcal vs target</div></div>' +
           '<div class="analytics-kpi"><div class="analytics-kpi-value">' + (averageProteinDifference == null ? '—' : (averageProteinDifference > 0 ? '+' : '') + Math.round(averageProteinDifference) + 'g') + '</div><div class="analytics-kpi-label">average protein vs target</div></div>' +
           '<div class="analytics-kpi"><div class="analytics-kpi-value">' + (averageFast == null ? '—' : averageFast.toFixed(1) + 'h') + '</div><div class="analytics-kpi-label">average measured fast</div></div>' +
         '</div>' +
-        '<div class="macro-status-note">' + incompleteCount + ' food-log day' + (incompleteCount === 1 ? ' is' : 's are') + ' currently excluded as incomplete.</div>' +
-        (unanalyzedHistory ? '<div class="macro-actions"><button type="button" class="btn btn-primary" id="nutrition-history-btn" onclick="nutritionAnalyzeHistory()">Estimate existing food history</button></div>' : '') +
-        '<div class="daily-status" id="nutrition-history-status" style="white-space:normal;margin-top:10px"></div>' +
+        '<div class="macro-status-note">' + incompleteCount + ' food-log day' + (incompleteCount === 1 ? ' is' : 's are') + ' currently excluded as incomplete.' +
+          (unanalyzedHistory ? ' ' + unanalyzedHistory + ' saved day' + (unanalyzedHistory === 1 ? ' is' : 's are') + ' still waiting for an estimate from Daily Log.' : '') +
+        '</div>' +
       '</div>' +
       '<div class="card" style="margin-bottom:14px"><div class="card-section-title">Daily calorie surplus / deficit</div>' +
         '<div class="analytics-chart">' + (days.length ? nutritionDivergingRows(days.slice(-30), 'calorieDifference', ' kcal') : '<div class="macro-status-note">Complete food days will appear here.</div>') + '</div></div>' +
@@ -6105,6 +6338,7 @@ function resetUserScopedState(force = false) {
   dailyPhotoUploadsInFlight = 0;
   nutritionMemory = null;
   nutritionTargetCache = new Map();
+  nutritionAnalysisJobs = new Map();
   window._historySessions = null;
   const extraCards = document.getElementById('extra-cards-container');
   if (extraCards) extraCards.innerHTML = '';
