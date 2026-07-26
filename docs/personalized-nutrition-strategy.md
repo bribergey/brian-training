@@ -59,6 +59,7 @@ The app should therefore:
 - Use the seven-day average of morning weight rather than individual weigh-ins.
 - Adjust maintenance no more often than weekly, and preferably after two complete weeks.
 - Never “eat back” wearable exercise calories one for one.
+- Keep the normal coach-workout modifier stable. For separately logged walking, hiking, or other extra activity, a deterministic engine may add a conservative weight-scaled allowance from logged distance, duration, and elevation. Show the calculation, cap extreme values, and do not count planned activity.
 
 For a lean-gain phase, start conservatively—approximately 3–5% above calibrated maintenance—and aim for roughly 0.1–0.25% body weight gain per week for a trained recreational lifter. If waist or fat gain rises without useful strength or training progress, reduce the surplus. If weight and performance do not move despite good adherence, increase it modestly.
 
@@ -265,6 +266,9 @@ Uncertain or highly individual:
 - [Energy surplus trial in resistance-trained adults](https://sportsmedicine-open.springeropen.com/articles/10.1186/s40798-023-00651-y)
 - [Accuracy of athlete resting metabolic rate equations](https://pubmed.ncbi.nlm.nih.gov/37632665/)
 - [NATA fluid-replacement position statement](https://pmc.ncbi.nlm.nih.gov/articles/PMC5634236/)
+- [2024 Adult Compendium of Physical Activities](https://pmc.ncbi.nlm.nih.gov/articles/PMC10818145/)
+- [NIDDK constipation treatment and prevention guidance](https://www.niddk.nih.gov/health-information/digestive-diseases/constipation/treatment)
+- [Bristol Stool Form Scale reliability study](https://pmc.ncbi.nlm.nih.gov/articles/PMC4760857/)
 - [ISSN nutrient-timing position stand](https://link.springer.com/article/10.1186/s12970-017-0189-4)
 - [IOC dietary supplement consensus](https://bjsm.bmj.com/content/52/7/439)
 - [Australian Institute of Sport supplement framework](https://www.ausport.gov.au/ais/nutrition/supplements/about-the-ais-sports-supplement-framework)

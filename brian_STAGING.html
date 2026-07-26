@@ -428,6 +428,14 @@ select {
 .btn-primary:active { opacity: 0.85; }
 .btn-full { width: 100%; }
 .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn.is-working, .daily-usual-food.is-working {
+  background:var(--text); border-color:var(--text); color:#fff; opacity:1;
+}
+.btn.is-success, .daily-usual-food.is-success {
+  background:var(--green); border-color:var(--green); color:#07180b; opacity:1;
+}
+.btn.is-error { background:rgba(180,35,24,.10); border-color:rgba(180,35,24,.35); color:#b42318; opacity:1; }
+.btn:disabled.is-working, .btn:disabled.is-success { cursor:default; }
 
 /* SUCCESS BANNER */
 .success-banner {
@@ -1128,6 +1136,13 @@ select {
 .daily-calendar-day.is-morning .daily-calendar-progress { --daily-progress:240deg; }
 .daily-calendar-day.is-complete .daily-calendar-progress { --daily-progress:360deg; }
 .daily-calendar-day.is-selected .daily-calendar-progress { box-shadow:0 0 0 2px var(--text), inset 0 0 0 1px rgba(255,255,255,.24); }
+.daily-calendar-food-complete {
+  position:absolute; top:3px; right:3px; width:13px; height:13px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; background:var(--green); color:#07180b;
+  font-family:var(--sans); font-size:9px; font-weight:900; line-height:1;
+  box-shadow:0 0 0 2px var(--bg2);
+}
+.daily-calendar-day.is-selected .daily-calendar-food-complete { box-shadow:0 0 0 2px var(--text); }
 .daily-info-btn {
   border:1px solid var(--border2); background:none; color:var(--text); width:22px; height:22px;
   border-radius:50%; font-family:var(--mono); font-size:12px; font-weight:700; cursor:pointer;
@@ -1136,8 +1151,9 @@ select {
 .daily-modal { width:min(460px,100%); max-height:82vh; overflow:auto; background:var(--bg2); border:1px solid var(--border2); border-radius:16px; padding:20px; box-shadow:0 18px 50px rgba(0,0,0,.28); }
 .daily-modal-row { padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; line-height:1.45; color:var(--text); }
 .daily-modal-row:last-of-type { border-bottom:none; }
-.daily-save-row { display:flex; align-items:center; gap:12px; margin-bottom:32px; }
-.daily-status { font-family:var(--mono); font-size:11px; color:var(--green-dark); white-space:nowrap; }
+.daily-save-row { display:block; margin-bottom:32px; }
+.daily-save-row .btn { min-height:48px; }
+.daily-status { display:block; margin-top:8px; font-family:var(--mono); font-size:11px; line-height:1.4; color:var(--green-dark); white-space:normal; }
 .macro-hero { padding:20px; margin-bottom:14px; background:var(--text); color:var(--bg2); }
 .macro-hero-top { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .macro-kcal-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-top:20px; }
@@ -1148,7 +1164,7 @@ select {
 }
 .macro-kcal { font-family:var(--display); font-size:38px; font-weight:850; line-height:.95; letter-spacing:-.04em; }
 .macro-kcal-label { margin-top:6px; font-family:var(--mono); font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; opacity:.62; }
-.macro-day-chip { display:inline-flex; margin-top:13px; padding:5px 9px; border-radius:20px; background:rgba(26,219,78,.18); color:#71f28d; font-family:var(--mono); font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.macro-day-chip { display:inline-flex; max-width:100%; margin-top:13px; padding:5px 9px; border-radius:20px; background:rgba(26,219,78,.18); color:#71f28d; font-family:var(--mono); font-size:9px; font-weight:700; line-height:1.35; text-transform:uppercase; letter-spacing:.05em; white-space:normal; }
 .macro-progress-list { display:grid; gap:16px; }
 .macro-progress-head { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; }
 .macro-progress-name { font-size:14px; font-weight:750; color:var(--text); }
@@ -1208,6 +1224,8 @@ select {
 .fasting-hours { text-align:right; font-size:11px; font-weight:700; color:var(--text); }
 .analytics-insight { padding:12px 0; border-bottom:1px solid var(--border); font-size:13px; line-height:1.5; color:var(--text); }
 .analytics-insight:last-child { border-bottom:0; }
+.analytics-subhead { margin:16px 0 2px; font-size:13px; font-weight:800; color:var(--text); }
+.analytics-caution { margin-top:10px; padding:10px 12px; border-radius:9px; background:var(--bg3); font-size:11px; line-height:1.5; color:var(--text); opacity:.72; }
 @media (max-width:380px) {
   .daily-scale-options { gap:4px; }
   .daily-photo-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
@@ -4358,7 +4376,7 @@ let dailyPhotoUploadsInFlight = 0;
 let nutritionMemory = null;
 let nutritionTargetCache = new Map();
 let nutritionAnalysisJobs = new Map();
-const NUTRITION_ENGINE_VERSION = 'stable-target-1.1.0';
+const NUTRITION_ENGINE_VERSION = 'stable-target-1.2.0';
 
 function dailyLocalDate(date = new Date()) {
   const y = date.getFullYear();
@@ -4393,6 +4411,22 @@ function dailyLogStage(log) {
   return { key: 'started', label: 'log started' };
 }
 
+function dailyFlashButton(button, label, duration = 1800) {
+  if (!button) return;
+  const idleLabel = button.dataset.idleLabel || button.textContent;
+  button.dataset.idleLabel = idleLabel;
+  button.classList.remove('is-working', 'is-error');
+  button.classList.add('is-success');
+  button.disabled = true;
+  button.textContent = label;
+  window.setTimeout(() => {
+    if (!button.isConnected) return;
+    button.classList.remove('is-success');
+    button.disabled = false;
+    button.textContent = idleLabel;
+  }, duration);
+}
+
 function dailyCalendarMarkup() {
   const month = dailyCalendarMonth || dailyMonthStart(dailySelectedDate || dailyLocalDate());
   const year = month.getFullYear();
@@ -4406,17 +4440,21 @@ function dailyCalendarMarkup() {
   for (let i = 0; i < firstWeekday; i++) cells.push('<div class="daily-calendar-blank" aria-hidden="true"></div>');
   for (let day = 1; day <= daysInMonth; day++) {
     const value = year + '-' + String(monthIndex + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-    const stage = dailyLogStage(logsByDate.get(value));
+    const log = logsByDate.get(value);
+    const stage = dailyLogStage(log);
+    const foodComplete = nutritionFoodLogIsAnalyzedComplete(log);
     const isSelected = value === selectedDate;
     const isToday = value === today;
     const classes = ['daily-calendar-day'];
     if (isToday) classes.push('is-today');
     if (stage.key) classes.push('is-' + stage.key);
     if (isSelected) classes.push('is-selected');
-    const label = dailyFormatDate(value) + (isToday ? ', today' : '') + (stage.label ? ', ' + stage.label : ', not logged') + (isSelected ? ', selected' : '');
+    const label = dailyFormatDate(value) + (isToday ? ', today' : '') + (stage.label ? ', ' + stage.label : ', not logged') +
+      (foodComplete ? ', food log complete and analyzed' : '') + (isSelected ? ', selected' : '');
     cells.push('<button type="button" class="' + classes.join(' ') + '" aria-label="' + escapeHtml(label) +
       '" aria-pressed="' + (isSelected ? 'true' : 'false') + '" onclick="dailySelectCalendarDate(\'' + value + '\')">' +
-      '<span>' + day + '</span>' + (stage.key ? '<span class="daily-calendar-progress" aria-hidden="true"></span>' : '') + '</button>');
+      '<span>' + day + '</span>' + (stage.key ? '<span class="daily-calendar-progress" aria-hidden="true"></span>' : '') +
+      (foodComplete ? '<span class="daily-calendar-food-complete" title="Food log complete and analyzed" aria-hidden="true">✓</span>' : '') + '</button>');
   }
   return '<div class="daily-calendar-header">' +
       '<div class="daily-calendar-title"><div class="daily-calendar-month">' +
@@ -4961,7 +4999,7 @@ function dailyUsualFoodsMarkup() {
     '<div class="daily-usual-foods-list">' + usual.map(memory =>
       '<button type="button" class="daily-usual-food" data-memory-id="' + escapeHtml(memory.id) +
       '" title="' + escapeHtml(memory.latest_raw_description || memory.canonical_name) +
-      '" onclick="dailyAddFoodFromMemory(this.dataset.memoryId)">' + escapeHtml(nutritionMemoryDisplayName(memory)) + '</button>'
+      '" onclick="dailyAddFoodFromMemory(this.dataset.memoryId,this)">' + escapeHtml(nutritionMemoryDisplayName(memory)) + '</button>'
     ).join('') + '</div></div>';
 }
 
@@ -4987,7 +5025,7 @@ function dailyNutritionFromMemory(memory, sourceDescription) {
   };
 }
 
-function dailyAddFoodFromMemory(memoryId) {
+function dailyAddFoodFromMemory(memoryId, button = null) {
   const memory = (nutritionMemory || []).find(item => item.id === memoryId);
   if (!memory) return;
   document.getElementById('daily-food-empty')?.remove();
@@ -5005,6 +5043,7 @@ function dailyAddFoodFromMemory(memoryId) {
   };
   document.getElementById('daily-food-entries')?.insertAdjacentHTML('beforeend', dailyFoodEntriesMarkup([entry]));
   dailyScheduleDraft();
+  dailyFlashButton(button, '✓ Added');
 }
 
 function dailyFoodDescriptionInput(textarea) {
@@ -5305,9 +5344,10 @@ function renderDailyLogForm() {
         escapeHtml(data.notes || '') + '</textarea>' +
     '</div>' +
     '<div class="daily-save-row">' +
-      '<button class="btn btn-primary btn-full" id="daily-save-btn" onclick="saveDailyLog()">' +
+      '<button class="btn btn-primary btn-full" id="daily-save-btn" data-idle-label="' +
+        (dailyEditingId ? 'Update Daily Log' : 'Save Daily Log') + '" onclick="saveDailyLog()">' +
         (dailyEditingId ? 'Update Daily Log' : 'Save Daily Log') + '</button>' +
-      '<span class="daily-status" id="daily-save-status"></span>' +
+      '<div class="daily-status" id="daily-save-status" aria-live="polite"></div>' +
     '</div>' +
     '<div id="daily-nutrition-summary"><div class="card" style="margin-bottom:18px"><div style="font-size:13px;color:var(--text);opacity:.55">Calculating nutrition target…</div></div></div>' +
     '<div class="daily-modal-backdrop" id="daily-stool-guide" style="display:none" onclick="dailyCloseStoolGuide(event)" role="dialog" aria-modal="true" aria-label="Bristol stool guide">' +
@@ -5342,6 +5382,7 @@ async function saveDailyLog() {
   const btn = document.getElementById('daily-save-btn');
   const status = document.getElementById('daily-save-status');
   if (!btn || !getActiveUserId()) return;
+  const wasEditing = Boolean(dailyEditingId);
   if (dailyPhotoUploadsInFlight > 0) {
     status.textContent = 'Please wait for photos to finish uploading.';
     return;
@@ -5351,6 +5392,7 @@ async function saveDailyLog() {
   const nextPhotoPaths = dailyPhotoPathsFromEntries(body.food_entries);
   const removedPhotoPaths = [...previousPhotoPaths].filter(path => !nextPhotoPaths.has(path));
   btn.disabled = true;
+  btn.classList.add('is-working');
   btn.textContent = 'Saving…';
   status.textContent = '';
 
@@ -5377,16 +5419,20 @@ async function saveDailyLog() {
     }
     dailyCalendarMonth = dailyMonthStart(dailySelectedDate);
     renderDailyLogForm();
+    const nextButton = document.getElementById('daily-save-btn');
+    dailyFlashButton(nextButton, wasEditing ? '✓ Daily Log Updated' : '✓ Daily Log Saved');
     const nextStatus = document.getElementById('daily-save-status');
     if (nextStatus) nextStatus.textContent = needsEstimate
-      ? '✓ Saved · estimating new food in background'
-      : '✓ Saved · nutrition current';
+      ? 'Estimating new food in the background.'
+      : '';
     saveNavigationState();
   } catch (e) {
     console.error('Daily Log save failed:', e);
     btn.disabled = false;
+    btn.classList.remove('is-working');
+    btn.classList.add('is-error');
     btn.textContent = dailyEditingId ? 'Update Daily Log' : 'Save Daily Log';
-    status.textContent = '⚠ Error saving';
+    status.textContent = 'Could not save. Please try again.';
   }
 }
 
@@ -5433,10 +5479,94 @@ function nutritionAge(dob) {
   return age > 0 && age < 120 ? age : null;
 }
 
-function nutritionDayType(date, profile) {
-  const completed = (cachedSessions || []).some(session => session.date === date && !session.skipped);
-  if (completed) return { key: 'training', reason: 'completed_workout' };
-  return { key: 'rest', reason: 'no_completed_workout' };
+function nutritionExerciseDistanceKm(exercise) {
+  const name = String(exercise?.name || exercise?.exercise || '').toLowerCase();
+  const unit = String(exercise?.unit || exercise?.rep_type || '').toLowerCase();
+  if (unit !== 'km' && !/\b(walk|walking|hike|hiking|run|running|jog|cycle|cycling|bike)\b/.test(name)) return 0;
+  return (Array.isArray(exercise?.sets) ? exercise.sets : [])
+    .reduce((sum, set) => sum + Math.max(0, Number(set?.reps) || Number(set?.distance) || 0), 0);
+}
+
+function nutritionActivityDurationHours(session) {
+  const text = [session?.notes, ...(session?.exercises || []).map(exercise => exercise?.notes)]
+    .filter(Boolean).join(' ');
+  const hourMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|hr)\b/i);
+  const minuteMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:minutes?|mins?|min)\b/i);
+  const hours = hourMatch ? Number(hourMatch[1]) : 0;
+  const minutes = minuteMatch ? Number(minuteMatch[1]) : 0;
+  return Math.max(0, hours + (minutes / 60));
+}
+
+function nutritionActivityElevationMeters(session) {
+  const text = [session?.notes, ...(session?.exercises || []).map(exercise => exercise?.notes)]
+    .filter(Boolean).join(' ');
+  const match = text.match(/([\d,]+(?:\.\d+)?)\s*(?:m|meters?|metres?)\s+(?:elevation|gain|ascent)|(?:elevation|gain|ascent)[^\d]{0,12}([\d,]+(?:\.\d+)?)\s*(?:m|meters?|metres?)/i);
+  return match ? Number(String(match[1] || match[2]).replace(/,/g, '')) || 0 : 0;
+}
+
+function nutritionExtraActivityEstimate(session, weightKg) {
+  const exercises = Array.isArray(session?.exercises) ? session.exercises : [];
+  const text = [session?.day, session?.notes, ...exercises.map(exercise => exercise?.name || exercise?.exercise)]
+    .filter(Boolean).join(' ').toLowerCase();
+  const distanceKm = exercises.reduce((sum, exercise) => sum + nutritionExerciseDistanceKm(exercise), 0);
+  const durationHours = nutritionActivityDurationHours(session);
+  const elevationM = nutritionActivityElevationMeters(session);
+  const kind = /\bhik/.test(text) ? 'hike'
+    : /\b(run|running|jog)/.test(text) ? 'run'
+      : /\b(cycl|bike)/.test(text) ? 'cycle'
+        : /\b(walk|walking)/.test(text) ? 'walk'
+          : /\b(swim|rowing|rower)/.test(text) ? 'cardio'
+            : 'extra workout';
+  // Distance costs and MET values follow conservative Compendium-style activity estimates.
+  const distanceRate = { hike: .75, run: 1, cycle: .3, walk: .5 }[kind] || 0;
+  const met = { hike: 6, run: 8, cycle: 6.8, walk: 3.8, cardio: 6, 'extra workout': 4.5 }[kind];
+  let grossKcal = distanceKm > 0 && distanceRate
+    ? weightKg * distanceKm * distanceRate
+    : (durationHours > 0 ? Math.max(0, met - 1) * weightKg * durationHours : 0);
+  if (kind === 'hike' && elevationM > 0) grossKcal += weightKg * elevationM * .003;
+  if (!grossKcal) grossKcal = 140;
+  // Apply 70% instead of eating back a full gross estimate, then cap outlier logs.
+  const kcal = Math.min(800, Math.max(75, nutritionRoundTo(grossKcal * .7, 25)));
+  const quantity = distanceKm > 0 ? (Math.round(distanceKm * 10) / 10) + ' km '
+    : durationHours > 0 ? (Math.round(durationHours * 10) / 10) + ' hr '
+      : '';
+  return {
+    kind,
+    distance_km: Math.round(distanceKm * 10) / 10,
+    duration_hours: Math.round(durationHours * 10) / 10,
+    elevation_m: Math.round(elevationM),
+    kcal,
+    label: quantity + kind + ' +' + kcal + ' kcal'
+  };
+}
+
+function nutritionDayType(date, profile, weightKg = 70) {
+  const completed = (cachedSessions || []).filter(session => session.date === date && !session.skipped);
+  const coachSessions = completed.filter(session =>
+    Boolean(session.program_session_key) || (session.day && session.day !== 'extra')
+  );
+  const extraSessions = completed.filter(session => !coachSessions.includes(session));
+  const extraActivities = extraSessions.map(session => nutritionExtraActivityEstimate(session, weightKg));
+  const extraEnergyKcal = Math.min(1000, extraActivities.reduce((sum, activity) => sum + activity.kcal, 0));
+  const coachEnergyKcal = coachSessions.length ? 150 : 0;
+  const key = completed.length ? 'training' : 'rest';
+  const reason = coachSessions.length && extraSessions.length ? 'completed_workout_plus_extra_activity'
+    : coachSessions.length ? 'completed_workout'
+      : extraSessions.length ? 'completed_extra_activity'
+        : 'no_completed_workout';
+  const parts = [];
+  if (coachSessions.length) parts.push('coach workout +' + coachEnergyKcal + ' kcal');
+  parts.push(...extraActivities.map(activity => activity.label));
+  return {
+    key,
+    reason,
+    coachCount: coachSessions.length,
+    extraCount: extraSessions.length,
+    coachEnergyKcal,
+    extraEnergyKcal,
+    extraActivities,
+    label: parts.length ? parts.join(' · ') : 'No logged workout'
+  };
 }
 
 async function nutritionHash(value) {
@@ -5465,7 +5595,7 @@ function calculateNutritionTarget(date, profile, measurements) {
   const isFemale = String(profile.gender || '').toLowerCase() === 'female';
   const estimatedWeight = heightCm ? 22.5 * Math.pow(heightCm / 100, 2) : 70;
   const weightKg = Number(latestWeightRow?.weight_kg) || estimatedWeight;
-  const day = nutritionDayType(date, profile);
+  const day = nutritionDayType(date, profile, weightKg);
   const activityMultiplier = {
     'Low': 1.3,
     'Moderate': 1.4,
@@ -5483,12 +5613,13 @@ function calculateNutritionTarget(date, profile, measurements) {
     ? (10 * weightKg) + (6.25 * heightCm) - (5 * age) + (isFemale ? -161 : 5)
     : weightKg * 22;
   const baseEnergy = nutritionRoundTo(rmr * activityMultiplier * goalMultiplier, 50);
-  const desiredEnergy = Math.max(1600, baseEnergy + (day.key === 'training' ? 150 : 0));
+  const desiredEnergy = Math.max(1600, baseEnergy + day.coachEnergyKcal + day.extraEnergyKcal);
   const proteinG = nutritionRoundTo(weightKg * (
     profile.nutrition_goal === 'Cut' ? 2.2 : 2
   ), 5);
-  const carbsPerKg = day.key === 'training' ? 3.2 : 2.6;
-  const carbsG = nutritionRoundTo(weightKg * carbsPerKg, 5);
+  const carbsPerKg = day.coachCount ? 3.2 : 2.6;
+  const extraActivityCarbsG = nutritionRoundTo(day.extraEnergyKcal * .55 / 4, 5);
+  const carbsG = nutritionRoundTo(weightKg * carbsPerKg, 5) + extraActivityCarbsG;
   const minimumFatG = nutritionRoundTo(weightKg * .8, 5);
   const fatG = Math.max(minimumFatG, Math.round((desiredEnergy - (proteinG * 4) - (carbsG * 4)) / 9));
   const energyKcal = (proteinG * 4) + (carbsG * 4) + (fatG * 9);
@@ -5507,7 +5638,13 @@ function calculateNutritionTarget(date, profile, measurements) {
     activity_level: profile.activity_level || 'Moderate',
     carbohydrate_policy: 'lower_carbohydrate',
     day_type: day.key,
-    day_reason: day.reason
+    day_reason: day.reason,
+    activity_label: day.label,
+    coach_workout_count: day.coachCount,
+    coach_workout_kcal: day.coachEnergyKcal,
+    extra_activity_count: day.extraCount,
+    extra_activity_kcal: day.extraEnergyKcal,
+    extra_activity_details: day.extraActivities
   };
   return {
     target_date: date,
@@ -5517,6 +5654,7 @@ function calculateNutritionTarget(date, profile, measurements) {
     input_snapshot: inputSnapshot,
     reason_codes: [
       day.reason,
+      ...(day.extraEnergyKcal ? ['measured_extra_activity'] : []),
       'lower_carbohydrate_policy',
       String(profile.nutrition_goal || 'maintain').toLowerCase().replace(/\s+/g, '_')
     ],
@@ -5655,6 +5793,12 @@ function nutritionFoodLogIsComplete(log) {
     entries.every(entry => entry.nutrition);
 }
 
+function nutritionFoodLogIsAnalyzedComplete(log) {
+  if (!nutritionFoodLogIsComplete(log)) return false;
+  const described = (log?.food_entries || []).filter(entry => String(entry?.description || '').trim());
+  return described.length > 0 && described.every(entry => entry.nutrition);
+}
+
 function nutritionFoodLogCompletionSource(log) {
   if (!nutritionFoodLogIsComplete(log)) return 'incomplete';
   return log?.coach_analysis?.nutrition &&
@@ -5683,8 +5827,12 @@ async function renderDailyNutritionSummary() {
     const persistedUnanalyzed = (log?.food_entries || []).filter(entry => entry.description && !entry.nutrition).length;
     const analysisRunning = nutritionAnalysisJobs.has(dailySelectedDate);
     const proteinFeedings = entries.filter(entry => Number(entry.nutrition?.protein_g) >= 25).length;
+    const activityLabel = target.input_snapshot?.activity_label || (target.day_type === 'training' ? 'Completed workout' : 'No logged workout');
+    const coachKcal = Number(target.input_snapshot?.coach_workout_kcal) || 0;
+    const extraKcal = Number(target.input_snapshot?.extra_activity_kcal) || 0;
     const targetExplanation = target.day_type === 'training'
-      ? 'A completed workout was logged, so today includes 150 kcal of additional training fuel.'
+      ? 'Logged activity adds ' + (coachKcal + extraKcal) + ' kcal: ' + activityLabel + '.' +
+        (extraKcal ? ' Extra activity uses a conservative 70% recovery allowance rather than a full calorie eat-back.' : '')
       : 'No completed workout is logged, so this remains a rest-day target.';
     const completenessNote = complete
       ? (completionSource === 'closed_past_log'
@@ -5692,17 +5840,19 @@ async function renderDailyNutritionSummary() {
         : 'Food log marked complete and included in Analytics.')
       : 'Logged so far. Unlogged food is unknown, not zero; mark complete when you are done.';
     const estimateAction = analysisRunning
-      ? '<button type="button" class="btn btn-primary" disabled>Estimating in background…</button>'
+      ? '<button type="button" class="btn btn-primary is-working" disabled>Estimating…</button>'
       : persistedUnanalyzed
         ? '<button type="button" class="btn btn-primary" id="nutrition-analyze-btn" onclick="nutritionAnalyzeSelectedDay()">Retry food estimate</button>'
         : unanalyzed
           ? '<button type="button" class="btn btn-primary" disabled>Save to estimate new food</button>'
-          : '';
+          : entries.some(entry => entry.description)
+            ? '<button type="button" class="btn is-success" disabled>✓ Food analyzed</button>'
+            : '';
 
     container.innerHTML =
       '<div class="card macro-hero">' +
         '<div class="macro-hero-top"><div class="macro-day-chip">' +
-          (target.day_type === 'training' ? 'Completed workout · training day' : 'No completed workout · rest day') +
+          escapeHtml(target.day_type === 'training' ? activityLabel : 'No completed workout · rest day') +
         '</div></div>' +
         '<div class="macro-kcal-grid">' +
           '<div><div class="macro-kcal">' + Math.round(target.energy_kcal).toLocaleString() + '</div><div class="macro-kcal-label">calorie target</div></div>' +
@@ -5725,7 +5875,9 @@ async function renderDailyNutritionSummary() {
           (unanalyzed ? ' ' + unanalyzed + ' food entr' + (unanalyzed === 1 ? 'y needs' : 'ies need') + ' an estimate.' : '') + '</div>' +
         '<div class="macro-actions">' +
           estimateAction +
-          '<button type="button" class="btn" onclick="nutritionToggleFoodComplete()"' + (log?.id ? '' : ' disabled') + '>' + (complete ? 'Reopen food log' : 'Done logging food') + '</button>' +
+          '<button type="button" class="btn" id="nutrition-complete-btn" data-idle-label="' +
+            (complete ? 'Reopen food log' : 'Done logging food') + '" onclick="nutritionToggleFoodComplete()"' +
+            (log?.id ? '' : ' disabled') + '>' + (complete ? 'Reopen food log' : 'Done logging food') + '</button>' +
         '</div>' +
         '<div class="daily-status" id="nutrition-analysis-status" style="white-space:normal;margin-top:10px">' +
           (analysisRunning ? 'You can change dates or tabs; this estimate will keep running.' : '') + '</div>' +
@@ -5868,6 +6020,7 @@ function nutritionAnalyzeSelectedDay(options = {}) {
       await Promise.all([loadDailyLogs(true), loadNutritionMemory(true)]);
       const status = visibleStatus();
       if (status) status.textContent = '✓ Food estimates updated and saved';
+      if (dailySelectedDate === analysisDate) renderDailyCalendar();
       dailyRefreshNutritionRows(analysisDate);
       if (dailyActiveSubTab === 'analytics') renderNutritionAnalytics();
       return true;
@@ -5880,6 +6033,9 @@ function nutritionAnalyzeSelectedDay(options = {}) {
   })();
 
   nutritionAnalysisJobs.set(analysisDate, job);
+  if (dailyActiveSubTab === 'log' && dailySelectedDate === analysisDate) {
+    renderDailyNutritionSummary().catch(() => {});
+  }
   job.finally(() => {
     nutritionAnalysisJobs.delete(analysisDate);
     if (dailyActiveSubTab === 'log' && dailySelectedDate === analysisDate) {
@@ -5893,23 +6049,45 @@ async function nutritionToggleFoodComplete() {
   const toggleDate = dailySelectedDate;
   const log = (dailyLogs || []).find(item => item.log_date === toggleDate) || null;
   if (!log?.id) return;
+  const button = document.getElementById('nutrition-complete-btn');
+  if (button) {
+    button.disabled = true;
+    button.classList.add('is-working');
+    button.textContent = 'Saving…';
+  }
   const coach = log.coach_analysis && typeof log.coach_analysis === 'object' ? log.coach_analysis : {};
   const nutrition = coach.nutrition && typeof coach.nutrition === 'object' ? coach.nutrition : {};
   const wasComplete = nutritionFoodLogIsComplete(log);
-  await sbPatch(TABLES.dailyLogs, log.id, {
-    coach_analysis: {
-      ...coach,
-      nutrition: {
-        ...nutrition,
-        food_logging_complete: !wasComplete,
-        food_logging_completed_at: wasComplete ? null : new Date().toISOString(),
-        food_logging_completion_source: wasComplete ? 'manual_exclusion' : 'manual'
+  try {
+    await sbPatch(TABLES.dailyLogs, log.id, {
+      coach_analysis: {
+        ...coach,
+        nutrition: {
+          ...nutrition,
+          food_logging_complete: !wasComplete,
+          food_logging_completed_at: wasComplete ? null : new Date().toISOString(),
+          food_logging_completion_source: wasComplete ? 'manual_exclusion' : 'manual'
+        }
       }
+    }, withUserScope(), 'training');
+    await loadDailyLogs(true);
+    renderDailyCalendar();
+    await renderDailyNutritionSummary();
+    dailyFlashButton(
+      document.getElementById('nutrition-complete-btn'),
+      wasComplete ? '✓ Food log reopened' : '✓ Food log complete'
+    );
+    if (!wasComplete) nutritionAnalyzeSelectedDay({ date: toggleDate, silent: true, skipRender: true });
+  } catch (error) {
+    if (button) {
+      button.disabled = false;
+      button.classList.remove('is-working');
+      button.classList.add('is-error');
+      button.textContent = 'Try again';
     }
-  }, withUserScope(), 'training');
-  await loadDailyLogs(true);
-  renderDailyLogForm();
-  if (!wasComplete) nutritionAnalyzeSelectedDay({ date: toggleDate, silent: true, skipRender: true });
+    const status = document.getElementById('nutrition-analysis-status');
+    if (status) status.textContent = 'Could not update the food log. Please try again.';
+  }
 }
 
 function nutritionCanonicalKey(value) {
@@ -6007,6 +6185,13 @@ function nutritionAverage(values) {
   return valid.length ? valid.reduce((sum, value) => sum + value, 0) / valid.length : null;
 }
 
+function nutritionMedian(values) {
+  const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!sorted.length) return null;
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
 function nutritionDivergingRows(days, field, unit) {
   const differences = days.map(day => Number(day[field]) || 0);
   const scale = Math.max(1, ...differences.map(Math.abs));
@@ -6039,7 +6224,7 @@ function nutritionFastingRows(days) {
   }).join('');
 }
 
-function nutritionAssociationInsight(pairs, label, groupA, groupB, outcome, outcomeLabel, invert = false) {
+function nutritionAssociationInsight(pairs, label, groupA, groupALabel, groupB, groupBLabel, outcome, outcomeLabel) {
   const valuesFor = predicate => pairs.filter(predicate)
     .map(pair => pair.next?.[outcome])
     .filter(value => value != null && value !== '')
@@ -6051,10 +6236,137 @@ function nutritionAssociationInsight(pairs, label, groupA, groupB, outcome, outc
   const averageA = nutritionAverage(a);
   const averageB = nutritionAverage(b);
   const difference = averageA - averageB;
-  const direction = Math.abs(difference) < .15 ? 'about the same' : ((difference > 0) !== invert ? 'higher' : 'lower');
+  const comparison = Math.abs(difference) < .15
+    ? 'about the same'
+    : Math.abs(difference).toFixed(1) + ' point' + (Math.abs(difference) >= 1.95 ? 's' : '') +
+      ' ' + (difference > 0 ? 'higher' : 'lower') + ' after ' + groupALabel;
   return '<div class="analytics-insight"><strong>' + escapeHtml(label) + ':</strong> ' +
-    escapeHtml(outcomeLabel) + ' was ' + direction + ' by ' + Math.abs(difference).toFixed(1) +
-    ' on average (' + a.length + ' vs ' + b.length + ' days).</div>';
+    escapeHtml(outcomeLabel) + ' averaged ' + averageA.toFixed(1) + ' after ' + escapeHtml(groupALabel) +
+    ' and ' + averageB.toFixed(1) + ' after ' + escapeHtml(groupBLabel) + ' — ' +
+    escapeHtml(comparison) + ' (' + a.length + ' vs ' + b.length + ' days).</div>';
+}
+
+function nutritionStoolOutcome(log) {
+  if (!log) return null;
+  if (log.no_bowel_movement === true) return { noStool: true, type: null };
+  const type = Number(log.stool_type);
+  return Number.isFinite(type) && type >= 1 && type <= 7 ? { noStool: false, type } : null;
+}
+
+function nutritionStoolMetricInsight(pairs, label, selector, unit) {
+  const values = pairs.map(pair => Number(selector(pair.day))).filter(Number.isFinite);
+  const median = nutritionMedian(values);
+  if (median == null) return null;
+  const summarize = predicate => {
+    const group = pairs.filter(predicate).map(pair => nutritionStoolOutcome(pair.next)).filter(Boolean);
+    return {
+      count: group.length,
+      averageType: nutritionAverage(group.map(outcome => outcome.type)),
+      noStool: group.filter(outcome => outcome.noStool).length
+    };
+  };
+  const high = summarize(pair => Number(selector(pair.day)) >= median);
+  const low = summarize(pair => Number(selector(pair.day)) < median);
+  if (high.count < 2 || low.count < 2) return null;
+  const threshold = unit === ' kcal' ? Math.round(median) : Math.round(median * 10) / 10;
+  const typeText = value => value == null ? 'no typed stools' : 'average Bristol ' + value.toFixed(1);
+  return '<div class="analytics-insight"><strong>' + escapeHtml(label) + ':</strong> at least ' +
+    threshold + escapeHtml(unit) + ' the next stool was ' + typeText(high.averageType) +
+    ' (' + high.count + ' mornings); below that it was ' + typeText(low.averageType) +
+    ' (' + low.count + ' mornings). No-stool mornings: ' + high.noStool + ' vs ' + low.noStool + '.</div>';
+}
+
+function nutritionStoolContextInsight(pairs, label, predicate, withLabel, withoutLabel) {
+  const summarize = group => {
+    const outcomes = group.map(pair => nutritionStoolOutcome(pair.next)).filter(Boolean);
+    return {
+      count: outcomes.length,
+      averageType: nutritionAverage(outcomes.map(outcome => outcome.type)),
+      noStool: outcomes.filter(outcome => outcome.noStool).length
+    };
+  };
+  const withContext = summarize(pairs.filter(predicate));
+  const withoutContext = summarize(pairs.filter(pair => !predicate(pair)));
+  if (withContext.count < 2 || withoutContext.count < 2 ||
+      withContext.averageType == null || withoutContext.averageType == null) return null;
+  return '<div class="analytics-insight"><strong>' + escapeHtml(label) + ':</strong> after ' +
+    escapeHtml(withLabel) + ', the next stool averaged Bristol ' + withContext.averageType.toFixed(1) +
+    '; after ' + escapeHtml(withoutLabel) + ' it averaged ' + withoutContext.averageType.toFixed(1) +
+    ' (' + withContext.count + ' vs ' + withoutContext.count + ' mornings). No-stool mornings: ' +
+    withContext.noStool + ' vs ' + withoutContext.noStool + '.</div>';
+}
+
+function nutritionFoodSignals(day) {
+  const text = (day.log?.food_entries || []).map(entry =>
+    [entry.description, entry.nutrition?.canonical_name].filter(Boolean).join(' ')
+  ).join(' ').toLowerCase();
+  const phrases = [
+    'protein shake', 'sweet potato', 'olive oil', 'greek yogurt', 'peanut butter',
+    'white rice', 'brown rice', 'chicken breast', 'red meat', 'ice cream',
+    'fast food', 'restaurant meal'
+  ];
+  const stopwords = new Set([
+    'with','from','plus','some','about','large','small','medium','grams','gram','serving','servings',
+    'tablespoon','tablespoons','teaspoon','teaspoons','cup','cups','bowl','plate','piece','pieces',
+    'meal','food','drink','homemade','cooked','raw','fresh','usual','added','made','into','over',
+    'protein','calories','water','approximately','roughly','around','whole','half','scoop','scoops'
+  ]);
+  const signals = new Set(phrases.filter(phrase => text.includes(phrase)));
+  text.replace(/[^a-z\s]/g, ' ').split(/\s+/).forEach(word => {
+    if (word.length >= 4 && !stopwords.has(word) && !phrases.some(phrase => phrase.includes(word))) signals.add(word);
+  });
+  return signals;
+}
+
+function nutritionFoodStoolInsights(pairs) {
+  const eligible = pairs.map(pair => ({ ...pair, stool: nutritionStoolOutcome(pair.next), foods: nutritionFoodSignals(pair.day) }))
+    .filter(pair => pair.stool);
+  const candidates = new Set();
+  eligible.forEach(pair => pair.foods.forEach(food => candidates.add(food)));
+  return Array.from(candidates).map(food => {
+    const withFood = eligible.filter(pair => pair.foods.has(food));
+    const withoutFood = eligible.filter(pair => !pair.foods.has(food));
+    if (withFood.length < 2 || withoutFood.length < 2) return null;
+    const withAverage = nutritionAverage(withFood.map(pair => pair.stool.type));
+    const withoutAverage = nutritionAverage(withoutFood.map(pair => pair.stool.type));
+    const withNoStool = withFood.filter(pair => pair.stool.noStool).length;
+    const withoutNoStool = withoutFood.filter(pair => pair.stool.noStool).length;
+    if (withAverage == null || withoutAverage == null) return null;
+    const score = Math.abs(withAverage - withoutAverage) +
+      Math.abs((withNoStool / withFood.length) - (withoutNoStool / withoutFood.length)) * 2;
+    return { food, withFood, withoutFood, withAverage, withoutAverage, withNoStool, withoutNoStool, score };
+  }).filter(Boolean).sort((a, b) => b.score - a.score).slice(0, 4).map(item =>
+    '<div class="analytics-insight"><strong>' + escapeHtml(item.food.replace(/\b\w/g, letter => letter.toUpperCase())) +
+    ':</strong> after days containing this food, the next stool averaged Bristol ' + item.withAverage.toFixed(1) +
+    ' vs ' + item.withoutAverage.toFixed(1) + ' without it (' + item.withFood.length + ' vs ' +
+    item.withoutFood.length + ' days). No-stool mornings: ' + item.withNoStool + ' vs ' + item.withoutNoStool + '.</div>'
+  );
+}
+
+function nutritionNoteThemeInsights(pairs) {
+  const themes = [
+    { label: 'low energy or poor focus', pattern: /\b(low energy|tired|fatigue|weak|poor focus|focus again|off today)\b/i },
+    { label: 'disrupted sleep', pattern: /\b(woke|awake|early waking|couldn.t sleep|poor sleep|mind racing)\b/i },
+    { label: 'GI or stool difficulty', pattern: /\b(constipat|no stool|no bowel|hard stool|push|poop|bowel)\b/i },
+    { label: 'headache', pattern: /\bheadache\b/i }
+  ];
+  return themes.map(theme => {
+    const mentioned = pairs.filter(pair => theme.pattern.test(String(pair.next?.notes || '')));
+    const comparison = pairs.filter(pair => !theme.pattern.test(String(pair.next?.notes || '')));
+    if (mentioned.length < 2 || comparison.length < 2) return null;
+    const averageFor = (group, selector) => nutritionAverage(group.map(selector));
+    const mentionedCalories = averageFor(mentioned, pair => pair.day.calorieDifference);
+    const comparisonCalories = averageFor(comparison, pair => pair.day.calorieDifference);
+    const mentionedFiber = averageFor(mentioned, pair => pair.day.totals.fiber_g);
+    const comparisonFiber = averageFor(comparison, pair => pair.day.totals.fiber_g);
+    const workoutRate = group => group.filter(pair => pair.day.target.day_type === 'training').length / group.length * 100;
+    return '<div class="analytics-insight"><strong>Notes mentioning ' + escapeHtml(theme.label) + ':</strong> on those ' +
+      mentioned.length + ' days, the prior day averaged ' + (mentionedCalories >= 0 ? '+' : '') + Math.round(mentionedCalories) +
+      ' kcal vs target and ' + Math.round(mentionedFiber) + 'g fiber. Other comparison days averaged ' +
+      (comparisonCalories >= 0 ? '+' : '') + Math.round(comparisonCalories) + ' kcal and ' +
+      Math.round(comparisonFiber) + 'g fiber. Prior-day workout rate: ' + Math.round(workoutRate(mentioned)) +
+      '% vs ' + Math.round(workoutRate(comparison)) + '%.</div>';
+  }).filter(Boolean);
 }
 
 async function renderNutritionAnalytics() {
@@ -6075,7 +6387,7 @@ async function renderNutritionAnalytics() {
     const completeLogs = sortedLogs.filter(nutritionFoodLogIsComplete);
     const targets = new Map((targetRows || []).map(target => [target.target_date, target]));
     for (const log of completeLogs) {
-      if (!targets.has(log.log_date)) {
+      if (!targets.has(log.log_date) || targets.get(log.log_date)?.engine_version !== NUTRITION_ENGINE_VERSION) {
         targets.set(log.log_date, calculateNutritionTarget(log.log_date, context.profile, context.measurements));
       }
     }
@@ -6130,28 +6442,69 @@ async function renderNutritionAnalytics() {
       nutritionAssociationInsight(
         pairs, 'After a workout vs rest day',
         pair => pair.day.target.day_type === 'training',
+        'workout days',
         pair => pair.day.target.day_type === 'rest',
+        'rest days',
         'sleep_score', 'next-morning sleep score'
       ),
       nutritionAssociationInsight(
         pairs, 'After calorie surplus vs deficit',
         pair => pair.day.calorieDifference > 100,
+        'surplus days',
         pair => pair.day.calorieDifference < -100,
+        'deficit days',
         'energy', 'next-day energy'
       ),
       nutritionAssociationInsight(
         pairs, 'Earlier vs later final calories',
         pair => pair.day.lastHours != null && pair.day.lastHours < 20.5,
+        'earlier final-calorie days',
         pair => pair.day.lastHours != null && pair.day.lastHours >= 20.5,
+        'later final-calorie days',
         'sleep_score', 'next-morning sleep score'
       ),
       nutritionAssociationInsight(
         pairs, 'Earlier vs later final calories',
         pair => pair.day.lastHours != null && pair.day.lastHours < 20.5,
+        'earlier final-calorie days',
         pair => pair.day.lastHours != null && pair.day.lastHours >= 20.5,
-        'stress', 'next-day stress', true
+        'later final-calorie days',
+        'stress', 'next-day stress'
       )
     ].filter(Boolean);
+    const stoolPairs = pairs.filter(pair => nutritionStoolOutcome(pair.next));
+    const stoolNutritionInsights = [
+      nutritionStoolMetricInsight(stoolPairs, 'Prior-day fiber', day => day.totals.fiber_g, 'g'),
+      nutritionStoolMetricInsight(stoolPairs, 'Prior-day protein', day => day.totals.protein_g, 'g'),
+      nutritionStoolMetricInsight(stoolPairs, 'Prior-day carbohydrate', day => day.totals.carbs_g, 'g'),
+      nutritionStoolMetricInsight(stoolPairs, 'Prior-day fat', day => day.totals.fat_g, 'g'),
+      nutritionStoolMetricInsight(stoolPairs, 'Prior-day calories', day => day.totals.calories, ' kcal')
+    ].filter(Boolean);
+    const stoolFoodInsights = nutritionFoodStoolInsights(stoolPairs);
+    const stoolContextInsights = [
+      nutritionStoolContextInsight(
+        stoolPairs, 'Workout context',
+        pair => pair.day.target.day_type === 'training',
+        'a logged workout', 'a rest day'
+      ),
+      nutritionStoolContextInsight(
+        stoolPairs, 'Alcohol context',
+        pair => pair.day.log.had_alcohol === true,
+        'alcohol was logged', 'no alcohol was logged'
+      ),
+      nutritionStoolContextInsight(
+        stoolPairs, 'Magnesium context',
+        pair => pair.day.log.took_magnesium === true,
+        'magnesium was logged', 'no magnesium was logged'
+      ),
+      nutritionStoolContextInsight(
+        stoolPairs, 'Higher-stress context',
+        pair => Number(pair.day.log.stress) >= 4,
+        'stress was 4–5', 'stress was below 4'
+      )
+    ].filter(Boolean);
+    const noStoolCount = stoolPairs.filter(pair => pair.next.no_bowel_movement === true).length;
+    const noteInsights = nutritionNoteThemeInsights(pairs);
 
     container.innerHTML =
       '<div class="card" style="margin-bottom:14px">' +
@@ -6174,9 +6527,31 @@ async function renderNutritionAnalytics() {
       '<div class="card" style="margin-bottom:14px"><div class="card-section-title">Eating windows &amp; fasting</div>' +
         '<p style="font-size:11px;line-height:1.45;color:var(--text);opacity:.58;margin:0">Green shows the eating window on a 24-hour line. Hours at right measure the fast since the previous complete day.</p>' +
         '<div class="analytics-chart">' + (fastingDays.length ? nutritionFastingRows(fastingDays.slice(-30)) : '<div class="macro-status-note">Complete days with first and last calorie times will appear here.</div>') + '</div></div>' +
+      '<div class="card" style="margin-bottom:14px"><div class="card-section-title">Stool patterns</div>' +
+        '<p style="font-size:11px;line-height:1.45;color:var(--text);opacity:.58;margin:0 0 4px">Compares a complete food day with the following logged stool. A higher Bristol number means looser stool—not necessarily better. These are associations, not diagnoses or proof that a food caused the result.</p>' +
+        '<div class="analytics-subhead">Macros &amp; fiber</div>' +
+        (stoolNutritionInsights.length ? stoolNutritionInsights.join('') :
+          '<div class="macro-status-note">Not enough paired food-and-next-stool days yet. Each comparison needs at least two mornings on both sides of the median.</div>') +
+        '<div class="analytics-subhead">Recurring foods</div>' +
+        (stoolFoodInsights.length ? stoolFoodInsights.join('') :
+          '<div class="macro-status-note">No food has enough repeated exposures and comparison days yet. Repeated usual foods will become more useful here over time.</div>') +
+        '<div class="analytics-subhead">Other logged context</div>' +
+        (stoolContextInsights.length ? stoolContextInsights.join('') :
+          '<div class="macro-status-note">There are not yet two mornings on both sides of any workout, alcohol, magnesium, or high-stress comparison.</div>') +
+        '<div class="analytics-caution">' + (noStoolCount < 2
+          ? (noStoolCount === 1
+            ? 'Only one no-stool morning is paired with a complete prior-day food log, so the app will not name a likely food cause yet. '
+            : 'No no-stool morning is paired with a complete prior-day food log yet. ')
+          : '') +
+          'Hydration is an important missing signal—especially after hot or sweaty activity. Activity, alcohol, magnesium, illness, travel, stress, medications, and meal timing can also affect bowel patterns; the app will only surface them when both comparison groups are large enough.</div>' +
+      '</div>' +
       '<div class="card" style="margin-bottom:28px"><div class="card-section-title">What seems connected</div>' +
         '<p style="font-size:11px;line-height:1.45;color:var(--text);opacity:.58;margin:0 0 4px">Exploratory associations using the prior day’s nutrition/workout and the next day’s outcomes. They are signals to investigate, not proof of cause.</p>' +
+        '<div class="analytics-subhead">Ratings</div>' +
         (insights.length ? insights.join('') : '<div class="macro-status-note">There is not enough complete history for a fair comparison yet. Each comparison needs at least two days in both groups.</div>') +
+        '<div class="analytics-subhead">Patterns found in Daily notes</div>' +
+        (noteInsights.length ? noteInsights.join('') :
+          '<div class="macro-status-note">Notes are included, but no recurring theme has at least two matching and two comparison days yet.</div>') +
       '</div>';
   } catch (error) {
     console.error('Nutrition analytics failed', error);
