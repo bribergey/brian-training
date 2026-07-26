@@ -1,12 +1,12 @@
 # Personalized Nutrition Product Specification
 
 Status: research and architecture baseline for review
-Branch: `codex/personalized-nutrition-engine`
+Branch: `codex/nutrition-daily-analytics`
 Started: 2026-07-25
 
 ## Product promise
 
-The Macros experience should answer four questions without pretending to know more than the data supports:
+The nutrition section at the bottom of Daily Log should answer four questions without pretending to know more than the data supports:
 
 1. What is my target today, and why?
 2. What have I logged so far?
@@ -42,7 +42,7 @@ The advisory layer cannot silently change canonical data.
 ```text
 Profile + measurements + goal phase
                     |
-Training schedule and completed sessions
+Completed workout sessions
                     v
        Deterministic target engine
         policy version + engine version
@@ -52,7 +52,7 @@ Training schedule and completed sessions
        +------------+-------------+
        |                          |
        v                          v
-Structured food facts       Macros dashboard
+Structured food facts       Daily Log nutrition
 provenance + revisions      target / logged /
        |                    remaining / confidence
        +------------+-------------+
@@ -76,16 +76,15 @@ calculateNutritionTargets(policy, profileSnapshot, dayContext)
   -> confidence
 ```
 
-## Macros tab
+## Daily Log nutrition section
 
-The Macros tab is the primary product, not a chat transcript.
+The Daily Log is the primary day-level product, not a chat transcript. Its calendar controls the selected date for both wellness data and nutrition.
 
 ### Top section
 
-- Date navigation shared with Daily Log.
-- Day type such as “Normal resistance day” or “Rest / light day.”
-- Planned workout and training time where available.
-- A short deterministic explanation such as “Carbohydrate is higher because Day C is scheduled.”
+- Day type such as “Completed workout” or “Rest day.”
+- A day begins as rest and changes only when a completed workout is logged for that date; planned or preferred workout days do not count.
+- A short deterministic explanation such as “A completed workout was logged, so the training-day target is active.”
 - Completeness badge: target ready, target provisional, missing current weight, or needs calibration.
 
 ### Progress section
@@ -418,7 +417,9 @@ Track:
 - stale-analysis detection,
 - unsafe-answer rate,
 - latency,
-- cost per accepted meal.
+- provider-reported cost per model call,
+- whether the portion estimate used text, photos, both, or reusable food memory,
+- the visual portion cues and assumptions that materially affected the estimate.
 
 Invalid schema, impossible units, internal calorie/macro inconsistency, or an out-of-policy claim fails closed to “Could not analyze—please review.” Never silently coerce it into a canonical total.
 
@@ -426,12 +427,12 @@ Invalid schema, impossible units, internal calorie/macro inconsistency, or an ou
 
 ### First testable loop
 
-- Calculate a stable, versioned calorie and macro target from the current profile, latest measurement, goal, activity, lower-carbohydrate preference, and training/rest day type.
+- Calculate a stable, versioned calorie and macro target from the current profile, latest measurement, goal, activity, nutrition policy, and completed-workout/rest day type.
 - Show calories, protein, carbohydrate, and fat consumed and remaining.
 - Analyze ordinary Daily Log food descriptions through an authenticated server function.
 - Store estimates, confidence, assumptions, and source metadata with each food entry.
 - Let the user correct an estimate without re-entering a meal.
-- Recognize and reuse recurring foods and meals while typing.
+- Show recurring foods as visible one-tap options and recognize them while typing.
 - Keep incomplete days explicitly incomplete; missing food is never counted as zero.
 
 Exit: the user can log a normal day, see useful estimated progress immediately, correct it, and receive a better default the next time the food recurs.
@@ -460,7 +461,8 @@ Exit: coach usefulness and safety exceed the deterministic experience in evaluat
 - Targets are stable by day type and do not react to daily sleep, stress, soreness, stool, or energy scores.
 - The preferred logging mode is quick AI estimation from ordinary text, with better amounts added when convenient.
 - Recurring foods and meals should become reusable user-specific memory.
-- The active fasting, lower-carbohydrate, and no/low-added-sugar preferences come from the current profile, not from hardcoded documentation.
+- Personal values and active nutrition policy come from the current app configuration and current profile, never from hardcoded values in this document.
+- Added sugar is retained only as an estimate when useful for future analysis; it is not a primary dashboard widget.
 - Historical outcome analysis links food on one day to recovery signals on following days; it does not rewrite the day's target.
 - Hydration, micronutrients, and a conversational coach can follow after the core loop is useful.
 
