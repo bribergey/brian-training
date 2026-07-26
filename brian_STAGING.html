@@ -3567,6 +3567,10 @@ async function saveSessionEdit(sid, sessionId, idx) {
     await sbPatch(TABLES.sessions, sessionId, { exercises, notes, date, workout_time }, withUserScope());
     // Update cache
     cachedSessions = null;
+    if (typeof nutritionTargetCache !== 'undefined') {
+      nutritionTargetCache.delete(s.date);
+      nutritionTargetCache.delete(date);
+    }
     statusEl.textContent = '✓ Saved';
     btn.textContent = 'Save changes'; btn.disabled = false;
     // Clear added exercises state — they're now part of the session
