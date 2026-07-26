@@ -200,7 +200,7 @@ Numeric cards are always rendered from the database, never copied from model pro
 
 ## Food analysis
 
-AI-assisted food estimation is part of the first usable release. The user can keep writing normal descriptions instead of entering every ingredient and measurement. The system returns an explicit estimate with assumptions and improves recurring foods from corrections.
+AI-assisted food estimation is part of the first usable release. The user can keep writing normal descriptions instead of entering every ingredient and measurement. Saving a Daily Log automatically starts any needed estimate; leaving the selected date or Daily tab must not cancel it or reset navigation. The system returns an explicit estimate with assumptions and improves recurring foods from corrections.
 
 ```text
 Description and optional photo
@@ -432,7 +432,10 @@ Invalid schema, impossible units, internal calorie/macro inconsistency, or an ou
 - Analyze ordinary Daily Log food descriptions through an authenticated server function.
 - Store estimates, confidence, assumptions, and source metadata with each food entry.
 - Let the user correct an estimate without re-entering a meal.
-- Show recurring foods as visible one-tap options and recognize them while typing.
+- Show recurring foods as visible, compact one-tap options and recognize them while typing.
+- Let the user rename, revise, and delete a recurring food. Recipe revisions update the same memory row and are re-estimated once on next use.
+- Treat closed past logs with a final-calories time and complete saved estimates as analytically complete unless the user explicitly reopens/excludes them.
+- Build Analytics from saved estimates; never require a separate history-estimation workflow.
 - Keep incomplete days explicitly incomplete; missing food is never counted as zero.
 
 Exit: the user can log a normal day, see useful estimated progress immediately, correct it, and receive a better default the next time the food recurs.
