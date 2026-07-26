@@ -23,6 +23,11 @@ const expected = [
   ['Daily Log work-hours stepper', "stepperHtml('daily-work-hours'"],
   ['Daily Log empty-food filter', 'filter(entry => entry.description || entry.photos.length)'],
   ['brick favicon', '<link rel="icon" type="image/svg+xml"'],
+  ['food-complete calendar marker', 'function nutritionFoodLogIsAnalyzedComplete'],
+  ['logged extra-activity target', 'function nutritionExtraActivityEstimate'],
+  ['stool nutrition analytics', 'function nutritionStoolMetricInsight'],
+  ['Daily notes analytics', 'function nutritionNoteThemeInsights'],
+  ['button success feedback', 'function dailyFlashButton'],
 ];
 
 if (appFile === 'brian_STAGING.html') {
