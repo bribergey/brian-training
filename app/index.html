@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Briq Training">
 <title>Briq Training</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='28' fill='%230f0f0e'/%3E%3Crect x='34' y='34' width='34' height='124' rx='5' fill='%231adb4e'/%3E%3Crect x='80' y='34' width='78' height='56' rx='5' fill='%23fff'/%3E%3Crect x='80' y='102' width='78' height='56' rx='5' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -1011,6 +1012,23 @@ select {
 .daily-food-entry-head { display:flex; align-items:flex-end; gap:10px; margin-bottom:10px; }
 .daily-food-time-wrap { flex:1; min-width:0; }
 .daily-food-description { min-height:96px; line-height:1.5; resize:vertical; }
+.daily-food-estimate {
+  margin-top:10px; padding:10px 11px; border-radius:9px;
+  background:rgba(26,219,78,.07); border:1px solid rgba(26,219,78,.22);
+}
+.daily-food-estimate-head { display:flex; justify-content:space-between; gap:8px; align-items:center; }
+.daily-food-estimate-values { font-family:var(--mono); font-size:10px; font-weight:700; line-height:1.5; color:var(--text); }
+.daily-food-confidence {
+  flex:0 0 auto; border-radius:20px; padding:3px 7px; background:var(--bg2);
+  font-family:var(--mono); font-size:8px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+}
+.daily-food-assumption { margin-top:5px; font-size:11px; line-height:1.4; color:var(--text); opacity:.62; }
+.daily-food-suggestions { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.daily-food-suggestion {
+  border:1px solid var(--border2); background:var(--bg3); color:var(--text);
+  border-radius:18px; padding:6px 9px; font-family:var(--mono); font-size:9px;
+  font-weight:700; cursor:pointer;
+}
 .daily-photo-tools { display:flex; align-items:center; gap:10px; margin-top:10px; }
 .daily-photo-picker { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
 .daily-photo-add {
@@ -1090,28 +1108,26 @@ select {
 .daily-calendar-day:hover { background:var(--bg3); }
 .daily-calendar-day:active { transform:scale(.92); }
 .daily-calendar-day.is-today { border-color:var(--border2); }
-.daily-calendar-day.is-logged { background:rgba(26,219,78,.11); color:var(--green-dark); }
+.daily-calendar-day.is-started { background:rgba(26,219,78,.05); color:var(--green-dark); }
+.daily-calendar-day.is-morning { background:rgba(26,219,78,.10); color:var(--green-dark); }
+.daily-calendar-day.is-complete { background:rgba(26,219,78,.18); color:var(--green-dark); }
 .daily-calendar-day.is-selected {
   border-color:var(--text); background:var(--text); color:var(--bg2);
   box-shadow:0 7px 18px rgba(0,0,0,.14);
 }
-.daily-calendar-day.is-selected.is-logged { border-color:var(--green); background:var(--text); }
-.daily-calendar-check {
-  position:static; flex:0 0 12px; display:flex; align-items:center; justify-content:center;
-  width:12px; height:12px; border-radius:50%; background:var(--green); color:#09250f;
-  font-family:var(--mono); font-size:8px; font-weight:900; line-height:1;
+.daily-calendar-day.is-selected.is-started,
+.daily-calendar-day.is-selected.is-morning,
+.daily-calendar-day.is-selected.is-complete { border-color:var(--green); background:var(--text); }
+.daily-calendar-progress {
+  --daily-progress:0deg;
+  position:static; flex:0 0 12px; width:12px; height:12px; border-radius:50%;
+  background:conic-gradient(var(--green) var(--daily-progress), var(--bg4) 0);
+  box-shadow:inset 0 0 0 1px rgba(15,15,14,.12);
 }
-.daily-calendar-day.is-selected .daily-calendar-check { box-shadow:0 0 0 2px var(--text); }
-.daily-calendar-footer {
-  display:flex; align-items:center; justify-content:space-between; gap:12px;
-  margin-top:14px; padding-top:12px; border-top:1px solid var(--border);
-}
-.daily-calendar-legend { display:flex; align-items:center; gap:7px; font-size:12px; font-weight:600; color:var(--text); opacity:.64; }
-.daily-calendar-legend-check {
-  display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px;
-  border-radius:50%; background:var(--green); color:#09250f; font-family:var(--mono); font-size:11px; font-weight:900;
-}
-.daily-calendar-state { font-family:var(--mono); font-size:9px; font-weight:700; letter-spacing:.04em; color:var(--text); opacity:.42; text-transform:uppercase; }
+.daily-calendar-day.is-started .daily-calendar-progress { --daily-progress:120deg; }
+.daily-calendar-day.is-morning .daily-calendar-progress { --daily-progress:240deg; }
+.daily-calendar-day.is-complete .daily-calendar-progress { --daily-progress:360deg; }
+.daily-calendar-day.is-selected .daily-calendar-progress { box-shadow:0 0 0 2px var(--text), inset 0 0 0 1px rgba(255,255,255,.24); }
 .daily-info-btn {
   border:1px solid var(--border2); background:none; color:var(--text); width:22px; height:22px;
   border-radius:50%; font-family:var(--mono); font-size:12px; font-weight:700; cursor:pointer;
@@ -1122,6 +1138,76 @@ select {
 .daily-modal-row:last-of-type { border-bottom:none; }
 .daily-save-row { display:flex; align-items:center; gap:12px; margin-bottom:32px; }
 .daily-status { font-family:var(--mono); font-size:11px; color:var(--green-dark); white-space:nowrap; }
+.macro-hero { padding:20px; margin-bottom:14px; background:var(--text); color:var(--bg2); }
+.macro-hero-top { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.macro-kcal-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-top:20px; }
+.macro-date-nav { display:flex; gap:6px; }
+.macro-date-btn {
+  width:38px; height:38px; border-radius:10px; border:1px solid rgba(255,255,255,.22);
+  background:transparent; color:inherit; font-size:22px; cursor:pointer;
+}
+.macro-kcal { font-family:var(--display); font-size:38px; font-weight:850; line-height:.95; letter-spacing:-.04em; }
+.macro-kcal-label { margin-top:6px; font-family:var(--mono); font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; opacity:.62; }
+.macro-day-chip { display:inline-flex; margin-top:13px; padding:5px 9px; border-radius:20px; background:rgba(26,219,78,.18); color:#71f28d; font-family:var(--mono); font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.macro-progress-list { display:grid; gap:16px; }
+.macro-progress-head { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:end; }
+.macro-progress-name { font-size:14px; font-weight:750; color:var(--text); }
+.macro-progress-numbers { text-align:right; font-size:13px; line-height:1.35; font-weight:650; color:var(--text); }
+.macro-progress-track { height:9px; margin-top:7px; border-radius:20px; background:var(--bg4); overflow:hidden; }
+.macro-progress-fill { height:100%; border-radius:inherit; background:var(--green); transition:width .25s ease; }
+.macro-progress-fill.over { background:#f59e0b; }
+.macro-summary-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin-top:16px; }
+.macro-summary-tile { padding:12px; border-radius:10px; background:var(--bg3); }
+.macro-summary-value { font-family:var(--display); font-size:23px; font-weight:800; color:var(--text); }
+.macro-summary-label { margin-top:2px; font-family:var(--mono); font-size:8px; text-transform:uppercase; letter-spacing:.06em; color:var(--text); opacity:.5; }
+.macro-status-note { font-size:12px; line-height:1.5; color:var(--text); opacity:.64; margin-top:12px; }
+.macro-food-row { padding:13px 0; border-bottom:1px solid var(--border); }
+.macro-food-row:last-child { border-bottom:0; }
+.macro-food-head { display:flex; justify-content:space-between; gap:12px; }
+.macro-food-name { font-size:14px; line-height:1.4; font-weight:650; color:var(--text); }
+.macro-food-time { font-family:var(--mono); font-size:9px; color:var(--text); opacity:.45; }
+.macro-food-values { margin-top:6px; font-family:var(--mono); font-size:10px; line-height:1.5; color:var(--text); opacity:.72; }
+.macro-correction { margin-top:10px; }
+.macro-correction summary { cursor:pointer; font-family:var(--mono); font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--green-dark); }
+.macro-correction-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:10px; }
+.macro-correction-grid label { font-family:var(--mono); font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text); opacity:.55; }
+.macro-correction-grid input { margin-top:4px; min-height:40px; }
+.macro-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+.macro-actions .btn { width:auto; flex:1 1 150px; }
+.macro-method { border-top:1px solid var(--border); margin-top:14px; padding-top:12px; font-size:11px; line-height:1.5; color:var(--text); opacity:.58; }
+.daily-usual-foods { margin:0 0 14px; padding:12px; border-radius:10px; background:var(--bg3); }
+.daily-usual-foods-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+.daily-usual-foods-title { font-family:var(--mono); font-size:9px; font-weight:750; letter-spacing:.06em; text-transform:uppercase; color:var(--text); opacity:.58; }
+.daily-usual-foods-manage { border:0; background:none; padding:2px; color:var(--green-dark); font-size:11px; font-weight:750; cursor:pointer; }
+.daily-usual-foods-list { display:flex; gap:7px; flex-wrap:wrap; }
+.daily-usual-food {
+  border:1px solid var(--border2); border-radius:999px; background:var(--bg2); color:var(--text);
+  max-width:175px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  padding:7px 10px; font-size:12px; font-weight:650; cursor:pointer;
+}
+.usual-food-manager-item { padding:14px 0; border-bottom:1px solid var(--border); }
+.usual-food-manager-item:last-child { border-bottom:0; }
+.usual-food-manager-actions { display:flex; gap:8px; margin-top:10px; }
+.usual-food-manager-actions .btn { flex:1; width:auto; }
+.usual-food-delete { color:#b42318; border-color:rgba(180,35,24,.28); }
+.analytics-kpis { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin-bottom:14px; }
+.analytics-kpi { padding:14px; border-radius:12px; background:var(--bg3); }
+.analytics-kpi-value { font-family:var(--display); font-size:26px; font-weight:850; letter-spacing:-.03em; color:var(--text); }
+.analytics-kpi-label { margin-top:3px; font-size:11px; line-height:1.35; color:var(--text); opacity:.62; }
+.analytics-chart { display:grid; gap:9px; margin-top:12px; }
+.analytics-bar-row { display:grid; grid-template-columns:58px 1fr 72px; gap:9px; align-items:center; }
+.analytics-date { font-family:var(--mono); font-size:9px; color:var(--text); opacity:.58; }
+.analytics-diverging { position:relative; height:14px; border-radius:4px; background:var(--bg3); overflow:hidden; }
+.analytics-diverging::after { content:""; position:absolute; left:50%; top:0; bottom:0; width:1px; background:var(--border2); }
+.analytics-bar { position:absolute; top:2px; bottom:2px; border-radius:3px; background:var(--green); }
+.analytics-bar.negative { background:#7c8a84; }
+.analytics-value { text-align:right; font-size:11px; font-weight:700; color:var(--text); }
+.fasting-row { display:grid; grid-template-columns:58px 1fr 58px; gap:9px; align-items:center; }
+.fasting-track { position:relative; height:18px; border-radius:5px; background:var(--bg4); overflow:hidden; }
+.fasting-window { position:absolute; top:2px; bottom:2px; border-radius:4px; background:var(--green); }
+.fasting-hours { text-align:right; font-size:11px; font-weight:700; color:var(--text); }
+.analytics-insight { padding:12px 0; border-bottom:1px solid var(--border); font-size:13px; line-height:1.5; color:var(--text); }
+.analytics-insight:last-child { border-bottom:0; }
 @media (max-width:380px) {
   .daily-scale-options { gap:4px; }
   .daily-photo-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
@@ -1225,14 +1311,11 @@ select {
   <div class="panel-inner">
     <div class="nut-subtab-bar">
       <button class="nut-subtab active" id="daily-sub-log" onclick="dailyShowTab('log',this)">Daily Log</button>
-      <button class="nut-subtab" id="daily-sub-macros" onclick="dailyShowTab('macros',this)">Macros</button>
+      <button class="nut-subtab" id="daily-sub-analytics" onclick="dailyShowTab('analytics',this)">Analytics</button>
     </div>
     <div id="daily-page-log"><div style="color:var(--text);font-size:14px;opacity:0.5;padding:8px 0">Loading...</div></div>
-    <div id="daily-page-macros" style="display:none">
-      <div class="card">
-        <div class="card-section-title">Macros</div>
-        <p style="font-size:14px;line-height:1.55;color:var(--text);opacity:.65;margin:0">A future home for calories, protein, carbohydrates, and fat. We’ll build this tab in a separate update.</p>
-      </div>
+    <div id="daily-page-analytics" style="display:none">
+      <div style="color:var(--text);font-size:14px;opacity:0.5;padding:8px 0">Loading...</div>
     </div>
   </div>
 </div>
@@ -1559,6 +1642,8 @@ const TABLES = {
   profile: ENV === 'production' ? 'user_profile' : 'user_profile_staging',
   measurements: ENV === 'production' ? 'user_measurements' : 'user_measurements_staging',
   dailyLogs: ENV === 'production' ? 'daily_logs' : 'daily_logs_staging',
+  nutritionTargets: ENV === 'production' ? 'nutrition_day_targets' : 'nutrition_day_targets_staging',
+  nutritionMemory: ENV === 'production' ? 'nutrition_food_memory' : 'nutrition_food_memory_staging',
 };
 
 // ─── SESSIONS: SUPABASE + localStorage CACHE ─────────────────────────────
@@ -1584,6 +1669,7 @@ async function loadSessions() {
 
 async function saveSession(session) {
   if (cachedSessions) cachedSessions.push(session);
+  if (typeof nutritionTargetCache !== 'undefined') nutritionTargetCache.delete(session.date);
   localStorage.setItem(getUserScopedStorageKey('brian_v3_cache'), JSON.stringify(cachedSessions || [session]));
   await sbPost(TABLES.sessions, {
     user_id: getActiveUserIdOrThrow(),
@@ -1645,6 +1731,30 @@ async function sbPatch(table, id, body, params = '', schema = '') {
   const rows = await r.json();
   if (!rows.length) throw new Error('No rows updated — record not found or permission denied');
   return rows[0];
+}
+async function sbDelete(table, id, params = '', schema = '') {
+  const query = params ? `id=eq.${encodeURIComponent(id)}&${params}` : `id=eq.${encodeURIComponent(id)}`;
+  const schemaHeaders = schema ? { 'Content-Profile': schema } : {};
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${query}`, {
+    method: 'DELETE',
+    headers: getSupabaseHeaders({ 'Prefer': 'return=representation', ...schemaHeaders })
+  });
+  if (!r.ok) throw new Error(await r.text());
+  const rows = await r.json();
+  if (!rows.length) throw new Error('No rows deleted — record not found or permission denied');
+  return rows[0];
+}
+
+async function sbFunction(name, body) {
+  if (!authSession?.access_token) throw new Error('Sign in again before using nutrition analysis');
+  const r = await fetch(`${SB_URL}/functions/v1/${encodeURIComponent(name)}`, {
+    method: 'POST',
+    headers: getSupabaseHeaders(),
+    body: JSON.stringify(body)
+  });
+  const payload = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(payload.error || payload.code || 'Function request failed');
+  return payload;
 }
 
 // ─── STATIC FALLBACK EXERCISES (used if program table is empty) ────────────
@@ -1777,15 +1887,16 @@ function forgetSelectedSession() {
 
 // ─── EXERCISE HELPERS ─────────────────────────────────────────────────────
 // ─── STEPPER HELPER ──────────────────────────────────────────────────────
-function stepperHtml(id, value, min, max, placeholder, step) {
+function stepperHtml(id, value, min, max, placeholder, step, oninput) {
   const val  = value !== undefined && value !== '' ? value : '';
   const minAttr = min  !== undefined ? `min="${min}"` : '';
   const maxAttr = max  !== undefined ? `max="${max}"` : '';
   const phAttr  = placeholder ? `placeholder="${placeholder}"` : '';
+  const inputAttr = oninput ? `oninput="${oninput}"` : '';
   const st      = step || 1;
   return `<div class="stepper">
     <button type="button" class="stepper-btn" onclick="stepField('${id}',-${st},${min??0},${max??999},${st})">−</button>
-    <input type="number" inputmode="decimal" id="${id}" value="${val}" ${minAttr} ${maxAttr} ${phAttr} step="${st}">
+    <input type="number" inputmode="decimal" id="${id}" value="${val}" ${minAttr} ${maxAttr} ${phAttr} ${inputAttr} step="${st}">
     <button type="button" class="stepper-btn" onclick="stepField('${id}',${st},${min??0},${max??999},${st})">+</button>
   </div>`;
 }
@@ -4210,13 +4321,6 @@ const DAILY_SCALE_OPTIONS = {
     'High — hard to switch off',
     'Overwhelming — severe stress or anxiety'
   ],
-  mood: [
-    'Very low — a bad day emotionally',
-    'Low — below your normal mood',
-    'Neutral — neither good nor bad',
-    'Good — positive overall',
-    'Excellent — unusually positive'
-  ],
   soreness: [
     'None — body feels fresh',
     'Mild — noticeable only when checked',
@@ -4251,6 +4355,10 @@ let dailyOpenedLocalDate = null;
 let dailyEditingId = null;
 let dailyDraftDirty = false;
 let dailyPhotoUploadsInFlight = 0;
+let nutritionMemory = null;
+let nutritionTargetCache = new Map();
+let nutritionAnalysisJobs = new Map();
+const NUTRITION_ENGINE_VERSION = 'stable-target-1.1.0';
 
 function dailyLocalDate(date = new Date()) {
   const y = date.getFullYear();
@@ -4274,32 +4382,42 @@ function dailyMonthStart(value) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
+function dailyLogStage(log) {
+  if (!log) return { key: '', label: '' };
+  const hasSleep = log.sleep_score != null || log.sleep_duration_minutes != null;
+  const hasStool = log.stool_type != null || log.no_bowel_movement === true;
+  const hasMorning = hasSleep && hasStool;
+  const hasDayRatings = log.energy != null && log.soreness != null && log.stress != null;
+  if (hasMorning && hasDayRatings) return { key: 'complete', label: 'day complete' };
+  if (hasMorning) return { key: 'morning', label: 'morning logged' };
+  return { key: 'started', label: 'log started' };
+}
+
 function dailyCalendarMarkup() {
   const month = dailyCalendarMonth || dailyMonthStart(dailySelectedDate || dailyLocalDate());
   const year = month.getFullYear();
   const monthIndex = month.getMonth();
   const selectedDate = dailySelectedDate || dailyLocalDate();
   const today = dailyLocalDate();
-  const loggedDates = new Set((dailyLogs || []).map(log => log.log_date));
+  const logsByDate = new Map((dailyLogs || []).map(log => [log.log_date, log]));
   const firstWeekday = (new Date(year, monthIndex, 1).getDay() + 6) % 7;
   const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
   const cells = [];
   for (let i = 0; i < firstWeekday; i++) cells.push('<div class="daily-calendar-blank" aria-hidden="true"></div>');
   for (let day = 1; day <= daysInMonth; day++) {
     const value = year + '-' + String(monthIndex + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-    const isLogged = loggedDates.has(value);
+    const stage = dailyLogStage(logsByDate.get(value));
     const isSelected = value === selectedDate;
     const isToday = value === today;
     const classes = ['daily-calendar-day'];
     if (isToday) classes.push('is-today');
-    if (isLogged) classes.push('is-logged');
+    if (stage.key) classes.push('is-' + stage.key);
     if (isSelected) classes.push('is-selected');
-    const label = dailyFormatDate(value) + (isToday ? ', today' : '') + (isLogged ? ', logged' : '') + (isSelected ? ', selected' : '');
+    const label = dailyFormatDate(value) + (isToday ? ', today' : '') + (stage.label ? ', ' + stage.label : ', not logged') + (isSelected ? ', selected' : '');
     cells.push('<button type="button" class="' + classes.join(' ') + '" aria-label="' + escapeHtml(label) +
       '" aria-pressed="' + (isSelected ? 'true' : 'false') + '" onclick="dailySelectCalendarDate(\'' + value + '\')">' +
-      '<span>' + day + '</span>' + (isLogged ? '<span class="daily-calendar-check" aria-hidden="true">✓</span>' : '') + '</button>');
+      '<span>' + day + '</span>' + (stage.key ? '<span class="daily-calendar-progress" aria-hidden="true"></span>' : '') + '</button>');
   }
-  const selectedIsLogged = loggedDates.has(selectedDate);
   return '<div class="daily-calendar-header">' +
       '<div class="daily-calendar-title"><div class="daily-calendar-month">' +
         DAILY_MONTH_LABELS[monthIndex] + ' ' + year + '</div></div>' +
@@ -4312,9 +4430,7 @@ function dailyCalendarMarkup() {
     '<div class="daily-calendar-weekdays" aria-hidden="true">' +
       ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(day => '<div class="daily-calendar-weekday">' + day + '</div>').join('') +
     '</div>' +
-    '<div class="daily-calendar-grid" aria-label="' + escapeHtml(month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })) + '">' + cells.join('') + '</div>' +
-    '<div class="daily-calendar-footer"><div class="daily-calendar-legend"><span class="daily-calendar-legend-check">✓</span> Logged</div>' +
-      '<div class="daily-calendar-state">' + (selectedIsLogged ? 'Editing saved log' : 'New daily log') + '</div></div>';
+    '<div class="daily-calendar-grid" aria-label="' + escapeHtml(month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })) + '">' + cells.join('') + '</div>';
 }
 
 function renderDailyCalendar() {
@@ -4339,19 +4455,20 @@ function dailySelectCalendarDate(value) {
 
 function dailySetSubTabUI(sub) {
   document.getElementById('daily-sub-log')?.classList.toggle('active', sub === 'log');
-  document.getElementById('daily-sub-macros')?.classList.toggle('active', sub === 'macros');
+  document.getElementById('daily-sub-analytics')?.classList.toggle('active', sub === 'analytics');
   const logPage = document.getElementById('daily-page-log');
-  const macrosPage = document.getElementById('daily-page-macros');
+  const analyticsPage = document.getElementById('daily-page-analytics');
   if (logPage) logPage.style.display = sub === 'log' ? '' : 'none';
-  if (macrosPage) macrosPage.style.display = sub === 'macros' ? '' : 'none';
+  if (analyticsPage) analyticsPage.style.display = sub === 'analytics' ? '' : 'none';
 }
 
 function dailyShowTab(sub) {
-  if (sub !== 'log' && sub !== 'macros') return;
+  if (sub !== 'log' && sub !== 'analytics') return;
   dailySaveDraftNow();
   dailyActiveSubTab = sub;
   dailySetSubTabUI(sub);
   if (sub === 'log') renderDaily();
+  if (sub === 'analytics') renderNutritionAnalytics();
 }
 
 function dailyDraftKey(date) {
@@ -4368,6 +4485,16 @@ async function loadDailyLogs(force = false) {
   if (dailyLogs && !force) return dailyLogs;
   dailyLogs = await sbGet(TABLES.dailyLogs, withUserScope('select=*&order=log_date.desc,updated_at.desc'), 'training');
   return dailyLogs;
+}
+
+async function loadNutritionMemory(force = false) {
+  if (nutritionMemory && !force) return nutritionMemory;
+  nutritionMemory = await sbGet(
+    TABLES.nutritionMemory,
+    withUserScope('select=*&order=user_confirmed.desc,times_used.desc,last_used_at.desc&limit=100'),
+    'training'
+  );
+  return nutritionMemory;
 }
 
 function dailyScaleMarkup(name, label, value) {
@@ -4558,7 +4685,9 @@ function dailyPhotoStoragePath(row, photoId, mime) {
 }
 
 async function dailyDeletePhotoPaths(paths) {
-  const uniquePaths = [...new Set((paths || []).filter(Boolean))];
+  const uniquePaths = [...new Set((paths || []).filter(path =>
+    path && (ENV === 'production' ? path.startsWith('production/') : path.startsWith('staging/'))
+  ))];
   if (!uniquePaths.length) return;
   const { error } = await getAuthClient().storage.from(DAILY_PHOTO_BUCKET).remove(uniquePaths);
   if (error) throw error;
@@ -4678,21 +4807,64 @@ async function dailyRemovePhoto(button) {
   dailySetPhotoStatus(row, 'Photo removed. Save the Daily Log to keep this change.');
 }
 
+function nutritionFromElement(row) {
+  try {
+    return row?.dataset?.nutrition ? JSON.parse(row.dataset.nutrition) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function dailyFoodEstimateMarkup(nutrition) {
+  if (!nutrition) return '<div class="daily-food-estimate-slot"></div>';
+  const confidence = Number(nutrition.confidence);
+  const confidenceLabel = nutrition.status === 'confirmed'
+    ? 'Confirmed'
+    : (confidence >= .78 ? 'Higher confidence' : confidence >= .5 ? 'Estimated' : 'Rough estimate');
+  const assumption = Array.isArray(nutrition.assumptions) && nutrition.assumptions[0]
+    ? '<div class="daily-food-assumption">Assuming: ' + escapeHtml(nutrition.assumptions[0]) + '</div>'
+    : '';
+  const portionSource = nutrition.portion_basis === 'text_and_photo'
+    ? 'Photo + description informed'
+    : nutrition.portion_basis === 'photo'
+      ? 'Photo informed'
+      : nutrition.portion_basis === 'memory'
+        ? 'Usual portion'
+        : '';
+  return '<div class="daily-food-estimate-slot"><div class="daily-food-estimate">' +
+    '<div class="daily-food-estimate-head">' +
+      '<div class="daily-food-estimate-values">' +
+        Math.round(Number(nutrition.calories) || 0) + ' kcal · ' +
+        Math.round(Number(nutrition.protein_g) || 0) + 'g P · ' +
+        Math.round(Number(nutrition.carbs_g) || 0) + 'g C · ' +
+        Math.round(Number(nutrition.fat_g) || 0) + 'g F' +
+      '</div>' +
+      '<span class="daily-food-confidence">' + escapeHtml(portionSource || confidenceLabel) + '</span>' +
+    '</div>' + assumption +
+  '</div></div>';
+}
+
 function dailyFoodEntriesMarkup(entries) {
   if (!entries.length) {
     return '<div id="daily-food-empty" style="font-size:13px;color:var(--text);opacity:.5;margin-bottom:10px">No food or drinks added yet.</div>';
   }
   return entries.map(entry => {
     const id = escapeHtml(entry.id || ('food-' + Date.now() + '-' + Math.random().toString(16).slice(2)));
-    return '<div class="daily-food-entry" data-entry-id="' + id + '">' +
+    const nutrition = entry.nutrition || null;
+    return '<div class="daily-food-entry" data-entry-id="' + id +
+      '" data-memory-id="' + escapeHtml(entry.memory_id || '') +
+      '" data-memory-description="' + escapeHtml(entry.memory_source_description || '') +
+      '" data-nutrition=\'' + escapeHtml(nutrition ? JSON.stringify(nutrition) : '') + '\'>' +
       '<div class="daily-food-entry-head">' +
         '<div class="input-group daily-food-time-wrap"><label class="input-label">Time</label>' +
           '<input type="time" class="date-picker-input daily-time-input daily-food-time" value="' +
             escapeHtml(entry.time || '') + '" onchange="dailyScheduleDraft()"></div>' +
         '<button type="button" class="daily-remove-btn" aria-label="Remove entry" onclick="dailyRemoveFood(this)">×</button>' +
       '</div>' +
-      '<textarea rows="4" class="daily-food-description" placeholder="Describe the meal, food, or drink…" oninput="dailyScheduleDraft()">' +
+      '<textarea rows="4" class="daily-food-description" placeholder="Describe the meal, food, or drink…" oninput="dailyFoodDescriptionInput(this)">' +
         escapeHtml(entry.description || '') + '</textarea>' +
+      '<div class="daily-food-suggestions"></div>' +
+      dailyFoodEstimateMarkup(nutrition) +
       dailyPhotoControlsMarkup(entry) +
     '</div>';
   }).join('');
@@ -4702,12 +4874,21 @@ function dailyCurrentData() {
   const date = document.getElementById('daily-date')?.value || dailySelectedDate || dailyLocalDate();
   const scaleValue = name => dailyNumber(document.querySelector('#daily-scale-' + name + ' .daily-scale-btn.active')?.dataset.value);
   const stool = document.querySelector('#daily-stool-options .daily-stool-btn.active')?.dataset.value || '';
-  const foodEntries = Array.from(document.querySelectorAll('.daily-food-entry')).map(row => ({
-    id: row.dataset.entryId,
-    time: row.querySelector('.daily-food-time')?.value || '',
-    description: row.querySelector('.daily-food-description')?.value?.trim() || '',
-    photos: dailyPhotosFromRow(row)
-  })).filter(entry => entry.time || entry.description || entry.photos.length);
+  const foodEntries = Array.from(document.querySelectorAll('.daily-food-entry')).map(row => {
+    const entry = {
+      id: row.dataset.entryId,
+      time: row.querySelector('.daily-food-time')?.value || '',
+      description: row.querySelector('.daily-food-description')?.value?.trim() || '',
+      photos: dailyPhotosFromRow(row)
+    };
+    if (row.dataset.memoryId) {
+      entry.memory_id = row.dataset.memoryId;
+      entry.memory_source_description = row.dataset.memoryDescription || entry.description;
+    }
+    const nutrition = nutritionFromElement(row);
+    if (nutrition) entry.nutrition = nutrition;
+    return entry;
+  }).filter(entry => entry.description || entry.photos.length);
   const firstMealTime = foodEntries.map(entry => entry.time).filter(Boolean).sort()[0] || null;
   const sleepHours = dailyNumber(document.getElementById('daily-sleep-duration')?.value);
 
@@ -4717,7 +4898,6 @@ function dailyCurrentData() {
     sleep_duration_minutes: sleepHours == null ? null : Math.round(sleepHours * 60),
     energy: scaleValue('energy'),
     stress: scaleValue('stress'),
-    mood: scaleValue('mood'),
     soreness: scaleValue('soreness'),
     work_hours: dailyNumber(document.getElementById('daily-work-hours')?.value),
     stool_type: stool && stool !== 'none' ? Number(stool) : null,
@@ -4745,6 +4925,221 @@ function dailySaveDraftNow(dateOverride = null) {
 function dailyScheduleDraft() {
   dailyDraftDirty = true;
   dailySaveDraftNow();
+}
+
+function nutritionMemoryMatches(query) {
+  const normalized = String(query || '').trim().toLowerCase();
+  if (normalized.length < 2) return [];
+  return (nutritionMemory || []).filter(memory => {
+    const candidates = [memory.display_name, memory.canonical_name, memory.latest_raw_description, ...(memory.aliases || [])]
+      .filter(Boolean).map(value => String(value).toLowerCase());
+    return candidates.some(value => value.includes(normalized) || normalized.includes(value));
+  }).slice(0, 4);
+}
+
+function nutritionMemoryDisplayName(memory) {
+  const chosen = String(memory.display_name || '').trim();
+  if (chosen) return chosen;
+  const canonical = String(memory.canonical_name || 'Usual food').trim();
+  const firstPhrase = canonical.split(/[,(]/)[0].trim();
+  if (/shake/i.test(firstPhrase)) return firstPhrase.slice(0, 32);
+  const items = canonical.split(',').map(item => item.trim()).filter(Boolean);
+  const compact = items.length > 1 ? items.slice(0, 2).join(' + ') : canonical;
+  return compact.length > 34 ? compact.slice(0, 31).trimEnd() + '…' : compact + (items.length > 2 ? '…' : '');
+}
+
+function dailyUsualFoodsMarkup() {
+  const usual = (nutritionMemory || []).filter(memory => memory.canonical_name).slice(0, 6);
+  const head = '<div class="daily-usual-foods-head"><div class="daily-usual-foods-title">Usual foods' +
+    (usual.length ? ' · tap to add' : '') + '</div>' +
+    (usual.length ? '<button type="button" class="daily-usual-foods-manage" onclick="dailyOpenUsualFoodsManager()">Manage</button>' : '') +
+    '</div>';
+  if (!usual.length) {
+    return '<div class="daily-usual-foods">' + head +
+      '<div style="font-size:12px;line-height:1.45;color:var(--text);opacity:.58">Your repeated or corrected meals will appear here for one-tap logging.</div></div>';
+  }
+  return '<div class="daily-usual-foods">' + head +
+    '<div class="daily-usual-foods-list">' + usual.map(memory =>
+      '<button type="button" class="daily-usual-food" data-memory-id="' + escapeHtml(memory.id) +
+      '" title="' + escapeHtml(memory.latest_raw_description || memory.canonical_name) +
+      '" onclick="dailyAddFoodFromMemory(this.dataset.memoryId)">' + escapeHtml(nutritionMemoryDisplayName(memory)) + '</button>'
+    ).join('') + '</div></div>';
+}
+
+function dailyNutritionFromMemory(memory, sourceDescription) {
+  if (memory.needs_reestimate) return null;
+  return {
+    calories: Number(memory.energy_kcal),
+    protein_g: Number(memory.protein_g),
+    carbs_g: Number(memory.carbs_g),
+    fat_g: Number(memory.fat_g),
+    fiber_g: Number(memory.fiber_g) || 0,
+    confidence: Number(memory.confidence),
+    assumptions: memory.assumptions || [],
+    canonical_name: memory.canonical_name,
+    serving_description: memory.serving_description || '',
+    portion_description: memory.portion_notes?.portion_description || memory.serving_description || '',
+    visual_portion_cues: memory.portion_notes?.visual_portion_cues || [],
+    portion_basis: 'memory',
+    status: memory.user_confirmed ? 'confirmed' : 'estimated',
+    source: 'food_memory',
+    memory_id: memory.id,
+    source_description: sourceDescription
+  };
+}
+
+function dailyAddFoodFromMemory(memoryId) {
+  const memory = (nutritionMemory || []).find(item => item.id === memoryId);
+  if (!memory) return;
+  document.getElementById('daily-food-empty')?.remove();
+  const now = new Date();
+  const time = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  const description = memory.latest_raw_description || memory.canonical_name;
+  const entry = {
+    id: 'food-' + Date.now() + '-' + Math.random().toString(16).slice(2),
+    time,
+    description,
+    photos: [],
+    memory_id: memory.id,
+    memory_source_description: description,
+    nutrition: dailyNutritionFromMemory(memory, description)
+  };
+  document.getElementById('daily-food-entries')?.insertAdjacentHTML('beforeend', dailyFoodEntriesMarkup([entry]));
+  dailyScheduleDraft();
+}
+
+function dailyFoodDescriptionInput(textarea) {
+  const row = textarea.closest('.daily-food-entry');
+  if (!row) return;
+  if (row.dataset.memoryId && row.dataset.memoryDescription !== textarea.value.trim()) {
+    delete row.dataset.memoryId;
+    delete row.dataset.memoryDescription;
+  }
+  const previous = nutritionFromElement(row);
+  if (previous && previous.source_description !== textarea.value.trim()) {
+    delete row.dataset.nutrition;
+    const slot = row.querySelector('.daily-food-estimate-slot');
+    if (slot) slot.outerHTML = dailyFoodEstimateMarkup(null);
+  }
+  const suggestions = row.querySelector('.daily-food-suggestions');
+  const matches = nutritionMemoryMatches(textarea.value);
+  if (suggestions) {
+    suggestions.innerHTML = matches.map(memory =>
+      '<button type="button" class="daily-food-suggestion" data-memory-id="' + escapeHtml(memory.id) +
+      '" onclick="dailyApplyFoodMemory(this)">Use ' + escapeHtml(nutritionMemoryDisplayName(memory)) + '</button>'
+    ).join('');
+  }
+  dailyScheduleDraft();
+}
+
+function dailyApplyFoodMemory(button) {
+  const memory = (nutritionMemory || []).find(item => item.id === button.dataset.memoryId);
+  const row = button.closest('.daily-food-entry');
+  if (!memory || !row) return;
+  const textarea = row.querySelector('.daily-food-description');
+  if (!textarea) return;
+  textarea.value = memory.latest_raw_description || memory.canonical_name;
+  const nutrition = dailyNutritionFromMemory(memory, textarea.value.trim());
+  row.dataset.memoryId = memory.id;
+  row.dataset.memoryDescription = textarea.value.trim();
+  if (nutrition) row.dataset.nutrition = JSON.stringify(nutrition);
+  else delete row.dataset.nutrition;
+  const slot = row.querySelector('.daily-food-estimate-slot');
+  if (slot) slot.outerHTML = dailyFoodEstimateMarkup(nutrition);
+  row.querySelector('.daily-food-suggestions').innerHTML = '';
+  dailyScheduleDraft();
+}
+
+function dailyUsualFoodManagerMarkup() {
+  const memories = (nutritionMemory || []).filter(memory => memory.canonical_name);
+  if (!memories.length) {
+    return '<p style="font-size:13px;color:var(--text);opacity:.6;margin:0">No usual foods saved yet.</p>';
+  }
+  return memories.map(memory =>
+    '<div class="usual-food-manager-item" data-memory-id="' + escapeHtml(memory.id) + '">' +
+      '<div class="input-group" style="margin-bottom:10px"><label class="input-label">Short name</label>' +
+        '<input class="usual-food-name" maxlength="60" value="' + escapeHtml(memory.display_name || nutritionMemoryDisplayName(memory)) + '" placeholder="e.g. Protein shake"></div>' +
+      '<div class="input-group"><label class="input-label">Full recipe or description</label>' +
+        '<textarea class="usual-food-recipe" rows="3" placeholder="What goes into this usual food?">' +
+          escapeHtml(memory.latest_raw_description || memory.canonical_name) + '</textarea></div>' +
+      (memory.needs_reestimate
+        ? '<div class="macro-status-note">Recipe changed · nutrition will refresh automatically next time you log it.</div>'
+        : '') +
+      '<div class="usual-food-manager-actions">' +
+        '<button type="button" class="btn btn-primary" onclick="dailySaveUsualFood(this)">Save changes</button>' +
+        '<button type="button" class="btn usual-food-delete" onclick="dailyDeleteUsualFood(this)">Delete</button>' +
+      '</div><div class="daily-status usual-food-status" style="white-space:normal;margin-top:8px"></div>' +
+    '</div>'
+  ).join('');
+}
+
+function dailyOpenUsualFoodsManager() {
+  const modal = document.getElementById('daily-usual-food-manager');
+  const list = document.getElementById('daily-usual-food-manager-list');
+  if (list) list.innerHTML = dailyUsualFoodManagerMarkup();
+  if (modal) modal.style.display = 'flex';
+}
+
+function dailyCloseUsualFoodsManager(event) {
+  if (event && event.target !== event.currentTarget) return;
+  const modal = document.getElementById('daily-usual-food-manager');
+  if (modal) modal.style.display = 'none';
+}
+
+function dailyRefreshUsualFoods() {
+  const container = document.getElementById('daily-usual-foods');
+  if (container) container.innerHTML = dailyUsualFoodsMarkup();
+  const list = document.getElementById('daily-usual-food-manager-list');
+  if (list) list.innerHTML = dailyUsualFoodManagerMarkup();
+}
+
+async function dailySaveUsualFood(button) {
+  const item = button.closest('.usual-food-manager-item');
+  const memory = (nutritionMemory || []).find(value => value.id === item?.dataset.memoryId);
+  const status = item?.querySelector('.usual-food-status');
+  if (!item || !memory) return;
+  const displayName = item.querySelector('.usual-food-name')?.value?.trim() || null;
+  const recipe = item.querySelector('.usual-food-recipe')?.value?.trim() || '';
+  if (!recipe) {
+    if (status) status.textContent = 'Add a recipe or description first.';
+    return;
+  }
+  const recipeChanged = recipe !== String(memory.latest_raw_description || '').trim();
+  button.disabled = true;
+  button.textContent = 'Saving…';
+  try {
+    await sbPatch(TABLES.nutritionMemory, memory.id, {
+      display_name: displayName,
+      latest_raw_description: recipe,
+      description_patterns: [...new Set([...(memory.description_patterns || []), recipe])].slice(-12),
+      needs_reestimate: memory.needs_reestimate === true || recipeChanged
+    }, withUserScope(), 'training');
+    await loadNutritionMemory(true);
+    dailyRefreshUsualFoods();
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = 'Save changes';
+    if (status) status.textContent = 'Could not save: ' + error.message;
+  }
+}
+
+async function dailyDeleteUsualFood(button) {
+  const item = button.closest('.usual-food-manager-item');
+  const memory = (nutritionMemory || []).find(value => value.id === item?.dataset.memoryId);
+  if (!item || !memory) return;
+  if (!confirm('Delete “' + nutritionMemoryDisplayName(memory) + '” from Usual Foods? Existing Daily Logs will not be changed.')) return;
+  button.disabled = true;
+  button.textContent = 'Deleting…';
+  try {
+    await sbDelete(TABLES.nutritionMemory, memory.id, withUserScope(), 'training');
+    await loadNutritionMemory(true);
+    dailyRefreshUsualFoods();
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = 'Delete';
+    const status = item.querySelector('.usual-food-status');
+    if (status) status.textContent = 'Could not delete: ' + error.message;
+  }
 }
 
 document.addEventListener('visibilitychange', () => {
@@ -4818,7 +5213,8 @@ async function dailyChangeDate(value) {
   dailySelectedDate = value || dailyLocalDate();
   dailyCalendarMonth = dailyMonthStart(dailySelectedDate);
   dailyEditingId = null;
-  renderDailyLogForm();
+  if (dailyActiveSubTab === 'analytics') renderNutritionAnalytics();
+  else renderDailyLogForm();
   saveNavigationState();
 }
 
@@ -4871,24 +5267,19 @@ function renderDailyLogForm() {
           '<input type="number" inputmode="numeric" id="daily-sleep-score" min="0" max="100" value="' +
           escapeHtml(data.sleep_score ?? '') + '" placeholder="0–100" oninput="dailyScheduleDraft()"></div>' +
         '<div class="input-group"><label class="input-label">Sleep duration <span style="opacity:.45;font-weight:400">(hours)</span></label>' +
-          '<input type="number" inputmode="decimal" id="daily-sleep-duration" min="0" max="24" step="0.1" value="' +
-          escapeHtml(sleepHours) + '" placeholder="e.g. 7.5" oninput="dailyScheduleDraft()"></div>' +
+          stepperHtml('daily-sleep-duration', escapeHtml(sleepHours), 0, 24, 'e.g. 7.5', 0.5, 'dailyScheduleDraft()') + '</div>' +
       '</div>' +
-      dailyScaleMarkup('energy', 'Energy', data.energy) +
-      dailyScaleMarkup('soreness', 'Muscle soreness', data.soreness) +
-    '</div>' +
-    '<div class="card" style="margin-bottom:18px">' +
-      '<div class="card-section-title">Mind &amp; work</div>' +
-      dailyScaleMarkup('stress', 'Stress', data.stress) +
-      dailyScaleMarkup('mood', 'Mood', data.mood) +
-      '<div class="input-group"><label class="input-label">Hours worked <span style="opacity:.45;font-weight:400">(optional)</span></label>' +
-        '<input type="number" inputmode="decimal" id="daily-work-hours" min="0" max="24" step="0.5" value="' +
-        escapeHtml(data.work_hours ?? '') + '" placeholder="e.g. 9.5" oninput="dailyScheduleDraft()"></div>' +
-    '</div>' +
-    '<div class="card" style="margin-bottom:18px">' +
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><div class="card-section-title" style="margin:0">Morning stool</div>' +
         '<button type="button" class="daily-info-btn" aria-label="Bristol stool guide" onclick="dailyOpenStoolGuide()">i</button></div>' +
       '<div class="daily-flags" id="daily-stool-options">' + stoolButtons + '</div>' +
+    '</div>' +
+    '<div class="card" style="margin-bottom:18px">' +
+      '<div class="card-section-title">Daily readiness &amp; workload</div>' +
+      dailyScaleMarkup('energy', 'Energy', data.energy) +
+      dailyScaleMarkup('soreness', 'Muscle soreness', data.soreness) +
+      dailyScaleMarkup('stress', 'Stress', data.stress) +
+      '<div class="input-group"><label class="input-label">Hours worked <span style="opacity:.45;font-weight:400">(optional)</span></label>' +
+        stepperHtml('daily-work-hours', escapeHtml(data.work_hours ?? ''), 0, 24, 'e.g. 9.5', 0.5, 'dailyScheduleDraft()') + '</div>' +
     '</div>' +
     '<div class="card" style="margin-bottom:18px">' +
       '<div class="card-section-title">Daily context</div>' +
@@ -4902,6 +5293,7 @@ function renderDailyLogForm() {
     '</div>' +
     '<div class="card" style="margin-bottom:18px">' +
       '<div class="card-section-title">Food &amp; drinks</div>' +
+      '<div id="daily-usual-foods">' + dailyUsualFoodsMarkup() + '</div>' +
       '<div id="daily-food-entries">' + dailyFoodEntriesMarkup(foodEntries) + '</div>' +
       '<button type="button" class="daily-add-btn" onclick="dailyAddFood()">+ Add food or drink</button>' +
       '<div class="input-group" style="margin-top:16px"><label class="input-label">Last calories</label>' +
@@ -4918,6 +5310,7 @@ function renderDailyLogForm() {
         (dailyEditingId ? 'Update Daily Log' : 'Save Daily Log') + '</button>' +
       '<span class="daily-status" id="daily-save-status"></span>' +
     '</div>' +
+    '<div id="daily-nutrition-summary"><div class="card" style="margin-bottom:18px"><div style="font-size:13px;color:var(--text);opacity:.55">Calculating nutrition target…</div></div></div>' +
     '<div class="daily-modal-backdrop" id="daily-stool-guide" style="display:none" onclick="dailyCloseStoolGuide(event)" role="dialog" aria-modal="true" aria-label="Bristol stool guide">' +
       '<div class="daily-modal">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px">' +
@@ -4931,8 +5324,19 @@ function renderDailyLogForm() {
         ).join('') +
         '<button type="button" class="btn btn-primary btn-full" style="margin-top:16px" onclick="dailyCloseStoolGuide()">Got it</button>' +
       '</div>' +
+    '</div>' +
+    '<div class="daily-modal-backdrop" id="daily-usual-food-manager" style="display:none" onclick="dailyCloseUsualFoodsManager(event)" role="dialog" aria-modal="true" aria-label="Manage usual foods">' +
+      '<div class="daily-modal">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px">' +
+          '<div class="card-section-title" style="margin:0">Manage Usual Foods</div>' +
+          '<button type="button" class="daily-remove-btn" style="width:36px" onclick="dailyCloseUsualFoodsManager()">×</button>' +
+        '</div>' +
+        '<p style="font-size:12px;line-height:1.5;color:var(--text);opacity:.65;margin:0 0 8px">Rename the short button or revise the full recipe. A changed recipe is re-estimated once, the next time you log it.</p>' +
+        '<div id="daily-usual-food-manager-list">' + dailyUsualFoodManagerMarkup() + '</div>' +
+      '</div>' +
     '</div>';
   dailyHydratePhotoPreviews(container).catch(error => console.warn('Could not load Daily Log photo previews.', error));
+  renderDailyNutritionSummary().catch(error => console.warn('Could not render nutrition summary.', error));
 }
 
 async function saveDailyLog() {
@@ -4963,11 +5367,22 @@ async function saveDailyLog() {
     dailyDraftDirty = false;
     dailySelectedDate = body.log_date;
     await loadDailyLogs(true);
+    const savedLog = (dailyLogs || []).find(log => log.log_date === body.log_date);
+    const needsEstimate = (savedLog?.food_entries || []).some(entry =>
+      entry.description && (!entry.nutrition ||
+        entry.nutrition.source_description !== entry.description.trim() ||
+        JSON.stringify(entry.nutrition.photo_paths || []) !== JSON.stringify(nutritionPhotoPaths(entry)))
+    );
+    if (needsEstimate) {
+      nutritionAnalyzeSelectedDay({ date: body.log_date, silent: true, skipRender: true });
+    }
     dailyCalendarMonth = dailyMonthStart(dailySelectedDate);
     renderDailyLogForm();
-    document.getElementById('daily-save-status').textContent = '✓ Saved';
+    const nextStatus = document.getElementById('daily-save-status');
+    if (nextStatus) nextStatus.textContent = needsEstimate
+      ? '✓ Saved · estimating new food in background'
+      : '✓ Saved · nutrition current';
     saveNavigationState();
-    document.getElementById('tab-daily')?.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (e) {
     console.error('Daily Log save failed:', e);
     btn.disabled = false;
@@ -4979,14 +5394,17 @@ async function saveDailyLog() {
 async function renderDaily() {
   const logPage = document.getElementById('daily-page-log');
   dailySetSubTabUI(dailyActiveSubTab);
-  if (dailyActiveSubTab === 'macros') return;
+  if (dailyActiveSubTab === 'analytics') {
+    renderNutritionAnalytics();
+    return;
+  }
   if (!getActiveUserId()) {
     logPage.innerHTML = getAuthCardMarkup();
     return;
   }
   logPage.innerHTML = '<div style="color:var(--text);font-size:14px;opacity:0.5;padding:8px 0">Loading...</div>';
   try {
-    await loadDailyLogs(true);
+    await Promise.all([loadDailyLogs(true), loadNutritionMemory(true)]);
     const today = dailyLocalDate();
     if (!dailySelectedDate || (dailyOpenedLocalDate && dailyOpenedLocalDate !== today)) {
       dailySelectedDate = today;
@@ -4999,6 +5417,772 @@ async function renderDaily() {
     console.error('Daily Log load failed:', e);
     logPage.innerHTML = '<div class="card"><div class="card-section-title">Daily Log unavailable</div>' +
       '<p style="font-size:14px;color:var(--text);opacity:.65;margin:0">Could not load Daily Logs. Please try again.</p></div>';
+  }
+}
+
+// ─── MACROS + AI FOOD ESTIMATION ─────────────────────────────────────────
+function nutritionRoundTo(value, step) {
+  return Math.round(value / step) * step;
+}
+
+function nutritionAge(dob) {
+  if (!dob) return null;
+  const birth = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  if (today < new Date(today.getFullYear(), birth.getMonth(), birth.getDate())) age--;
+  return age > 0 && age < 120 ? age : null;
+}
+
+function nutritionDayType(date, profile) {
+  const completed = (cachedSessions || []).some(session => session.date === date && !session.skipped);
+  if (completed) return { key: 'training', reason: 'completed_workout' };
+  return { key: 'rest', reason: 'no_completed_workout' };
+}
+
+async function nutritionHash(value) {
+  const bytes = new TextEncoder().encode(JSON.stringify(value));
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function loadNutritionContext(force = false) {
+  if ((!meProfile || !meMeasurements.length) || force) {
+    const [profile, measurements] = await Promise.all([
+      sbGet(TABLES.profile, withUserScope('select=*&limit=1')),
+      sbGet(TABLES.measurements, withUserScope('select=*&order=logged_at.desc'))
+    ]);
+    meProfile = profile[0] || {};
+    meMeasurements = measurements || [];
+  }
+  if (!cachedSessions || force) await loadSessions();
+  return { profile: meProfile || {}, measurements: meMeasurements || [] };
+}
+
+function calculateNutritionTarget(date, profile, measurements) {
+  const latestWeightRow = measurements.find(item => Number(item.weight_kg) > 0) || null;
+  const heightCm = Number(profile.height_cm) || null;
+  const age = nutritionAge(profile.dob);
+  const isFemale = String(profile.gender || '').toLowerCase() === 'female';
+  const estimatedWeight = heightCm ? 22.5 * Math.pow(heightCm / 100, 2) : 70;
+  const weightKg = Number(latestWeightRow?.weight_kg) || estimatedWeight;
+  const day = nutritionDayType(date, profile);
+  const activityMultiplier = {
+    'Low': 1.3,
+    'Moderate': 1.4,
+    'High': 1.5,
+    'Very high': 1.65
+  }[profile.activity_level] || 1.4;
+  const goalMultiplier = {
+    'Cut': .85,
+    'Recomp': 1,
+    'Maintain': 1,
+    'Lean bulk': 1.04,
+    'Performance': 1.03
+  }[profile.nutrition_goal] || 1;
+  const rmr = age && heightCm
+    ? (10 * weightKg) + (6.25 * heightCm) - (5 * age) + (isFemale ? -161 : 5)
+    : weightKg * 22;
+  const baseEnergy = nutritionRoundTo(rmr * activityMultiplier * goalMultiplier, 50);
+  const desiredEnergy = Math.max(1600, baseEnergy + (day.key === 'training' ? 150 : 0));
+  const proteinG = nutritionRoundTo(weightKg * (
+    profile.nutrition_goal === 'Cut' ? 2.2 : 2
+  ), 5);
+  const carbsPerKg = day.key === 'training' ? 3.2 : 2.6;
+  const carbsG = nutritionRoundTo(weightKg * carbsPerKg, 5);
+  const minimumFatG = nutritionRoundTo(weightKg * .8, 5);
+  const fatG = Math.max(minimumFatG, Math.round((desiredEnergy - (proteinG * 4) - (carbsG * 4)) / 9));
+  const energyKcal = (proteinG * 4) + (carbsG * 4) + (fatG * 9);
+  const fiberG = nutritionRoundTo(Math.max(25, energyKcal / 1000 * 14), 5);
+  const status = latestWeightRow ? 'provisional' : 'provisional';
+  const inputSnapshot = {
+    profile_updated_at: profile.updated_at || null,
+    measurement_id: latestWeightRow?.id || null,
+    measurement_date: latestWeightRow?.logged_at || null,
+    weight_kg_used: Math.round(weightKg * 10) / 10,
+    weight_source: latestWeightRow ? 'latest_measurement' : 'height_based_estimate',
+    height_cm: heightCm,
+    age_years: age,
+    gender: profile.gender || null,
+    nutrition_goal: profile.nutrition_goal || 'Maintain',
+    activity_level: profile.activity_level || 'Moderate',
+    carbohydrate_policy: 'lower_carbohydrate',
+    day_type: day.key,
+    day_reason: day.reason
+  };
+  return {
+    target_date: date,
+    day_type: day.key,
+    status,
+    engine_version: NUTRITION_ENGINE_VERSION,
+    input_snapshot: inputSnapshot,
+    reason_codes: [
+      day.reason,
+      'lower_carbohydrate_policy',
+      String(profile.nutrition_goal || 'maintain').toLowerCase().replace(/\s+/g, '_')
+    ],
+    energy_kcal: energyKcal,
+    protein_g: proteinG,
+    carbs_g: carbsG,
+    fat_g: fatG,
+    fiber_g: fiberG
+  };
+}
+
+async function nutritionEnsureTarget(date, force = false) {
+  if (nutritionTargetCache.has(date) && !force) return nutritionTargetCache.get(date);
+  const { profile, measurements } = await loadNutritionContext(force);
+  const target = calculateNutritionTarget(date, profile, measurements);
+  target.input_hash = await nutritionHash({
+    engine_version: target.engine_version,
+    target_date: date,
+    input_snapshot: target.input_snapshot
+  });
+  const existing = await sbGet(
+    TABLES.nutritionTargets,
+    withUserScope('select=*&target_date=eq.' + encodeURIComponent(date) + '&limit=1'),
+    'training'
+  );
+  const row = existing[0] || null;
+  if (!row || row.input_hash !== target.input_hash) {
+    const body = { ...target, user_id: getActiveUserIdOrThrow() };
+    if (row?.id) await sbPatch(TABLES.nutritionTargets, row.id, body, withUserScope(), 'training');
+    else await sbPost(TABLES.nutritionTargets, body, 'training');
+  }
+  const result = { ...(row || {}), ...target };
+  nutritionTargetCache.set(date, result);
+  return result;
+}
+
+function nutritionTotals(entries) {
+  return (entries || []).reduce((totals, entry) => {
+    const value = entry.nutrition;
+    if (!value) return totals;
+    totals.calories += Number(value.calories) || 0;
+    totals.protein_g += Number(value.protein_g) || 0;
+    totals.carbs_g += Number(value.carbs_g) || 0;
+    totals.fat_g += Number(value.fat_g) || 0;
+    totals.fiber_g += Number(value.fiber_g) || 0;
+    totals.sugar_g += Number(value.sugar_g) || 0;
+    totals.added_sugar_g += Number(value.added_sugar_g) || 0;
+    totals.analyzed++;
+    if (value.status === 'confirmed') totals.confirmed++;
+    return totals;
+  }, {
+    calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0,
+    fiber_g: 0, sugar_g: 0, added_sugar_g: 0, analyzed: 0, confirmed: 0
+  });
+}
+
+function nutritionProgressMarkup(name, consumed, target, unit) {
+  const percentage = target > 0 ? Math.round((consumed / target) * 100) : 0;
+  const remaining = Math.max(0, target - consumed);
+  return '<div>' +
+    '<div class="macro-progress-head">' +
+      '<div class="macro-progress-name">' + escapeHtml(name) + '</div>' +
+      '<div class="macro-progress-numbers">' + Math.round(consumed) + ' / ' + Math.round(target) + unit +
+        ' · ' + Math.round(remaining) + unit + ' left</div>' +
+    '</div>' +
+    '<div class="macro-progress-track"><div class="macro-progress-fill' + (percentage > 105 ? ' over' : '') +
+      '" style="width:' + Math.min(100, percentage) + '%"></div></div>' +
+  '</div>';
+}
+
+function nutritionCorrectionId(entryId) {
+  return String(entryId).replace(/[^a-zA-Z0-9_-]/g, '-');
+}
+
+function nutritionFoodRowMarkup(entry) {
+  const nutrition = entry.nutrition;
+  const id = nutritionCorrectionId(entry.id);
+  if (!nutrition) {
+    return '<div class="macro-food-row">' +
+      '<div class="macro-food-head"><div class="macro-food-name">' + escapeHtml(entry.description || 'Food entry') +
+      '</div><div class="macro-food-time">' + escapeHtml(entry.time || '') + '</div></div>' +
+      '<div class="macro-food-values">Not estimated yet</div></div>';
+  }
+  const assumption = Array.isArray(nutrition.assumptions) && nutrition.assumptions.length
+    ? '<div class="daily-food-assumption">Assuming: ' + escapeHtml(nutrition.assumptions.join(' · ')) + '</div>'
+    : '';
+  const portion = nutrition.portion_description
+    ? '<div class="daily-food-assumption">Portion: ' + escapeHtml(nutrition.portion_description) +
+      (['photo','text_and_photo'].includes(nutrition.portion_basis) ? ' · photo informed' : '') + '</div>'
+    : '';
+  return '<div class="macro-food-row" data-entry-id="' + escapeHtml(entry.id) + '">' +
+    '<div class="macro-food-head"><div class="macro-food-name">' + escapeHtml(nutrition.canonical_name || entry.description || 'Food entry') +
+    '</div><div class="macro-food-time">' + escapeHtml(entry.time || '') + '</div></div>' +
+    '<div class="macro-food-values">' + Math.round(nutrition.calories) + ' kcal · ' +
+      Math.round(nutrition.protein_g) + 'g protein · ' + Math.round(nutrition.carbs_g) + 'g carbs · ' +
+      Math.round(nutrition.fat_g) + 'g fat · ' + Math.round(nutrition.fiber_g || 0) + 'g fiber</div>' +
+    portion + assumption +
+    '<details class="macro-correction"><summary>Adjust &amp; remember my usual portion</summary>' +
+      '<div class="macro-correction-grid">' +
+        [['Calories','calories'],['Protein g','protein_g'],['Carbs g','carbs_g'],['Fat g','fat_g'],['Fiber g','fiber_g']].map(item =>
+          '<label>' + item[0] + '<input type="number" min="0" step="0.1" data-field="' + item[1] +
+          '" value="' + escapeHtml(nutrition[item[1]] ?? 0) + '"></label>'
+        ).join('') +
+      '</div>' +
+      '<button type="button" class="btn btn-primary btn-full" style="margin-top:10px" onclick="nutritionCorrectEntry(this)">Save as my usual portion</button>' +
+    '</details>' +
+  '</div>';
+}
+
+function nutritionShiftDate(offset) {
+  const date = new Date((dailySelectedDate || dailyLocalDate()) + 'T00:00:00');
+  date.setDate(date.getDate() + offset);
+  dailySelectedDate = dailyLocalDate(date);
+  dailyCalendarMonth = dailyMonthStart(dailySelectedDate);
+  renderDailyLogForm();
+  saveNavigationState();
+}
+
+function nutritionGoToday() {
+  dailySelectedDate = dailyLocalDate();
+  dailyCalendarMonth = dailyMonthStart(dailySelectedDate);
+  renderDailyLogForm();
+  saveNavigationState();
+}
+
+function nutritionFoodLogIsComplete(log) {
+  if (!log) return false;
+  const nutrition = log.coach_analysis?.nutrition;
+  if (nutrition && Object.prototype.hasOwnProperty.call(nutrition, 'food_logging_complete')) {
+    return nutrition.food_logging_complete === true;
+  }
+  const entries = (log.food_entries || []).filter(entry => entry.description);
+  return log.log_date < dailyLocalDate() &&
+    Boolean(log.last_calories_at) &&
+    entries.length > 0 &&
+    entries.every(entry => entry.nutrition);
+}
+
+function nutritionFoodLogCompletionSource(log) {
+  if (!nutritionFoodLogIsComplete(log)) return 'incomplete';
+  return log?.coach_analysis?.nutrition &&
+    Object.prototype.hasOwnProperty.call(log.coach_analysis.nutrition, 'food_logging_complete')
+    ? 'manual'
+    : 'closed_past_log';
+}
+
+async function renderDailyNutritionSummary() {
+  const container = document.getElementById('daily-nutrition-summary');
+  if (!container || !getActiveUserId()) return;
+  dailySelectedDate = dailySelectedDate || dailyLocalDate();
+  try {
+    await loadNutritionContext();
+    const target = await nutritionEnsureTarget(dailySelectedDate);
+    const log = (dailyLogs || []).find(item => item.log_date === dailySelectedDate) || null;
+    const current = document.getElementById('daily-date') ? dailyCurrentData() : null;
+    const entries = Array.isArray(current?.food_entries)
+      ? current.food_entries
+      : (Array.isArray(log?.food_entries) ? log.food_entries : []);
+    const totals = nutritionTotals(entries);
+    const complete = nutritionFoodLogIsComplete(log);
+    const completionSource = nutritionFoodLogCompletionSource(log);
+    const lastAnalysis = log?.coach_analysis?.nutrition?.last_analysis || null;
+    const unanalyzed = entries.filter(entry => entry.description && !entry.nutrition).length;
+    const persistedUnanalyzed = (log?.food_entries || []).filter(entry => entry.description && !entry.nutrition).length;
+    const analysisRunning = nutritionAnalysisJobs.has(dailySelectedDate);
+    const proteinFeedings = entries.filter(entry => Number(entry.nutrition?.protein_g) >= 25).length;
+    const targetExplanation = target.day_type === 'training'
+      ? 'A completed workout was logged, so today includes 150 kcal of additional training fuel.'
+      : 'No completed workout is logged, so this remains a rest-day target.';
+    const completenessNote = complete
+      ? (completionSource === 'closed_past_log'
+        ? 'Past food log is complete and included in Analytics.'
+        : 'Food log marked complete and included in Analytics.')
+      : 'Logged so far. Unlogged food is unknown, not zero; mark complete when you are done.';
+    const estimateAction = analysisRunning
+      ? '<button type="button" class="btn btn-primary" disabled>Estimating in background…</button>'
+      : persistedUnanalyzed
+        ? '<button type="button" class="btn btn-primary" id="nutrition-analyze-btn" onclick="nutritionAnalyzeSelectedDay()">Retry food estimate</button>'
+        : unanalyzed
+          ? '<button type="button" class="btn btn-primary" disabled>Save to estimate new food</button>'
+          : '';
+
+    container.innerHTML =
+      '<div class="card macro-hero">' +
+        '<div class="macro-hero-top"><div class="macro-day-chip">' +
+          (target.day_type === 'training' ? 'Completed workout · training day' : 'No completed workout · rest day') +
+        '</div></div>' +
+        '<div class="macro-kcal-grid">' +
+          '<div><div class="macro-kcal">' + Math.round(target.energy_kcal).toLocaleString() + '</div><div class="macro-kcal-label">calorie target</div></div>' +
+          '<div><div class="macro-kcal">' + Math.round(totals.calories).toLocaleString() + '</div><div class="macro-kcal-label">calories logged</div></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="card" style="margin-bottom:14px">' +
+        '<div class="card-section-title">Nutrition progress</div>' +
+        '<div class="macro-progress-list">' +
+          nutritionProgressMarkup('Calories', totals.calories, target.energy_kcal, ' kcal') +
+          nutritionProgressMarkup('Protein', totals.protein_g, target.protein_g, 'g') +
+          nutritionProgressMarkup('Carbohydrate', totals.carbs_g, target.carbs_g, 'g') +
+          nutritionProgressMarkup('Fat', totals.fat_g, target.fat_g, 'g') +
+        '</div>' +
+        '<div class="macro-summary-grid">' +
+          '<div class="macro-summary-tile"><div class="macro-summary-value">' + Math.round(totals.fiber_g) + 'g</div><div class="macro-summary-label">fiber · target ' + Math.round(target.fiber_g) + 'g</div></div>' +
+          '<div class="macro-summary-tile"><div class="macro-summary-value">' + proteinFeedings + '</div><div class="macro-summary-label">protein feedings ≥25g · aim for 3</div></div>' +
+        '</div>' +
+        '<div class="macro-status-note">' + completenessNote +
+          (unanalyzed ? ' ' + unanalyzed + ' food entr' + (unanalyzed === 1 ? 'y needs' : 'ies need') + ' an estimate.' : '') + '</div>' +
+        '<div class="macro-actions">' +
+          estimateAction +
+          '<button type="button" class="btn" onclick="nutritionToggleFoodComplete()"' + (log?.id ? '' : ' disabled') + '>' + (complete ? 'Reopen food log' : 'Done logging food') + '</button>' +
+        '</div>' +
+        '<div class="daily-status" id="nutrition-analysis-status" style="white-space:normal;margin-top:10px">' +
+          (analysisRunning ? 'You can change dates or tabs; this estimate will keep running.' : '') + '</div>' +
+      '</div>' +
+      '<div class="card" style="margin-bottom:14px">' +
+        '<div class="card-section-title">Food estimates</div>' +
+        (entries.length ? entries.map(nutritionFoodRowMarkup).join('') :
+          '<p style="font-size:13px;line-height:1.5;color:var(--text);opacity:.55;margin:0">Add food above to see calories and macros accumulate here.</p>') +
+      '</div>' +
+      '<div class="card" style="margin-bottom:18px">' +
+        '<div class="card-section-title">How this target was set</div>' +
+        '<p style="font-size:13px;line-height:1.55;color:var(--text);opacity:.72;margin:0">' +
+          escapeHtml(targetExplanation) + ' Protein stays stable, and the lower-carbohydrate policy is consistent. Sleep, stress, soreness, energy, and stool never change the target.' +
+        '</p>' +
+        '<div class="macro-method">Method ' + escapeHtml(target.engine_version) +
+          ' · current profile + latest measurement · ' + escapeHtml(target.status) +
+          ' · historical dates retain their own target snapshot' +
+          (lastAnalysis?.model ? '<br>Food model ' + escapeHtml(lastAnalysis.model) +
+            (lastAnalysis.cost_usd != null && Number.isFinite(Number(lastAnalysis.cost_usd))
+              ? ' · last call $' + Number(lastAnalysis.cost_usd).toFixed(4) : '') : '') +
+        '</div>' +
+      '</div>';
+  } catch (error) {
+    console.error('Nutrition summary load failed', error);
+    container.innerHTML = '<div class="card" style="margin-bottom:18px"><div class="card-section-title">Nutrition unavailable</div>' +
+      '<p style="font-size:13px;line-height:1.5;color:var(--text);opacity:.65;margin:0">' +
+      escapeHtml(error.message || 'Could not load nutrition data.') + '</p></div>';
+  }
+}
+
+function nutritionPhotoPaths(entry) {
+  return (Array.isArray(entry?.photos) ? entry.photos : [])
+    .map(photo => photo?.path).filter(Boolean).sort();
+}
+
+function dailyRefreshNutritionRows(date) {
+  if (dailyActiveSubTab !== 'log' || dailySelectedDate !== date) return;
+  const log = (dailyLogs || []).find(item => item.log_date === date);
+  for (const entry of (log?.food_entries || [])) {
+    const rows = Array.from(document.querySelectorAll('.daily-food-entry'));
+    const row = rows.find(item => item.dataset.entryId === entry.id);
+    if (!row || row.querySelector('.daily-food-description')?.value?.trim() !== entry.description?.trim()) continue;
+    if (entry.nutrition) row.dataset.nutrition = JSON.stringify(entry.nutrition);
+    else delete row.dataset.nutrition;
+    if (entry.memory_id) {
+      row.dataset.memoryId = entry.memory_id;
+      row.dataset.memoryDescription = entry.memory_source_description || entry.description || '';
+    }
+    const slot = row.querySelector('.daily-food-estimate-slot');
+    if (slot) slot.outerHTML = dailyFoodEstimateMarkup(entry.nutrition || null);
+  }
+  renderDailyNutritionSummary().catch(error => console.warn('Could not refresh nutrition summary.', error));
+}
+
+function nutritionAnalyzeSelectedDay(options = {}) {
+  const analysisDate = options.date || dailySelectedDate || dailyLocalDate();
+  const existingJob = nutritionAnalysisJobs.get(analysisDate);
+  if (existingJob) return existingJob;
+
+  const job = (async () => {
+    const log = (dailyLogs || []).find(item => item.log_date === analysisDate) || null;
+    const visibleStatus = () => dailySelectedDate === analysisDate
+      ? (document.getElementById('nutrition-analysis-status') || document.getElementById('daily-save-status'))
+      : null;
+    if (!log?.id) {
+      const status = visibleStatus();
+      if (status && !options.silent) status.textContent = 'Save the Daily Log first.';
+      return false;
+    }
+    const entries = (log.food_entries || []).filter(entry =>
+      entry.description && (
+        !entry.nutrition ||
+        entry.nutrition.source_description !== entry.description.trim() ||
+        JSON.stringify(entry.nutrition.photo_paths || []) !== JSON.stringify(nutritionPhotoPaths(entry))
+      )
+    );
+    if (!entries.length) {
+      const status = visibleStatus();
+      if (status && !options.silent) status.textContent = 'Everything logged already has an estimate.';
+      return true;
+    }
+
+    if (dailySelectedDate === analysisDate) {
+      renderDailyNutritionSummary().catch(() => {});
+      const status = visibleStatus();
+      if (status) status.textContent = 'Estimating in the background. You can change dates or tabs.';
+    }
+
+    try {
+      const payload = await sbFunction('nutrition-analyze-food', {
+        environment: ENV,
+        log_date: analysisDate,
+        entries: entries.map(entry => ({
+          id: entry.id,
+          time: entry.time || '',
+          description: entry.description,
+          photos: Array.isArray(entry.photos) ? entry.photos : [],
+          memory_id: entry.memory_id || null
+        }))
+      });
+      const estimates = new Map(payload.estimates.map(item => [item.id, item]));
+      const requested = new Map(entries.map(entry => [entry.id, entry]));
+      const latestRows = await sbGet(
+        TABLES.dailyLogs,
+        withUserScope('select=*&log_date=eq.' + encodeURIComponent(analysisDate) + '&limit=1'),
+        'training'
+      );
+      const latestLog = latestRows[0] || log;
+      const foodEntries = (latestLog.food_entries || []).map(entry => {
+        const estimate = estimates.get(entry.id);
+        const original = requested.get(entry.id);
+        const stillMatches = original &&
+          original.description?.trim() === entry.description?.trim() &&
+          JSON.stringify(nutritionPhotoPaths(original)) === JSON.stringify(nutritionPhotoPaths(entry));
+        if (!estimate || !stillMatches) return entry;
+        return {
+          ...entry,
+          nutrition: {
+            ...estimate,
+            status: 'estimated',
+            source: 'ai_estimate',
+            source_description: entry.description.trim(),
+            photo_paths: nutritionPhotoPaths(entry),
+            analysis: payload.analysis
+          }
+        };
+      });
+      const existingCoach = latestLog.coach_analysis && typeof latestLog.coach_analysis === 'object' ? latestLog.coach_analysis : {};
+      const nutritionCoach = existingCoach.nutrition && typeof existingCoach.nutrition === 'object' ? existingCoach.nutrition : {};
+      await sbPatch(TABLES.dailyLogs, latestLog.id, {
+        food_entries: foodEntries,
+        coach_analysis: {
+          ...existingCoach,
+          nutrition: {
+            ...nutritionCoach,
+            last_analysis: payload.analysis
+          }
+        }
+      }, withUserScope(), 'training');
+      await Promise.all([loadDailyLogs(true), loadNutritionMemory(true)]);
+      const status = visibleStatus();
+      if (status) status.textContent = '✓ Food estimates updated and saved';
+      dailyRefreshNutritionRows(analysisDate);
+      if (dailyActiveSubTab === 'analytics') renderNutritionAnalytics();
+      return true;
+    } catch (error) {
+      console.error('Nutrition analysis failed', error);
+      const status = visibleStatus();
+      if (status) status.textContent = 'Your log is saved, but the food estimate failed. Retry below.';
+      return false;
+    }
+  })();
+
+  nutritionAnalysisJobs.set(analysisDate, job);
+  job.finally(() => {
+    nutritionAnalysisJobs.delete(analysisDate);
+    if (dailyActiveSubTab === 'log' && dailySelectedDate === analysisDate) {
+      renderDailyNutritionSummary().catch(() => {});
+    }
+  });
+  return job;
+}
+
+async function nutritionToggleFoodComplete() {
+  const toggleDate = dailySelectedDate;
+  const log = (dailyLogs || []).find(item => item.log_date === toggleDate) || null;
+  if (!log?.id) return;
+  const coach = log.coach_analysis && typeof log.coach_analysis === 'object' ? log.coach_analysis : {};
+  const nutrition = coach.nutrition && typeof coach.nutrition === 'object' ? coach.nutrition : {};
+  const wasComplete = nutritionFoodLogIsComplete(log);
+  await sbPatch(TABLES.dailyLogs, log.id, {
+    coach_analysis: {
+      ...coach,
+      nutrition: {
+        ...nutrition,
+        food_logging_complete: !wasComplete,
+        food_logging_completed_at: wasComplete ? null : new Date().toISOString(),
+        food_logging_completion_source: wasComplete ? 'manual_exclusion' : 'manual'
+      }
+    }
+  }, withUserScope(), 'training');
+  await loadDailyLogs(true);
+  renderDailyLogForm();
+  if (!wasComplete) nutritionAnalyzeSelectedDay({ date: toggleDate, silent: true, skipRender: true });
+}
+
+function nutritionCanonicalKey(value) {
+  return String(value || '').toLowerCase().normalize('NFKD')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 120);
+}
+
+async function nutritionRememberCorrection(entry, corrected) {
+  const canonicalName = entry.nutrition?.canonical_name || entry.description.slice(0, 120);
+  const key = nutritionCanonicalKey(canonicalName);
+  if (!key) return;
+  const matches = await sbGet(
+    TABLES.nutritionMemory,
+    withUserScope('select=*&canonical_key=eq.' + encodeURIComponent(key) + '&limit=1'),
+    'training'
+  );
+  const body = {
+    user_id: getActiveUserIdOrThrow(),
+    canonical_key: key,
+    canonical_name: canonicalName,
+    aliases: [...new Set([...(matches[0]?.aliases || []), canonicalName])].slice(-12),
+    description_patterns: [...new Set([...(matches[0]?.description_patterns || []), entry.description])].slice(-12),
+    serving_description: entry.nutrition?.serving_description || null,
+    portion_notes: {
+      portion_description: entry.nutrition?.portion_description || entry.nutrition?.serving_description || '',
+      visual_portion_cues: entry.nutrition?.visual_portion_cues || [],
+      portion_basis: entry.nutrition?.portion_basis || 'text'
+    },
+    latest_raw_description: entry.description,
+    energy_kcal: corrected.calories,
+    protein_g: corrected.protein_g,
+    carbs_g: corrected.carbs_g,
+    fat_g: corrected.fat_g,
+    fiber_g: corrected.fiber_g,
+    assumptions: corrected.assumptions || [],
+    confidence: 1,
+    source: 'user_corrected',
+    provider: corrected.analysis?.provider || null,
+    model: corrected.analysis?.model || null,
+    prompt_version: corrected.analysis?.prompt_version || null,
+    times_used: (matches[0]?.times_used || 0) + 1,
+    correction_count: (matches[0]?.correction_count || 0) + 1,
+    needs_reestimate: false,
+    user_confirmed: true,
+    last_used_at: new Date().toISOString()
+  };
+  if (matches[0]?.id) await sbPatch(TABLES.nutritionMemory, matches[0].id, body, withUserScope(), 'training');
+  else await sbPost(TABLES.nutritionMemory, body, 'training');
+}
+
+async function nutritionCorrectEntry(button) {
+  const rowEl = button.closest('.macro-food-row');
+  const log = (dailyLogs || []).find(item => item.log_date === dailySelectedDate) || null;
+  const entry = (log?.food_entries || []).find(item => item.id === rowEl?.dataset.entryId);
+  if (!log?.id || !entry) return;
+  const values = {};
+  rowEl.querySelectorAll('input[data-field]').forEach(input => {
+    values[input.dataset.field] = Math.max(0, Number(input.value) || 0);
+  });
+  button.disabled = true;
+  button.textContent = 'Saving…';
+  const corrected = {
+    ...(entry.nutrition || {}),
+    ...values,
+    status: 'confirmed',
+    source: 'user_corrected',
+    confidence: 1,
+    source_description: entry.description.trim(),
+    corrected_at: new Date().toISOString()
+  };
+  const foodEntries = log.food_entries.map(item =>
+    item.id === entry.id ? { ...item, nutrition: corrected } : item
+  );
+  try {
+    await sbPatch(TABLES.dailyLogs, log.id, { food_entries: foodEntries }, withUserScope(), 'training');
+    await nutritionRememberCorrection(entry, corrected);
+    await Promise.all([loadDailyLogs(true), loadNutritionMemory(true)]);
+    renderDailyLogForm();
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = 'Save correction';
+    alert('Could not save this correction: ' + error.message);
+  }
+}
+
+function nutritionTimeHours(value) {
+  const match = String(value || '').match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+  const hours = Number(match[1]) + (Number(match[2]) / 60);
+  return hours >= 0 && hours < 24 ? hours : null;
+}
+
+function nutritionAverage(values) {
+  const valid = values.filter(value => Number.isFinite(value));
+  return valid.length ? valid.reduce((sum, value) => sum + value, 0) / valid.length : null;
+}
+
+function nutritionDivergingRows(days, field, unit) {
+  const differences = days.map(day => Number(day[field]) || 0);
+  const scale = Math.max(1, ...differences.map(Math.abs));
+  return days.slice().reverse().map(day => {
+    const value = Number(day[field]) || 0;
+    const width = Math.min(50, Math.abs(value) / scale * 50);
+    const style = value >= 0
+      ? 'left:50%;width:' + width + '%'
+      : 'right:50%;width:' + width + '%';
+    return '<div class="analytics-bar-row">' +
+      '<div class="analytics-date">' + escapeHtml(dailyFormatDate(day.date).replace(/,? \d{4}/, '')) + '</div>' +
+      '<div class="analytics-diverging"><div class="analytics-bar' + (value < 0 ? ' negative' : '') + '" style="' + style + '"></div></div>' +
+      '<div class="analytics-value">' + (value > 0 ? '+' : '') + Math.round(value) + unit + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function nutritionFastingRows(days) {
+  return days.slice().reverse().map(day => {
+    const start = day.firstHours;
+    const end = day.lastHours;
+    const width = Math.max(1.5, (end - start) / 24 * 100);
+    return '<div class="fasting-row">' +
+      '<div class="analytics-date">' + escapeHtml(dailyFormatDate(day.date).replace(/,? \d{4}/, '')) + '</div>' +
+      '<div class="fasting-track" title="' + escapeHtml(day.firstLabel + '–' + day.lastLabel) + '">' +
+        '<div class="fasting-window" style="left:' + (start / 24 * 100) + '%;width:' + width + '%"></div>' +
+      '</div>' +
+      '<div class="fasting-hours">' + (day.fastHours == null ? '—' : day.fastHours.toFixed(1) + 'h') + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function nutritionAssociationInsight(pairs, label, groupA, groupB, outcome, outcomeLabel, invert = false) {
+  const valuesFor = predicate => pairs.filter(predicate)
+    .map(pair => pair.next?.[outcome])
+    .filter(value => value != null && value !== '')
+    .map(Number)
+    .filter(Number.isFinite);
+  const a = valuesFor(groupA);
+  const b = valuesFor(groupB);
+  if (a.length < 2 || b.length < 2) return null;
+  const averageA = nutritionAverage(a);
+  const averageB = nutritionAverage(b);
+  const difference = averageA - averageB;
+  const direction = Math.abs(difference) < .15 ? 'about the same' : ((difference > 0) !== invert ? 'higher' : 'lower');
+  return '<div class="analytics-insight"><strong>' + escapeHtml(label) + ':</strong> ' +
+    escapeHtml(outcomeLabel) + ' was ' + direction + ' by ' + Math.abs(difference).toFixed(1) +
+    ' on average (' + a.length + ' vs ' + b.length + ' days).</div>';
+}
+
+async function renderNutritionAnalytics() {
+  const container = document.getElementById('daily-page-analytics');
+  if (!container || dailyActiveSubTab !== 'analytics') return;
+  if (!getActiveUserId()) {
+    container.innerHTML = getAuthCardMarkup();
+    return;
+  }
+  container.innerHTML = '<div style="color:var(--text);font-size:14px;opacity:.5;padding:8px 0">Building nutrition history…</div>';
+  try {
+    const [, context, targetRows] = await Promise.all([
+      loadDailyLogs(true),
+      loadNutritionContext(),
+      sbGet(TABLES.nutritionTargets, withUserScope('select=*&order=target_date.asc'), 'training')
+    ]);
+    const sortedLogs = (dailyLogs || []).slice().sort((a, b) => a.log_date.localeCompare(b.log_date));
+    const completeLogs = sortedLogs.filter(nutritionFoodLogIsComplete);
+    const targets = new Map((targetRows || []).map(target => [target.target_date, target]));
+    for (const log of completeLogs) {
+      if (!targets.has(log.log_date)) {
+        targets.set(log.log_date, calculateNutritionTarget(log.log_date, context.profile, context.measurements));
+      }
+    }
+    const days = completeLogs.map(log => {
+      const entries = Array.isArray(log.food_entries) ? log.food_entries : [];
+      const target = targets.get(log.log_date);
+      const totals = nutritionTotals(entries);
+      const described = entries.filter(entry => entry.description).length;
+      if (!target || described === 0 || totals.analyzed < described) return null;
+      const first = nutritionTimeHours(log.first_calories_at || entries.map(entry => entry.time).filter(Boolean).sort()[0]);
+      const last = nutritionTimeHours(log.last_calories_at || entries.map(entry => entry.time).filter(Boolean).sort().slice(-1)[0]);
+      return {
+        date: log.log_date,
+        log,
+        target,
+        totals,
+        calorieDifference: totals.calories - target.energy_kcal,
+        proteinDifference: totals.protein_g - target.protein_g,
+        firstHours: first,
+        lastHours: last,
+        firstLabel: first == null ? '' : String(log.first_calories_at || ''),
+        lastLabel: last == null ? '' : String(log.last_calories_at || '')
+      };
+    }).filter(Boolean);
+    const fastingDays = days.filter(day => day.firstHours != null && day.lastHours != null && day.lastHours >= day.firstHours);
+    fastingDays.forEach((day, index) => {
+      const previous = fastingDays[index - 1];
+      const priorDate = new Date(day.date + 'T00:00:00');
+      priorDate.setDate(priorDate.getDate() - 1);
+      day.fastHours = previous && previous.date === dailyLocalDate(priorDate)
+        ? (24 - previous.lastHours) + day.firstHours
+        : null;
+    });
+    const averageCalorieDifference = nutritionAverage(days.map(day => day.calorieDifference));
+    const averageProteinDifference = nutritionAverage(days.map(day => day.proteinDifference));
+    const averageFast = nutritionAverage(fastingDays.map(day => day.fastHours));
+    const incompleteCount = sortedLogs.filter(log =>
+      (log.food_entries || []).some(entry => entry.description) &&
+      !nutritionFoodLogIsComplete(log)
+    ).length;
+    const unanalyzedHistory = sortedLogs.filter(log =>
+      (log.food_entries || []).some(entry => entry.description && !entry.nutrition)
+    ).length;
+
+    const byDate = new Map(sortedLogs.map(log => [log.log_date, log]));
+    const pairs = days.map(day => {
+      const nextDate = new Date(day.date + 'T00:00:00');
+      nextDate.setDate(nextDate.getDate() + 1);
+      return { day, next: byDate.get(dailyLocalDate(nextDate)) || null };
+    }).filter(pair => pair.next);
+    const insights = [
+      nutritionAssociationInsight(
+        pairs, 'After a workout vs rest day',
+        pair => pair.day.target.day_type === 'training',
+        pair => pair.day.target.day_type === 'rest',
+        'sleep_score', 'next-morning sleep score'
+      ),
+      nutritionAssociationInsight(
+        pairs, 'After calorie surplus vs deficit',
+        pair => pair.day.calorieDifference > 100,
+        pair => pair.day.calorieDifference < -100,
+        'energy', 'next-day energy'
+      ),
+      nutritionAssociationInsight(
+        pairs, 'Earlier vs later final calories',
+        pair => pair.day.lastHours != null && pair.day.lastHours < 20.5,
+        pair => pair.day.lastHours != null && pair.day.lastHours >= 20.5,
+        'sleep_score', 'next-morning sleep score'
+      ),
+      nutritionAssociationInsight(
+        pairs, 'Earlier vs later final calories',
+        pair => pair.day.lastHours != null && pair.day.lastHours < 20.5,
+        pair => pair.day.lastHours != null && pair.day.lastHours >= 20.5,
+        'stress', 'next-day stress', true
+      )
+    ].filter(Boolean);
+
+    container.innerHTML =
+      '<div class="card" style="margin-bottom:14px">' +
+        '<div class="card-section-title">Nutrition analytics</div>' +
+        '<p style="font-size:13px;line-height:1.5;color:var(--text);opacity:.68;margin:0 0 14px">Past days with a final-calories time and saved food estimates are included automatically. Today stays open until you tap “Done logging food.” You never need to estimate history from this page.</p>' +
+        '<div class="analytics-kpis">' +
+          '<div class="analytics-kpi"><div class="analytics-kpi-value">' + days.length + '</div><div class="analytics-kpi-label">complete, fully estimated days</div></div>' +
+          '<div class="analytics-kpi"><div class="analytics-kpi-value">' + (averageCalorieDifference == null ? '—' : (averageCalorieDifference > 0 ? '+' : '') + Math.round(averageCalorieDifference)) + '</div><div class="analytics-kpi-label">average kcal vs target</div></div>' +
+          '<div class="analytics-kpi"><div class="analytics-kpi-value">' + (averageProteinDifference == null ? '—' : (averageProteinDifference > 0 ? '+' : '') + Math.round(averageProteinDifference) + 'g') + '</div><div class="analytics-kpi-label">average protein vs target</div></div>' +
+          '<div class="analytics-kpi"><div class="analytics-kpi-value">' + (averageFast == null ? '—' : averageFast.toFixed(1) + 'h') + '</div><div class="analytics-kpi-label">average measured fast</div></div>' +
+        '</div>' +
+        '<div class="macro-status-note">' + incompleteCount + ' food-log day' + (incompleteCount === 1 ? ' is' : 's are') + ' currently excluded as incomplete.' +
+          (unanalyzedHistory ? ' ' + unanalyzedHistory + ' saved day' + (unanalyzedHistory === 1 ? ' is' : 's are') + ' still waiting for an estimate from Daily Log.' : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="card" style="margin-bottom:14px"><div class="card-section-title">Daily calorie surplus / deficit</div>' +
+        '<div class="analytics-chart">' + (days.length ? nutritionDivergingRows(days.slice(-30), 'calorieDifference', ' kcal') : '<div class="macro-status-note">Complete food days will appear here.</div>') + '</div></div>' +
+      '<div class="card" style="margin-bottom:14px"><div class="card-section-title">Daily protein vs target</div>' +
+        '<div class="analytics-chart">' + (days.length ? nutritionDivergingRows(days.slice(-30), 'proteinDifference', 'g') : '<div class="macro-status-note">Complete food days will appear here.</div>') + '</div></div>' +
+      '<div class="card" style="margin-bottom:14px"><div class="card-section-title">Eating windows &amp; fasting</div>' +
+        '<p style="font-size:11px;line-height:1.45;color:var(--text);opacity:.58;margin:0">Green shows the eating window on a 24-hour line. Hours at right measure the fast since the previous complete day.</p>' +
+        '<div class="analytics-chart">' + (fastingDays.length ? nutritionFastingRows(fastingDays.slice(-30)) : '<div class="macro-status-note">Complete days with first and last calorie times will appear here.</div>') + '</div></div>' +
+      '<div class="card" style="margin-bottom:28px"><div class="card-section-title">What seems connected</div>' +
+        '<p style="font-size:11px;line-height:1.45;color:var(--text);opacity:.58;margin:0 0 4px">Exploratory associations using the prior day’s nutrition/workout and the next day’s outcomes. They are signals to investigate, not proof of cause.</p>' +
+        (insights.length ? insights.join('') : '<div class="macro-status-note">There is not enough complete history for a fair comparison yet. Each comparison needs at least two days in both groups.</div>') +
+      '</div>';
+  } catch (error) {
+    console.error('Nutrition analytics failed', error);
+    container.innerHTML = '<div class="card"><div class="card-section-title">Analytics unavailable</div><p style="font-size:13px;color:var(--text);opacity:.65;margin:0">' +
+      escapeHtml(error.message || 'Could not build nutrition analytics.') + '</p></div>';
   }
 }
 
@@ -5153,6 +6337,9 @@ function resetUserScopedState(force = false) {
   dailyEditingId = null;
   dailyDraftDirty = false;
   dailyPhotoUploadsInFlight = 0;
+  nutritionMemory = null;
+  nutritionTargetCache = new Map();
+  nutritionAnalysisJobs = new Map();
   window._historySessions = null;
   const extraCards = document.getElementById('extra-cards-container');
   if (extraCards) extraCards.innerHTML = '';

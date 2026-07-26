@@ -9,3 +9,14 @@ entrypoint = "./functions/notify-invitation-request/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/notify-invitation-request/*.html" ]
+
+[functions.nutrition-analyze-food]
+enabled = true
+verify_jwt = true
+import_map = "./functions/nutrition-analyze-food/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/nutrition-analyze-food/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML files:
+# static_files = [ "./functions/nutrition-analyze-food/*.html" ]

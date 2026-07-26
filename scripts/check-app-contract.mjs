@@ -18,6 +18,11 @@ const expected = [
   ['silent token refresh handling', "event === 'TOKEN_REFRESHED'"],
   ['scoped lift-card sharing', "querySelectorAll('#lift-tracker .lift-card')"],
   ['food photo upload support', 'const DAILY_PHOTO_LIMIT = 5'],
+  ['three-stage Daily Log calendar', 'function dailyLogStage'],
+  ['Daily Log sleep stepper', "stepperHtml('daily-sleep-duration'"],
+  ['Daily Log work-hours stepper', "stepperHtml('daily-work-hours'"],
+  ['Daily Log empty-food filter', 'filter(entry => entry.description || entry.photos.length)'],
+  ['brick favicon', '<link rel="icon" type="image/svg+xml"'],
 ];
 
 if (appFile === 'brian_STAGING.html') {
@@ -37,4 +42,15 @@ if (missing.length) {
   process.exit(1);
 }
 
-console.log(`App contract passed for ${appFile} (${expected.length} checks).`);
+const forbidden = [
+  ['Daily Log mood scale', "dailyScaleMarkup('mood'"],
+  ['Daily Log mood payload', "mood: scaleValue('mood')"],
+  ['obsolete Daily Log calendar footer', 'daily-calendar-footer'],
+];
+const present = forbidden.filter(([, marker]) => html.includes(marker));
+if (present.length) {
+  present.forEach(([name, marker]) => console.error(`Obsolete ${name}: ${marker}`));
+  process.exit(1);
+}
+
+console.log(`App contract passed for ${appFile} (${expected.length} required, ${forbidden.length} forbidden checks).`);
