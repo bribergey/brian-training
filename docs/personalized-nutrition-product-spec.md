@@ -43,8 +43,6 @@ The advisory layer cannot silently change canonical data.
 Profile + measurements + goal phase
                     |
 Training schedule and completed sessions
-                    |
-Bounded multi-day recovery trends
                     v
        Deterministic target engine
         policy version + engine version
@@ -177,7 +175,7 @@ This makes the system explainable without requiring AI.
 
 ## Optional Coach tab
 
-Add this only after targets and food facts are reliable.
+This can follow the first dashboard. The initial release already uses AI for food estimation; the optional Coach is a conversational explanation and planning layer, not the calculation engine.
 
 Good coach tasks:
 
@@ -203,18 +201,18 @@ Numeric cards are always rendered from the database, never copied from model pro
 
 ## Food analysis
 
-AI extracts structure; a food database supplies nutrient facts.
+AI-assisted food estimation is part of the first usable release. The user can keep writing normal descriptions instead of entering every ingredient and measurement. The system returns an explicit estimate with assumptions and improves recurring foods from corrections.
 
 ```text
 Description and optional photo
   -> item and portion candidates
-  -> food-database match
-  -> nutrient calculation from amount
+  -> known-food or food-database match when available
+  -> nutrient estimate from the best available evidence
   -> user review when confidence is low
   -> accepted nutrient fact revision
 ```
 
-Use USDA FoodData Central as the primary compositional source. Preserve:
+Use saved user-confirmed foods and product labels first, then USDA FoodData Central where practical. A model-only estimate is allowed when that is the only convenient option, but it remains visibly estimated. Preserve:
 
 - FoodData Central ID,
 - source data type,
@@ -329,6 +327,15 @@ Immutable scientific and product policy:
 - typed error,
 - privacy and retention mode.
 
+### `nutrition_food_memory`
+
+- user-scoped canonical name and aliases,
+- representative serving description,
+- calorie, protein, carbohydrate, fat, and fiber estimate,
+- source and assumptions,
+- confidence and user-confirmed state,
+- use count and timestamps.
+
 Optional chat tables can be added later. Keep core macro and energy columns typed and queryable. JSON snapshots are for audit and replay, not the only source of truth.
 
 Any aggregate view over user data must preserve caller-scoped row-level security.
@@ -415,56 +422,31 @@ Track:
 
 Invalid schema, impossible units, internal calorie/macro inconsistency, or an out-of-policy claim fails closed to “Could not analyze—please review.” Never silently coerce it into a canonical total.
 
-## Delivery phases
+## Delivery sequence
 
-### Phase 1: strategy and calibration inputs
+### First testable loop
 
-- Approve the nutrition policy.
-- Confirm primary goal and desired rate.
-- Add current weight and regular morning-weight workflow.
-- Add supplement, medical-context, step/activity, and training-duration inputs.
-- Define session day classifications.
-- Define an explicit `unknown` day type for dates beyond the available program horizon.
-- Validate and retire the existing unversioned macro-target JSON as an authoritative source.
+- Calculate a stable, versioned calorie and macro target from the current profile, latest measurement, goal, activity, lower-carbohydrate preference, and training/rest day type.
+- Show calories, protein, carbohydrate, and fat consumed and remaining.
+- Analyze ordinary Daily Log food descriptions through an authenticated server function.
+- Store estimates, confidence, assumptions, and source metadata with each food entry.
+- Let the user correct an estimate without re-entering a meal.
+- Recognize and reuse recurring foods and meals while typing.
+- Keep incomplete days explicitly incomplete; missing food is never counted as zero.
 
-Exit: enough current data exists to create an explicitly provisional target and start calibration.
+Exit: the user can log a normal day, see useful estimated progress immediately, correct it, and receive a better default the next time the food recurs.
 
-### Phase 2: deterministic targets and Macros UI
-
-- Add policy, goal-phase, and day-plan revision schema.
-- Implement the pure target engine.
-- Render day target, reason codes, progress placeholders, and calculation drawer.
-- No AI.
-
-Exit: targets are reproducible, versioned, RLS-safe, and understandable on staging.
-
-### Phase 3: structured food progress
-
-- Normalize Daily Log food observations without deleting JSON.
-- Add manual portions, food search, reusable foods/meals, and USDA matches.
-- Add completeness state and uncertainty-aware totals.
-- Add consumed and remaining progress.
-
-Exit: representative foods can be logged and corrected with trustworthy totals.
-
-### Phase 4: AI-assisted extraction
-
-- Add the private Edge Function and OpenRouter controls.
-- Extract meal candidates with strict schemas.
-- Require review according to confidence.
-- Run the benchmark and safety suites.
-
-Exit: AI saves time without becoming the nutrition database or target engine.
-
-### Phase 5: adaptive calibration
+### Calibration and outcome learning
 
 - Use sufficient complete weight, food, activity, and training data.
 - Generate bounded adjustment proposals.
 - Require explicit approval.
+- Analyze how food on day N relates to sleep, energy, stool, and other outcomes on day N+1 and over longer windows.
+- Keep these outcome associations separate from the target calculation and label them as observational rather than causal.
 
 Exit: the system can learn Brian's maintenance while preserving an auditable history.
 
-### Phase 6: optional Coach
+### Optional Coach
 
 - Add explanations, meal suggestions, clarifications, and weekly reviews.
 - Show fact references and proposed actions.
@@ -472,15 +454,15 @@ Exit: the system can learn Brian's maintenance while preserving an auditable his
 
 Exit: coach usefulness and safety exceed the deterministic experience in evaluation and real staging use.
 
-## Current decision gates
+## Current product decisions
 
-Brian should decide:
-
-1. Is “lean gain with minimal fat” the primary next phase, or is recomposition still the higher priority?
-2. Is the fasting window flexible on morning training days?
-3. How much logging precision is acceptable: quick estimates with ranges, portion presets, or weighed/label-backed tracking for a short calibration period?
-4. Should the first release cover calories/macros/fiber only, with hydration and micronutrients following after the core is reliable?
-5. Should the optional Coach wait until structured food progress is stable? The recommended answer is yes.
+- The dashboard must show total calories as well as protein, carbohydrate, and fat.
+- Targets are stable by day type and do not react to daily sleep, stress, soreness, stool, or energy scores.
+- The preferred logging mode is quick AI estimation from ordinary text, with better amounts added when convenient.
+- Recurring foods and meals should become reusable user-specific memory.
+- The active fasting, lower-carbohydrate, and no/low-added-sugar preferences come from the current profile, not from hardcoded documentation.
+- Historical outcome analysis links food on one day to recovery signals on following days; it does not rewrite the day's target.
+- Hydration, micronutrients, and a conversational coach can follow after the core loop is useful.
 
 ## Technical references
 

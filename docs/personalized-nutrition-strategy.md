@@ -19,21 +19,20 @@ The system should use a stable, versioned nutrition prescription with a small nu
 
 The target engine must be useful without AI. This is the central safeguard against model drift.
 
-## Brian-specific starting context
+## Personal context and source of truth
 
-Read-only production checks on 2026-07-25 found:
+Do not freeze a profile snapshot or today's prescribed targets in this document. When the app creates a new plan version, it must read:
 
-- Male, age 46, height 180 cm.
-- Last recorded measurement: 75 kg and 16% body fat, dated 2026-04-01. It is too old to treat as a current calibration point.
-- Current profile goal: lean bulk. The broader profile also lists strength, muscle gain, fat loss, recomposition, endurance, and general health, so the primary goal and acceptable rate of gain still need explicit confirmation.
-- High activity outside the gym, with four preferred lifting days per week.
-- Recent training is consistent and high volume: 15 normal resistance sessions in the last 28 days, generally about 23–28 logged work sets, plus a few small extra sessions.
-- Current eating preference is primarily plant-based but flexible, with gluten-free and lectin-free preferences.
-- Current eating window is approximately noon–7 p.m.; the training window begins as early as 10 a.m.
-- Fifteen Daily Logs cover 2026-07-11 through 2026-07-25. Food was recorded on 12 days, with 32 entries total.
-- The profile already contains unvalidated `macro_targets` and `macro_targets_history` JSON. The current stored values are 2,500 kcal, 149 g protein, 289 g carbohydrate, and 83 g fat for training days; 2,275 kcal, 149 g protein, 207 g carbohydrate, and 83 g fat for rest days. The training macros reconcile to about 2,499 kcal, but the rest macros reconcile to about 2,171 kcal—a 104 kcal mismatch. At least one history record also fails calorie/macro reconciliation. These values have no durable formula, evidence, input snapshot, or engine version and must not become the new system's source of truth.
+- the current profile, goal, activity level, dietary preferences, and eating-window preference;
+- the most recent available measurement, even when measurements update infrequently;
+- the current training schedule and recent completed training;
+- the active nutrition policy and any explicitly approved manual target adjustment.
 
-The food log is useful coaching context but not yet sufficient for accurate macro totals. Many entries use intentionally convenient descriptions such as “handful,” “bowl,” “a lot,” restaurant dishes, oil, tahini, or mixed meals. Those are normal ways to log a life, but they create large calorie and fat uncertainty unless portions are clarified.
+The database and the calculation drawer in the app are the authority for the personal values used by a particular plan. A profile or measurement change should create a new plan version; it must not rewrite historical targets.
+
+Existing unversioned target JSON may be used as migration context, but it is not authoritative unless its calories reconcile with its protein, carbohydrate, and fat and it has an identifiable method version.
+
+The food log is useful coaching context but not yet sufficient for exact macro totals. Convenient descriptions such as “handful,” “bowl,” restaurant dishes, oils, or mixed meals create unavoidable uncertainty. The product should estimate them, show its assumptions, accept simple corrections, and learn reusable versions of foods and meals that recur.
 
 ### Patterns worth testing, not declaring as facts
 
@@ -51,7 +50,7 @@ These are evidence-grounded starting ranges, not final daily targets. Energy and
 
 ### Energy
 
-Athlete-oriented resting-energy equations place Brian's estimated resting requirement at roughly 1,800–1,900 kcal/day using the stale April measurement. Equations can be wrong by hundreds of calories for an individual, and an activity multiplier adds more uncertainty.
+Use the current profile and most recent measurement with the versioned resting-energy and activity method. Equations can be wrong by hundreds of calories for an individual, and an activity multiplier adds more uncertainty.
 
 The app should therefore:
 
@@ -61,15 +60,13 @@ The app should therefore:
 - Adjust maintenance no more often than weekly, and preferably after two complete weeks.
 - Never “eat back” wearable exercise calories one for one.
 
-For a lean-gain phase, start conservatively—approximately 5% above calibrated maintenance—and aim for roughly 0.1–0.25% body weight gain per week for a trained recreational lifter. At 75 kg that would be about 0.08–0.19 kg per week. If waist or fat gain rises without useful strength or training progress, reduce the surplus. If weight and performance do not move despite good adherence, increase it modestly.
+For a lean-gain phase, start conservatively—approximately 3–5% above calibrated maintenance—and aim for roughly 0.1–0.25% body weight gain per week for a trained recreational lifter. If waist or fat gain rises without useful strength or training progress, reduce the surplus. If weight and performance do not move despite good adherence, increase it modestly.
 
 ### Protein
 
 - Working range for maintenance or lean gain: 1.8–2.0 g/kg/day.
-- At 75 kg: approximately 135–150 g/day.
 - Keep the daily target stable across rest and training days.
 - Use three or four meaningful feedings where practical, commonly about 0.4–0.55 g/kg per feeding for a muscle-gain pattern.
-- At 75 kg: approximately 30–40 g per feeding.
 - Total daily protein matters more than perfect timing.
 - For a predominantly plant-based pattern, favor the upper end and use protein-complete or complementary foods such as soy, tofu/tempeh, legumes, and soy or blended pea/rice isolates. A flexible diet can also use eggs, dairy, fish, and meat according to preference.
 
@@ -80,10 +77,11 @@ If the goal changes to a calorie deficit, the target would usually move toward r
 Carbohydrate is the main daily adjustment:
 
 - General resistance-training starting range: about 3–5 g/kg/day.
-- At 75 kg: approximately 225–375 g/day before reconciling with the calibrated energy target.
 - Rest or light day: lower end of the personal range.
 - Normal resistance day: middle of the personal range.
 - High-volume legs/full-body, conditioning, long session, or two-a-day: upper end.
+
+When the profile expresses a lower-carbohydrate preference, do not force an athlete-template carbohydrate number. Set protein first, choose fat within the evidence-based band, and allocate the remainder to carbohydrate while preserving enough carbohydrate to support training. Prefer minimally processed carbohydrate sources and treat added sugar as a preference constraint rather than confusing it with total carbohydrate.
 
 For ordinary fed lifting sessions under about 60–75 minutes, intra-workout carbohydrate is usually unnecessary. Higher-volume, fasted, glycogen-depleted, long, or twice-daily training is more likely to benefit from additional carbohydrate.
 
@@ -213,22 +211,19 @@ Escalate to a sports dietitian or clinician for persistent or concerning pattern
 - kidney, liver, cardiovascular, endocrine, or metabolic disease,
 - aggressive cutting, repeated fasting, or high-dose supplement use despite poor recovery.
 
-## Inputs still required
+## Missing-data policy
 
-Before final targets are activated:
+The first usable target does not require perfect data. Use the current profile and most recent measurement, label the result provisional, and expose which inputs are missing. Improve confidence over time from:
 
-- Current morning body weight and a new waist measurement.
-- At least 14 days of morning weight entries.
-- Explicit primary goal for the next phase and acceptable rate of gain or loss.
-- Typical session duration and effort/RPE; current set count alone is not an energy-expenditure measure.
-- A fallback rule for days beyond the scheduled-program horizon. The current program only extends through 2026-07-26, so “unknown” must remain distinct from “rest.”
-- Typical daily steps or another stable activity measure.
-- Protein-powder brand and nutrition label.
-- Current supplement list with dose and timing.
-- Relevant diagnoses, medications, food allergies/intolerances, and clinician-ordered labs Brian wants considered.
-- Usual caffeine and alcohol amount/timing.
-- Whether the fasting window is flexible on morning training days.
-- Representative pre/post training weights for hot, long, or unusually sweaty sessions if hydration periodization is desired.
+- multiweek morning-weight trends;
+- an explicit primary goal and acceptable rate of change;
+- typical session duration and effort;
+- a fallback day type beyond the scheduled-program horizon;
+- a stable outside-gym activity measure;
+- saved product labels and recurring meal corrections;
+- supplement, medical, caffeine, alcohol, and hydration context when the user chooses to add it.
+
+Missing data reduces confidence; it does not block the dashboard or silently become zero.
 
 ## Evidence quality
 
