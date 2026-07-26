@@ -81,7 +81,7 @@ Carbohydrate is the main daily adjustment:
 - Normal resistance day: middle of the personal range.
 - High-volume legs/full-body, conditioning, long session, or two-a-day: upper end.
 
-When the profile expresses a lower-carbohydrate preference, do not force an athlete-template carbohydrate number. Set protein first, choose fat within the evidence-based band, and allocate the remainder to carbohydrate while preserving enough carbohydrate to support training. Prefer minimally processed carbohydrate sources and treat added sugar as a preference constraint rather than confusing it with total carbohydrate.
+When the current app nutrition policy calls for lower carbohydrate, do not force an athlete-template carbohydrate number. Set protein first, choose fat within the evidence-based band, and allocate the remainder to carbohydrate while preserving enough carbohydrate to support training. Read the active policy and personal details from the app and current profile; do not encode the user's current values in this document. Prefer minimally processed carbohydrate sources and treat added sugar as a qualitative preference rather than confusing it with total carbohydrate.
 
 For ordinary fed lifting sessions under about 60–75 minutes, intra-workout carbohydrate is usually unnecessary. Higher-volume, fasted, glycogen-depleted, long, or twice-daily training is more likely to benefit from additional carbohydrate.
 
