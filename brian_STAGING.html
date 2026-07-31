@@ -5353,7 +5353,6 @@ function renderDailyLogForm() {
       '<button type="button" class="daily-add-btn" onclick="dailyAddFood()">+ Add food or drink</button>' +
     '</div>' +
     '<div class="card" style="margin-bottom:18px">' +
-      '<div class="card-section-title">Eating window</div>' +
       '<div class="input-group"><div class="daily-rating-label">Last calories</div>' +
         '<input type="time" class="date-picker-input daily-time-input" id="daily-last-calories" value="' + escapeHtml((data.last_calories_at || '').slice(0,5)) +
         '" onchange="dailyScheduleDraft()"></div>' +
