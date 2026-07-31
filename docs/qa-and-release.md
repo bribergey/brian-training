@@ -26,6 +26,14 @@ For auth/data work, staging should prove:
 
 Use synthetic staging users where possible. Clean up test rows after write tests.
 
+For every UI or data branch, refresh the durable `codex_qa` fixture before
+interactive staging QA by following
+[`scripts/qa/README.md`](../scripts/qa/README.md). The fixture mirrors Brian's
+production data shapes under an isolated user ID, strips production food-photo
+references, and gives Codex enough realistic data to exercise history,
+analytics, Daily Log, program, workout, and profile views. Branch-specific
+test writes must remain scoped to `codex_qa`.
+
 ## Production QA
 
 Production QA should be as read-only as possible.
@@ -44,6 +52,12 @@ Expected checks after auth/RLS work:
 
 Only do production write tests with explicit approval.
 
+Brian has approved realistic production QA under the isolated `codex_qa`
+account. After every production publish, refresh the fixture and verify the
+released flow while signed in as `dev@lostplate.com`. Never use Brian's login
+for Codex browser testing, and never mutate `user_id = 'brian'` rows. Sign out
+after QA.
+
 ## Deployment Verification
 
 After pushing to `main` or `staging`:
@@ -52,6 +66,8 @@ After pushing to `main` or `staging`:
 - Fetch the public deployed HTML and verify the expected marker/config.
 - Use a cache-buster URL for browser QA.
 - If GitHub Pages serves old HTML, wait and re-check before diagnosing app behavior.
+- Refresh and use the isolated `codex_qa` data as described in
+  [`scripts/qa/README.md`](../scripts/qa/README.md).
 
 ## Final Handoff
 
