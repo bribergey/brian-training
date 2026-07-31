@@ -1006,12 +1006,21 @@ select {
 .daily-scale-end:last-child { text-align:right; }
 .daily-scale-help { min-height:20px; margin-top:8px; font-size:14px; font-weight:500; line-height:1.4; color:var(--text); opacity:0.76; }
 .daily-flags { display:flex; flex-wrap:wrap; gap:8px; }
-.daily-flag, .daily-stool-btn {
+.daily-flag {
+  border:1.5px solid var(--border2); background:var(--bg2); color:var(--text);
+  border-radius:18px; padding:8px 12px; font-family:var(--sans); font-size:12px;
+  font-weight:650; cursor:pointer; touch-action:manipulation;
+}
+.daily-stool-btn {
   border:1.5px solid var(--border2); background:var(--bg2); color:var(--text);
   border-radius:18px; padding:8px 12px; font-family:var(--mono); font-size:11px;
   font-weight:600; cursor:pointer; touch-action:manipulation;
 }
 .daily-flag.active, .daily-stool-btn.active { border-color:var(--green); background:rgba(26,219,78,0.10); color:var(--green-dark); }
+.daily-rating-optional {
+  font-family:var(--sans); font-size:13px; font-weight:500; letter-spacing:0;
+  opacity:.55; white-space:nowrap;
+}
 .daily-time-input { display:block; width:100%; min-height:44px; }
 .daily-food-entry {
   display:block; padding:14px; margin-bottom:12px;
@@ -1024,13 +1033,13 @@ select {
   margin-top:10px; padding:10px 11px; border-radius:9px;
   background:rgba(26,219,78,.07); border:1px solid rgba(26,219,78,.22);
 }
-.daily-food-estimate-head { display:flex; justify-content:space-between; gap:8px; align-items:center; }
-.daily-food-estimate-values { font-family:var(--mono); font-size:10px; font-weight:700; line-height:1.5; color:var(--text); }
+.daily-food-estimate-head { display:flex; flex-wrap:wrap; justify-content:space-between; gap:7px 10px; align-items:center; }
+.daily-food-estimate-values { flex:1 1 210px; font-family:var(--sans); font-size:12.5px; font-weight:700; line-height:1.5; color:var(--text); }
 .daily-food-confidence {
   flex:0 0 auto; border-radius:20px; padding:3px 7px; background:var(--bg2);
-  font-family:var(--mono); font-size:8px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+  font-family:var(--sans); font-size:10px; font-weight:700; line-height:1.35;
 }
-.daily-food-assumption { margin-top:5px; font-size:11px; line-height:1.4; color:var(--text); opacity:.62; }
+.daily-food-assumption { margin-top:6px; font-size:12.5px; font-weight:500; line-height:1.5; color:var(--text); opacity:.76; }
 .daily-food-suggestions { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
 .daily-food-suggestion {
   border:1px solid var(--border2); background:var(--bg3); color:var(--text);
@@ -1128,21 +1137,16 @@ select {
 .daily-calendar-day.is-selected.is-complete { border-color:var(--green); background:var(--text); }
 .daily-calendar-progress {
   --daily-progress:0deg;
-  position:static; flex:0 0 12px; width:12px; height:12px; border-radius:50%;
+  position:static; flex:0 0 14px; width:14px; height:14px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
   background:conic-gradient(var(--green) var(--daily-progress), var(--bg4) 0);
+  color:#07180b; font-family:var(--sans); font-size:9px; font-weight:900; line-height:1;
   box-shadow:inset 0 0 0 1px rgba(15,15,14,.12);
 }
 .daily-calendar-day.is-started .daily-calendar-progress { --daily-progress:120deg; }
 .daily-calendar-day.is-morning .daily-calendar-progress { --daily-progress:240deg; }
 .daily-calendar-day.is-complete .daily-calendar-progress { --daily-progress:360deg; }
 .daily-calendar-day.is-selected .daily-calendar-progress { box-shadow:0 0 0 2px var(--text), inset 0 0 0 1px rgba(255,255,255,.24); }
-.daily-calendar-food-complete {
-  position:absolute; top:3px; right:3px; width:13px; height:13px; border-radius:50%;
-  display:flex; align-items:center; justify-content:center; background:var(--green); color:#07180b;
-  font-family:var(--sans); font-size:9px; font-weight:900; line-height:1;
-  box-shadow:0 0 0 2px var(--bg2);
-}
-.daily-calendar-day.is-selected .daily-calendar-food-complete { box-shadow:0 0 0 2px var(--text); }
 .daily-info-btn {
   border:1px solid var(--border2); background:none; color:var(--text); width:22px; height:22px;
   border-radius:50%; font-family:var(--mono); font-size:12px; font-weight:700; cursor:pointer;
@@ -1182,7 +1186,7 @@ select {
 .macro-food-head { display:flex; justify-content:space-between; gap:12px; }
 .macro-food-name { font-size:14px; line-height:1.4; font-weight:650; color:var(--text); }
 .macro-food-time { font-family:var(--mono); font-size:9px; color:var(--text); opacity:.45; }
-.macro-food-values { margin-top:6px; font-family:var(--mono); font-size:10px; line-height:1.5; color:var(--text); opacity:.72; }
+.macro-food-values { margin-top:6px; font-family:var(--sans); font-size:12.5px; font-weight:600; line-height:1.5; color:var(--text); opacity:.8; }
 .macro-correction { margin-top:10px; }
 .macro-correction summary { cursor:pointer; font-family:var(--mono); font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--green-dark); }
 .macro-correction-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:10px; }
@@ -1203,6 +1207,7 @@ select {
 }
 .usual-food-manager-item { padding:14px 0; border-bottom:1px solid var(--border); }
 .usual-food-manager-item:last-child { border-bottom:0; }
+.usual-food-short-name-hint { margin:-4px 0 10px; font-size:12px; line-height:1.45; color:var(--text); opacity:.62; }
 .usual-food-manager-actions { display:flex; gap:8px; margin-top:10px; }
 .usual-food-manager-actions .btn { flex:1; width:auto; }
 .usual-food-delete { color:#b42318; border-color:rgba(180,35,24,.28); }
@@ -4447,6 +4452,7 @@ function dailyCalendarMarkup() {
     const log = logsByDate.get(value);
     const stage = dailyLogStage(log);
     const foodComplete = nutritionFoodLogIsAnalyzedComplete(log);
+    const allComplete = stage.key === 'complete' && foodComplete;
     const isSelected = value === selectedDate;
     const isToday = value === today;
     const classes = ['daily-calendar-day'];
@@ -4454,11 +4460,13 @@ function dailyCalendarMarkup() {
     if (stage.key) classes.push('is-' + stage.key);
     if (isSelected) classes.push('is-selected');
     const label = dailyFormatDate(value) + (isToday ? ', today' : '') + (stage.label ? ', ' + stage.label : ', not logged') +
-      (foodComplete ? ', food log complete and analyzed' : '') + (isSelected ? ', selected' : '');
+      (allComplete ? ', daily log and food analysis complete' : foodComplete ? ', food log complete and analyzed' : '') +
+      (isSelected ? ', selected' : '');
     cells.push('<button type="button" class="' + classes.join(' ') + '" aria-label="' + escapeHtml(label) +
       '" aria-pressed="' + (isSelected ? 'true' : 'false') + '" onclick="dailySelectCalendarDate(\'' + value + '\')">' +
-      '<span>' + day + '</span>' + (stage.key ? '<span class="daily-calendar-progress" aria-hidden="true"></span>' : '') +
-      (foodComplete ? '<span class="daily-calendar-food-complete" title="Food log complete and analyzed" aria-hidden="true">✓</span>' : '') + '</button>');
+      '<span>' + day + '</span>' + (stage.key ? '<span class="daily-calendar-progress"' +
+        (allComplete ? ' title="Daily log and food analysis complete"' : '') + ' aria-hidden="true">' +
+        (allComplete ? '✓' : '') + '</span>' : '') + '</button>');
   }
   return '<div class="daily-calendar-header">' +
       '<div class="daily-calendar-title"><div class="daily-calendar-month">' +
@@ -4946,6 +4954,8 @@ function dailyCurrentData() {
     had_alcohol: document.getElementById('daily-flag-alcohol')?.classList.contains('active') || false,
     had_caffeine: document.getElementById('daily-flag-caffeine')?.classList.contains('active') || false,
     took_magnesium: document.getElementById('daily-flag-magnesium')?.classList.contains('active') || false,
+    took_electrolytes: document.getElementById('daily-flag-electrolytes')?.classList.contains('active') || false,
+    had_protein_powder: document.getElementById('daily-flag-protein-powder')?.classList.contains('active') || false,
     traveled: document.getElementById('daily-flag-travel')?.classList.contains('active') || false,
     illness: document.getElementById('daily-flag-illness')?.classList.contains('active') || false,
     first_calories_at: firstMealTime,
@@ -5099,8 +5109,9 @@ function dailyUsualFoodManagerMarkup() {
   }
   return memories.map(memory =>
     '<div class="usual-food-manager-item" data-memory-id="' + escapeHtml(memory.id) + '">' +
-      '<div class="input-group" style="margin-bottom:10px"><label class="input-label">Short name</label>' +
+      '<div class="input-group"><label class="input-label">Button short name</label>' +
         '<input class="usual-food-name" maxlength="60" value="' + escapeHtml(memory.display_name || nutritionMemoryDisplayName(memory)) + '" placeholder="e.g. Protein shake"></div>' +
+      '<div class="usual-food-short-name-hint">This is the editable name shown in the Usual foods bubble.</div>' +
       '<div class="input-group"><label class="input-label">Full recipe or description</label>' +
         '<textarea class="usual-food-recipe" rows="3" placeholder="What goes into this usual food?">' +
           escapeHtml(memory.latest_raw_description || memory.canonical_name) + '</textarea></div>' +
@@ -5320,7 +5331,7 @@ function renderDailyLogForm() {
       dailyScaleMarkup('energy', 'Energy', data.energy) +
       dailyScaleMarkup('soreness', 'Muscle soreness', data.soreness) +
       dailyScaleMarkup('stress', 'Stress', data.stress) +
-      '<div class="input-group"><label class="input-label">Hours worked <span style="opacity:.45;font-weight:400">(optional)</span></label>' +
+      '<div class="input-group"><div class="daily-rating-label">Hours worked <span class="daily-rating-optional">(optional)</span></div>' +
         stepperHtml('daily-work-hours', escapeHtml(data.work_hours ?? ''), 0, 24, 'e.g. 9.5', 0.5, 'dailyScheduleDraft()') + '</div>' +
     '</div>' +
     '<div class="card" style="margin-bottom:18px">' +
@@ -5329,6 +5340,8 @@ function renderDailyLogForm() {
         dailyFlagMarkup('alcohol', 'Alcohol', data.had_alcohol) +
         dailyFlagMarkup('caffeine', 'Caffeine', data.had_caffeine) +
         dailyFlagMarkup('magnesium', 'Magnesium', data.took_magnesium) +
+        dailyFlagMarkup('electrolytes', 'Electrolytes', data.took_electrolytes) +
+        dailyFlagMarkup('protein-powder', 'Protein Powder', data.had_protein_powder) +
         dailyFlagMarkup('travel', 'Travel', data.traveled) +
         dailyFlagMarkup('illness', 'Illness', data.illness) +
       '</div>' +
@@ -5338,7 +5351,10 @@ function renderDailyLogForm() {
       '<div id="daily-usual-foods">' + dailyUsualFoodsMarkup() + '</div>' +
       '<div id="daily-food-entries">' + dailyFoodEntriesMarkup(foodEntries) + '</div>' +
       '<button type="button" class="daily-add-btn" onclick="dailyAddFood()">+ Add food or drink</button>' +
-      '<div class="input-group" style="margin-top:16px"><label class="input-label">Last calories</label>' +
+    '</div>' +
+    '<div class="card" style="margin-bottom:18px">' +
+      '<div class="card-section-title">Eating window</div>' +
+      '<div class="input-group"><div class="daily-rating-label">Last calories</div>' +
         '<input type="time" class="date-picker-input daily-time-input" id="daily-last-calories" value="' + escapeHtml((data.last_calories_at || '').slice(0,5)) +
         '" onchange="dailyScheduleDraft()"></div>' +
     '</div>' +
