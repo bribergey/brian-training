@@ -1,7 +1,7 @@
 import "@supabase/functions-js/edge-runtime.d.ts"
 import { withSupabase } from "@supabase/server"
 
-const PROMPT_VERSION = "food-estimate-1.1.0"
+const PROMPT_VERSION = "food-estimate-1.2.0"
 const MAX_ENTRIES = 20
 const MAX_DESCRIPTION_LENGTH = 2400
 const MAX_PHOTOS_PER_ENTRY = 5
@@ -143,6 +143,7 @@ function validPhotoPath(path: string, authUserId: string, environment: Environme
 }
 
 async function loadImages(
+  // deno-lint-ignore no-explicit-any
   supabaseAdmin: any,
   entries: FoodEntry[],
   authUserId: string,
@@ -197,7 +198,11 @@ function roundEstimate(value: unknown, max: number) {
   return Math.round(number * 10) / 10
 }
 
-function validateEstimates(raw: unknown, requestedEntries: FoodEntry[]) {
+export function validateEstimates(
+  raw: unknown,
+  requestedEntries: FoodEntry[],
+  options: { reconcileMacroMismatch?: boolean } = {},
+) {
   const entries = (raw as { entries?: unknown })?.entries
   if (!Array.isArray(entries) || entries.length !== requestedEntries.length) {
     throw new Error("entry_count_mismatch")
@@ -241,10 +246,23 @@ function validateEstimates(raw: unknown, requestedEntries: FoodEntry[]) {
     const macroCalories = (estimate.protein_g * 4) + (estimate.carbs_g * 4) + (estimate.fat_g * 9)
     const tolerance = Math.max(120, estimate.calories * 0.22)
     if (Math.abs(estimate.calories - macroCalories) > tolerance) {
-      throw new Error("calorie_macro_mismatch")
+      if (!options.reconcileMacroMismatch || macroCalories <= 0) {
+        throw new Error("calorie_macro_mismatch")
+      }
+      estimate.calories = Math.round(macroCalories * 10) / 10
+      estimate.confidence = Math.min(estimate.confidence, 0.55)
+      estimate.assumptions = [
+        ...estimate.assumptions,
+        "Calories reconciled from the estimated protein, carbohydrate, and fat values after an inconsistent model response.",
+      ].slice(0, 8)
     }
     return estimate
   })
+}
+
+function nullableSum(left: number | null, right: number | null) {
+  if (left === null && right === null) return null
+  return (left || 0) + (right || 0)
 }
 
 async function callModel(entries: FoodEntry[], memories: unknown[], images: PreparedImage[]) {
@@ -299,68 +317,126 @@ async function callModel(entries: FoodEntry[], memories: unknown[], images: Prep
     })
   }
 
-  const body: Record<string, unknown> = {
-    model,
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: userContent },
-    ],
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: "nutrition_food_estimates",
-        strict: true,
-        schema: responseSchema,
-      },
-    },
-  }
+  const baseMessages: Array<Record<string, unknown>> = [
+    { role: "system", content: system },
+    { role: "user", content: userContent },
+  ]
+  let retryContent = ""
+  let retryCode = ""
+  let promptTokens: number | null = null
+  let completionTokens: number | null = null
+  let totalTokens: number | null = null
+  let costUsd: number | null = null
 
-  if (provider === "openrouter") {
-    body.provider = {
-      require_parameters: true,
-      data_collection: "deny",
-      zdr: true,
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const messages = retryContent
+      ? [
+        ...baseMessages,
+        { role: "assistant", content: retryContent },
+        {
+          role: "user",
+          content: [
+            `The previous response failed validation with ${retryCode}.`,
+            "Return the complete JSON response again with one entry per requested ID.",
+            "Recalculate every entry so calories are reasonably consistent with 4 × protein_g + 4 × carbs_g + 9 × fat_g.",
+            "Keep all values realistic for the described portion and preserve the required JSON schema exactly.",
+          ].join(" "),
+        },
+      ]
+      : baseMessages
+    const body: Record<string, unknown> = {
+      model,
+      messages,
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "nutrition_food_estimates",
+          strict: true,
+          schema: responseSchema,
+        },
+      },
+    }
+
+    if (provider === "openrouter") {
+      body.provider = {
+        require_parameters: true,
+        data_collection: "deny",
+        zdr: true,
+      }
+    }
+
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        ...(provider === "openrouter"
+          ? {
+            "HTTP-Referer": "https://staging.briantraining.com",
+            "X-OpenRouter-Title": "Brian Training Nutrition",
+          }
+          : {}),
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(45_000),
+    })
+
+    if (!response.ok) {
+      const detail = (await response.text()).slice(0, 500)
+      console.error("Nutrition provider error", response.status, detail)
+      throw new Error(`provider_${response.status}`)
+    }
+
+    const payload = await response.json()
+    const content = payload?.choices?.[0]?.message?.content
+    if (!content || typeof content !== "string") throw new Error("empty_model_response")
+    const callPromptTokens = Number(payload?.usage?.prompt_tokens) || null
+    const callCompletionTokens = Number(payload?.usage?.completion_tokens) || null
+    const callTotalTokens = Number(payload?.usage?.total_tokens) || null
+    const callCostUsd = Number.isFinite(Number(payload?.usage?.cost)) ? Number(payload.usage.cost) : null
+    promptTokens = nullableSum(promptTokens, callPromptTokens)
+    completionTokens = nullableSum(completionTokens, callCompletionTokens)
+    totalTokens = nullableSum(totalTokens, callTotalTokens)
+    costUsd = nullableSum(costUsd, callCostUsd)
+
+    try {
+      const estimates = validateEstimates(JSON.parse(content), entries, {
+        reconcileMacroMismatch: attempt === 1,
+      })
+      return {
+        provider,
+        model: cleanText(payload.model || model, 160),
+        estimates,
+        generationId: cleanText(payload.id, 200) || null,
+        validationRetries: attempt,
+        usage: { promptTokens, completionTokens, totalTokens, costUsd },
+      }
+    } catch (error) {
+      const code = cleanText(error instanceof Error ? error.message : "invalid_model_response", 120)
+      if (attempt === 0) {
+        retryContent = content
+        retryCode = code
+        console.warn("Nutrition model output failed validation; retrying once", code)
+        continue
+      }
+      throw error
     }
   }
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      ...(provider === "openrouter"
-        ? {
-          "HTTP-Referer": "https://staging.briantraining.com",
-          "X-OpenRouter-Title": "Brian Training Nutrition",
-        }
-        : {}),
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(45_000),
+  throw new Error("invalid_model_response")
+}
+
+async function recordNutritionRun(
+  // deno-lint-ignore no-explicit-any
+  supabaseAdmin: any,
+  runTable: string,
+  body: Record<string, unknown>,
+) {
+  const { error } = await supabaseAdmin.schema("training").from(runTable).insert({
+    purpose: "food_estimation",
+    ...body,
   })
-
-  if (!response.ok) {
-    const detail = (await response.text()).slice(0, 500)
-    console.error("Nutrition provider error", response.status, detail)
-    throw new Error(`provider_${response.status}`)
-  }
-
-  const payload = await response.json()
-  const content = payload?.choices?.[0]?.message?.content
-  if (!content || typeof content !== "string") throw new Error("empty_model_response")
-
-  return {
-    provider,
-    model: cleanText(payload.model || model, 160),
-    estimates: validateEstimates(JSON.parse(content), entries),
-    generationId: cleanText(payload.id, 200) || null,
-    usage: {
-      promptTokens: Number(payload?.usage?.prompt_tokens) || null,
-      completionTokens: Number(payload?.usage?.completion_tokens) || null,
-      totalTokens: Number(payload?.usage?.total_tokens) || null,
-      costUsd: Number.isFinite(Number(payload?.usage?.cost)) ? Number(payload.usage.cost) : null,
-    },
-  }
+  if (error) console.error("Nutrition run audit insert failed", error.message)
 }
 
 export default {
@@ -464,7 +540,8 @@ export default {
         existingQuery = original?.memory_id
           ? existingQuery.eq("id", original.memory_id)
           : existingQuery.eq("canonical_key", key)
-        const { data: existing } = await existingQuery.maybeSingle()
+        const { data: existing, error: existingError } = await existingQuery.maybeSingle()
+        if (existingError) console.error("Nutrition memory match failed", existingError.message)
 
         const preserveConfirmed = existing?.user_confirmed === true && existing?.needs_reestimate !== true
         const memoryBody = {
@@ -505,18 +582,20 @@ export default {
           last_used_at: new Date().toISOString(),
         }
         if (existing?.id) {
-          await supabaseAdmin.schema("training").from(memoryTable)
+          const { error } = await supabaseAdmin.schema("training").from(memoryTable)
             .update(memoryBody)
             .eq("id", existing.id)
             .eq("user_id", appUserId)
+          if (error) console.error("Nutrition memory update failed", error.message)
         } else {
-          await supabaseAdmin.schema("training").from(memoryTable)
+          const { error } = await supabaseAdmin.schema("training").from(memoryTable)
             .upsert(memoryBody, { onConflict: "user_id,canonical_key" })
+          if (error) console.error("Nutrition memory insert failed", error.message)
         }
       }
 
       const runTable = environment === "production" ? "nutrition_ai_runs" : "nutrition_ai_runs_staging"
-      await supabaseAdmin.schema("training").from(runTable).insert({
+      await recordNutritionRun(supabaseAdmin, runTable, {
         user_id: appUserId,
         log_date: logDate,
         entry_ids: entryIds,
@@ -543,6 +622,7 @@ export default {
           prompt_version: PROMPT_VERSION,
           input_hash: inputHash,
           image_count: imageCount,
+          validation_retries: result.validationRetries,
           cost_usd: result.usage.costUsd,
           generated_at: new Date().toISOString(),
         },
@@ -554,7 +634,7 @@ export default {
         // deno-lint-ignore no-explicit-any
         const supabaseAdmin = ctx.supabaseAdmin as any
         const runTable = environment === "production" ? "nutrition_ai_runs" : "nutrition_ai_runs_staging"
-        await supabaseAdmin.schema("training").from(runTable).insert({
+        await recordNutritionRun(supabaseAdmin, runTable, {
           user_id: appUserId,
           log_date: logDate,
           entry_ids: entryIds,
