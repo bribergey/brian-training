@@ -23,11 +23,13 @@ const expected = [
   ['Daily Log work-hours stepper', "stepperHtml('daily-work-hours'"],
   ['Daily Log empty-food filter', 'filter(entry => entry.description || entry.photos.length)'],
   ['brick favicon', '<link rel="icon" type="image/svg+xml"'],
+  ['mobile touch icon', '<link rel="apple-touch-icon" sizes="180x180"'],
   ['food-complete calendar marker', 'function nutritionFoodLogIsAnalyzedComplete'],
   ['logged extra-activity target', 'function nutritionExtraActivityEstimate'],
   ['stool nutrition analytics', 'function nutritionStoolMetricInsight'],
   ['Daily notes analytics', 'function nutritionNoteThemeInsights'],
   ['button success feedback', 'function dailyFlashButton'],
+  ['conditional usual-food recalculation', 'const recalculationNeeded = recipeChanged'],
 ];
 
 if (appFile === 'brian_STAGING.html') {
