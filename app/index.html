@@ -6,8 +6,13 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Briq Training">
+<meta name="theme-color" content="#0f0f0e">
 <title>Briq Training</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='28' fill='%230f0f0e'/%3E%3Crect x='34' y='34' width='34' height='124' rx='5' fill='%231adb4e'/%3E%3Crect x='80' y='34' width='78' height='56' rx='5' fill='%23fff'/%3E%3Crect x='80' y='102' width='78' height='56' rx='5' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="assets/briq-icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<link rel="shortcut icon" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -1040,6 +1045,24 @@ select {
   font-family:var(--sans); font-size:10px; font-weight:700; line-height:1.35;
 }
 .daily-food-assumption { margin-top:6px; font-size:12.5px; font-weight:500; line-height:1.5; color:var(--text); opacity:.76; }
+.daily-food-memory-row {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  margin-top:9px; padding-top:9px; border-top:1px solid rgba(26,219,78,.18);
+}
+.daily-food-memory-save {
+  border:0; background:none; color:var(--green-dark); padding:3px 0;
+  font-size:12px; font-weight:750; cursor:pointer; text-align:left;
+}
+.daily-food-memory-save:disabled { cursor:default; opacity:.62; }
+.daily-food-saved-label { font-size:12px; font-weight:750; color:var(--green-dark); }
+.daily-food-quantity { display:flex; align-items:center; gap:6px; }
+.daily-food-quantity-label { font-size:11px; font-weight:650; color:var(--text); opacity:.62; }
+.daily-food-quantity-btn {
+  width:29px; height:29px; border:1px solid var(--border2); border-radius:8px;
+  background:var(--bg2); color:var(--text); font-size:17px; font-weight:700;
+  line-height:1; cursor:pointer; touch-action:manipulation;
+}
+.daily-food-quantity-value { min-width:18px; text-align:center; font-size:13px; font-weight:750; color:var(--text); }
 .daily-food-suggestions { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
 .daily-food-suggestion {
   border:1px solid var(--border2); background:var(--bg3); color:var(--text);
@@ -1207,10 +1230,27 @@ select {
 }
 .usual-food-manager-item { padding:14px 0; border-bottom:1px solid var(--border); }
 .usual-food-manager-item:last-child { border-bottom:0; }
-.usual-food-short-name-hint { margin:-4px 0 10px; font-size:12px; line-height:1.45; color:var(--text); opacity:.62; }
+.usual-food-name {
+  width:100%; min-height:46px; margin-bottom:12px; padding:11px 12px;
+  border:1.5px solid var(--border2); border-radius:9px; background:var(--bg3);
+  color:var(--text); font-family:var(--sans); font-size:16px; font-weight:750;
+  outline:none;
+}
+.usual-food-name:focus { border-color:var(--text); background:var(--bg2); }
+.usual-food-stats {
+  display:flex; flex-wrap:wrap; gap:6px 10px; margin:0 0 12px;
+  font-size:12.5px; font-weight:700;
+  line-height:1.45; color:var(--text);
+}
+.usual-food-stats span:first-child { color:var(--green-dark); }
 .usual-food-manager-actions { display:flex; gap:8px; margin-top:10px; }
-.usual-food-manager-actions .btn { flex:1; width:auto; }
-.usual-food-delete { color:#b42318; border-color:rgba(180,35,24,.28); }
+.usual-food-manager-actions .btn-primary { flex:1; width:auto; min-height:48px; }
+.usual-food-delete {
+  flex:0 0 48px; width:48px; min-height:48px; padding:0;
+  display:flex; align-items:center; justify-content:center;
+  color:#b42318; border-color:rgba(180,35,24,.28);
+}
+.usual-food-delete svg { width:18px; height:18px; pointer-events:none; }
 .analytics-kpis { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin-bottom:14px; }
 .analytics-kpi { padding:14px; border-radius:12px; background:var(--bg3); }
 .analytics-kpi-value { font-family:var(--display); font-size:26px; font-weight:850; letter-spacing:-.03em; color:var(--text); }
@@ -4865,7 +4905,46 @@ function nutritionFromElement(row) {
   }
 }
 
-function dailyFoodEstimateMarkup(nutrition) {
+function nutritionMemoryForEntry(entry = {}, nutrition = null) {
+  const linkedId = entry.memory_id || nutrition?.memory_id || '';
+  if (linkedId) {
+    const linked = (nutritionMemory || []).find(memory => memory.id === linkedId);
+    if (linked) return linked;
+  }
+  const canonicalKey = nutritionCanonicalKey(nutrition?.canonical_name || '');
+  if (canonicalKey) {
+    const canonical = (nutritionMemory || []).find(memory => memory.canonical_key === canonicalKey);
+    if (canonical) return canonical;
+  }
+  const description = String(entry.description || nutrition?.source_description || '').trim().toLowerCase();
+  if (!description) return null;
+  return (nutritionMemory || []).find(memory => {
+    const patterns = [memory.latest_raw_description, ...(memory.description_patterns || [])]
+      .filter(Boolean).map(value => String(value).trim().toLowerCase());
+    return patterns.includes(description);
+  }) || null;
+}
+
+function dailyFoodMemoryControlMarkup(entry, nutrition) {
+  const memory = nutritionMemoryForEntry(entry, nutrition);
+  if (!memory) {
+    return '<div class="daily-food-memory-row">' +
+      '<button type="button" class="daily-food-memory-save" onclick="dailySaveFoodAsUsual(this)">＋ Save as usual food</button>' +
+    '</div>';
+  }
+  const quantity = Math.max(1, Math.round(Number(entry?.memory_quantity) || Number(nutrition?.memory_quantity) || 1));
+  return '<div class="daily-food-memory-row" data-memory-id="' + escapeHtml(memory.id) + '">' +
+    '<span class="daily-food-saved-label">✓ Saved usual food</span>' +
+    '<div class="daily-food-quantity" aria-label="Usual food quantity">' +
+      '<span class="daily-food-quantity-label">Qty</span>' +
+      '<button type="button" class="daily-food-quantity-btn" aria-label="Decrease quantity" onclick="dailyAdjustUsualFoodQuantity(this,-1)">−</button>' +
+      '<span class="daily-food-quantity-value">' + quantity + '</span>' +
+      '<button type="button" class="daily-food-quantity-btn" aria-label="Increase quantity" onclick="dailyAdjustUsualFoodQuantity(this,1)">+</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function dailyFoodEstimateMarkup(nutrition, entry = {}) {
   if (!nutrition) return '<div class="daily-food-estimate-slot"></div>';
   const confidence = Number(nutrition.confidence);
   const confidenceLabel = nutrition.status === 'confirmed'
@@ -4890,7 +4969,7 @@ function dailyFoodEstimateMarkup(nutrition) {
         Math.round(Number(nutrition.fat_g) || 0) + 'g F' +
       '</div>' +
       '<span class="daily-food-confidence">' + escapeHtml(portionSource || confidenceLabel) + '</span>' +
-    '</div>' + assumption +
+    '</div>' + assumption + dailyFoodMemoryControlMarkup(entry, nutrition) +
   '</div></div>';
 }
 
@@ -4904,6 +4983,7 @@ function dailyFoodEntriesMarkup(entries) {
     return '<div class="daily-food-entry" data-entry-id="' + id +
       '" data-memory-id="' + escapeHtml(entry.memory_id || '') +
       '" data-memory-description="' + escapeHtml(entry.memory_source_description || '') +
+      '" data-memory-quantity="' + escapeHtml(entry.memory_quantity || 1) +
       '" data-nutrition=\'' + escapeHtml(nutrition ? JSON.stringify(nutrition) : '') + '\'>' +
       '<div class="daily-food-entry-head">' +
         '<div class="input-group daily-food-time-wrap"><label class="input-label">Time</label>' +
@@ -4914,7 +4994,7 @@ function dailyFoodEntriesMarkup(entries) {
       '<textarea rows="4" class="daily-food-description" placeholder="Describe the meal, food, or drink…" oninput="dailyFoodDescriptionInput(this)">' +
         escapeHtml(entry.description || '') + '</textarea>' +
       '<div class="daily-food-suggestions"></div>' +
-      dailyFoodEstimateMarkup(nutrition) +
+      dailyFoodEstimateMarkup(nutrition, entry) +
       dailyPhotoControlsMarkup(entry) +
     '</div>';
   }).join('');
@@ -4934,6 +5014,7 @@ function dailyCurrentData() {
     if (row.dataset.memoryId) {
       entry.memory_id = row.dataset.memoryId;
       entry.memory_source_description = row.dataset.memoryDescription || entry.description;
+      entry.memory_quantity = Math.max(1, Math.round(Number(row.dataset.memoryQuantity) || 1));
     }
     const nutrition = nutritionFromElement(row);
     if (nutrition) entry.nutrition = nutrition;
@@ -5018,14 +5099,15 @@ function dailyUsualFoodsMarkup() {
     ).join('') + '</div></div>';
 }
 
-function dailyNutritionFromMemory(memory, sourceDescription) {
+function dailyNutritionFromMemory(memory, sourceDescription, quantity = 1) {
   if (memory.needs_reestimate) return null;
+  const multiplier = Math.max(1, Math.round(Number(quantity) || 1));
   return {
-    calories: Number(memory.energy_kcal),
-    protein_g: Number(memory.protein_g),
-    carbs_g: Number(memory.carbs_g),
-    fat_g: Number(memory.fat_g),
-    fiber_g: Number(memory.fiber_g) || 0,
+    calories: Number(memory.energy_kcal) * multiplier,
+    protein_g: Number(memory.protein_g) * multiplier,
+    carbs_g: Number(memory.carbs_g) * multiplier,
+    fat_g: Number(memory.fat_g) * multiplier,
+    fiber_g: (Number(memory.fiber_g) || 0) * multiplier,
     confidence: Number(memory.confidence),
     assumptions: memory.assumptions || [],
     canonical_name: memory.canonical_name,
@@ -5036,6 +5118,7 @@ function dailyNutritionFromMemory(memory, sourceDescription) {
     status: memory.user_confirmed ? 'confirmed' : 'estimated',
     source: 'food_memory',
     memory_id: memory.id,
+    memory_quantity: multiplier,
     source_description: sourceDescription
   };
 }
@@ -5054,7 +5137,8 @@ function dailyAddFoodFromMemory(memoryId, button = null) {
     photos: [],
     memory_id: memory.id,
     memory_source_description: description,
-    nutrition: dailyNutritionFromMemory(memory, description)
+    memory_quantity: 1,
+    nutrition: dailyNutritionFromMemory(memory, description, 1)
   };
   document.getElementById('daily-food-entries')?.insertAdjacentHTML('beforeend', dailyFoodEntriesMarkup([entry]));
   dailyScheduleDraft();
@@ -5067,6 +5151,7 @@ function dailyFoodDescriptionInput(textarea) {
   if (row.dataset.memoryId && row.dataset.memoryDescription !== textarea.value.trim()) {
     delete row.dataset.memoryId;
     delete row.dataset.memoryDescription;
+    delete row.dataset.memoryQuantity;
   }
   const previous = nutritionFromElement(row);
   if (previous && previous.source_description !== textarea.value.trim()) {
@@ -5095,11 +5180,132 @@ function dailyApplyFoodMemory(button) {
   const nutrition = dailyNutritionFromMemory(memory, textarea.value.trim());
   row.dataset.memoryId = memory.id;
   row.dataset.memoryDescription = textarea.value.trim();
+  row.dataset.memoryQuantity = '1';
   if (nutrition) row.dataset.nutrition = JSON.stringify(nutrition);
   else delete row.dataset.nutrition;
   const slot = row.querySelector('.daily-food-estimate-slot');
-  if (slot) slot.outerHTML = dailyFoodEstimateMarkup(nutrition);
+  if (slot) slot.outerHTML = dailyFoodEstimateMarkup(nutrition, {
+    description: textarea.value.trim(),
+    memory_id: memory.id,
+    memory_quantity: 1
+  });
   row.querySelector('.daily-food-suggestions').innerHTML = '';
+  dailyScheduleDraft();
+}
+
+async function dailySaveFoodAsUsual(button) {
+  const row = button.closest('.daily-food-entry');
+  const nutrition = nutritionFromElement(row);
+  const description = row?.querySelector('.daily-food-description')?.value?.trim() || '';
+  if (!row || !nutrition || !description) return;
+  const canonicalName = String(nutrition.canonical_name || description).trim().slice(0, 160);
+  const canonicalKey = nutritionCanonicalKey(canonicalName);
+  if (!canonicalKey) return;
+  button.disabled = true;
+  button.textContent = 'Saving…';
+  try {
+    const existing = nutritionMemoryForEntry({ description }, nutrition);
+    const body = {
+      user_id: getActiveUserIdOrThrow(),
+      canonical_key: existing?.canonical_key || canonicalKey,
+      canonical_name: canonicalName,
+      aliases: [...new Set([...(existing?.aliases || []), canonicalName])].slice(-12),
+      description_patterns: [...new Set([...(existing?.description_patterns || []), description])].slice(-12),
+      serving_description: nutrition.serving_description || null,
+      portion_notes: {
+        portion_description: nutrition.portion_description || nutrition.serving_description || '',
+        visual_portion_cues: nutrition.visual_portion_cues || [],
+        portion_basis: nutrition.portion_basis || 'text'
+      },
+      latest_raw_description: description,
+      energy_kcal: Number(nutrition.calories) || 0,
+      protein_g: Number(nutrition.protein_g) || 0,
+      carbs_g: Number(nutrition.carbs_g) || 0,
+      fat_g: Number(nutrition.fat_g) || 0,
+      fiber_g: Number(nutrition.fiber_g) || 0,
+      assumptions: nutrition.assumptions || [],
+      confidence: Number(nutrition.confidence) || .5,
+      source: 'ai_estimate',
+      provider: nutrition.analysis?.provider || null,
+      model: nutrition.analysis?.model || null,
+      prompt_version: nutrition.analysis?.prompt_version || null,
+      times_used: Math.max(1, Number(existing?.times_used) || 1),
+      correction_count: Number(existing?.correction_count) || 0,
+      user_confirmed: true,
+      needs_reestimate: false,
+      last_used_at: new Date().toISOString()
+    };
+    if (existing?.id) {
+      await sbPatch(TABLES.nutritionMemory, existing.id, body, withUserScope(), 'training');
+    } else {
+      await sbPost(TABLES.nutritionMemory, body, 'training');
+    }
+    await loadNutritionMemory(true);
+    const savedMemory = (nutritionMemory || []).find(memory => memory.canonical_key === body.canonical_key);
+    if (!savedMemory) throw new Error('Saved food could not be reloaded.');
+    row.dataset.memoryId = savedMemory.id;
+    row.dataset.memoryDescription = description;
+    row.dataset.memoryQuantity = '1';
+    const linkedNutrition = { ...nutrition, memory_id: savedMemory.id, memory_quantity: 1 };
+    row.dataset.nutrition = JSON.stringify(linkedNutrition);
+
+    const log = (dailyLogs || []).find(item => item.log_date === dailySelectedDate);
+    if (log?.id) {
+      const linkedEntries = (log.food_entries || []).map(entry => entry.id === row.dataset.entryId
+        ? { ...entry, memory_id: savedMemory.id, memory_source_description: description, memory_quantity: 1,
+            nutrition: linkedNutrition }
+        : entry);
+      await sbPatch(TABLES.dailyLogs, log.id, { food_entries: linkedEntries }, withUserScope(), 'training');
+      await loadDailyLogs(true);
+    }
+    dailyRefreshUsualFoods();
+    const slot = row.querySelector('.daily-food-estimate-slot');
+    if (slot) slot.outerHTML = dailyFoodEstimateMarkup(linkedNutrition, {
+      description,
+      memory_id: savedMemory.id,
+      memory_quantity: 1
+    });
+    dailyScheduleDraft();
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = 'Try saving again';
+    button.title = error.message;
+  }
+}
+
+function dailyAdjustUsualFoodQuantity(button, change) {
+  const control = button.closest('.daily-food-memory-row');
+  const row = button.closest('.daily-food-entry');
+  const memory = (nutritionMemory || []).find(item => item.id === control?.dataset.memoryId);
+  const description = row?.querySelector('.daily-food-description')?.value?.trim() || '';
+  const currentNutrition = nutritionFromElement(row);
+  if (!row || !memory || !description || !currentNutrition) return;
+  const current = Math.max(1, Math.round(Number(row.dataset.memoryQuantity) || 1));
+  const quantity = Math.min(20, Math.max(1, current + Number(change || 0)));
+  if (quantity === current) return;
+  const ratio = quantity / current;
+  const nutrition = {
+    ...currentNutrition,
+    calories: (Number(currentNutrition.calories) || 0) * ratio,
+    protein_g: (Number(currentNutrition.protein_g) || 0) * ratio,
+    carbs_g: (Number(currentNutrition.carbs_g) || 0) * ratio,
+    fat_g: (Number(currentNutrition.fat_g) || 0) * ratio,
+    fiber_g: (Number(currentNutrition.fiber_g) || 0) * ratio,
+    sugar_g: (Number(currentNutrition.sugar_g) || 0) * ratio,
+    added_sugar_g: (Number(currentNutrition.added_sugar_g) || 0) * ratio,
+    memory_id: memory.id,
+    memory_quantity: quantity
+  };
+  row.dataset.memoryId = memory.id;
+  row.dataset.memoryDescription = description;
+  row.dataset.memoryQuantity = String(quantity);
+  row.dataset.nutrition = JSON.stringify(nutrition);
+  const slot = row.querySelector('.daily-food-estimate-slot');
+  if (slot) slot.outerHTML = dailyFoodEstimateMarkup(nutrition, {
+    description,
+    memory_id: memory.id,
+    memory_quantity: quantity
+  });
   dailyScheduleDraft();
 }
 
@@ -5110,21 +5316,45 @@ function dailyUsualFoodManagerMarkup() {
   }
   return memories.map(memory =>
     '<div class="usual-food-manager-item" data-memory-id="' + escapeHtml(memory.id) + '">' +
-      '<div class="input-group"><label class="input-label">Button short name</label>' +
-        '<input class="usual-food-name" maxlength="60" value="' + escapeHtml(memory.display_name || nutritionMemoryDisplayName(memory)) + '" placeholder="e.g. Protein shake"></div>' +
-      '<div class="usual-food-short-name-hint">This is the editable name shown in the Usual foods bubble.</div>' +
+      '<input class="usual-food-name" aria-label="Usual food short name" maxlength="60" value="' +
+        escapeHtml(memory.display_name || nutritionMemoryDisplayName(memory)) + '" placeholder="Short name, e.g. Protein shake" oninput="dailyUsualFoodManagerChanged(this)">' +
+      '<div class="usual-food-stats">' +
+        '<span>' + Math.round(Number(memory.energy_kcal) || 0) + ' kcal</span>' +
+        '<span>' + Math.round(Number(memory.protein_g) || 0) + 'g protein</span>' +
+        '<span>' + Math.round(Number(memory.carbs_g) || 0) + 'g carbs</span>' +
+        '<span>' + Math.round(Number(memory.fat_g) || 0) + 'g fat</span>' +
+      '</div>' +
       '<div class="input-group"><label class="input-label">Full recipe or description</label>' +
-        '<textarea class="usual-food-recipe" rows="3" placeholder="What goes into this usual food?">' +
+        '<textarea class="usual-food-recipe" rows="3" placeholder="What goes into this usual food?" oninput="dailyUsualFoodManagerChanged(this)">' +
           escapeHtml(memory.latest_raw_description || memory.canonical_name) + '</textarea></div>' +
       (memory.needs_reestimate
-        ? '<div class="macro-status-note">Recipe changed · nutrition will refresh automatically next time you log it.</div>'
+        ? '<div class="macro-status-note">Nutrition needs recalculation.</div>'
         : '') +
       '<div class="usual-food-manager-actions">' +
-        '<button type="button" class="btn btn-primary" onclick="dailySaveUsualFood(this)">Save changes</button>' +
-        '<button type="button" class="btn usual-food-delete" onclick="dailyDeleteUsualFood(this)">Delete</button>' +
+        '<button type="button" class="btn btn-primary" data-idle-label="' +
+          (memory.needs_reestimate ? 'Save &amp; recalculate' : 'Save changes') +
+          '" onclick="dailySaveUsualFood(this)">' +
+          (memory.needs_reestimate ? 'Save &amp; recalculate' : 'Save changes') + '</button>' +
+        '<button type="button" class="btn usual-food-delete" aria-label="Delete usual food" title="Delete usual food" onclick="dailyDeleteUsualFood(this)">' +
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+        '</button>' +
       '</div><div class="daily-status usual-food-status" style="white-space:normal;margin-top:8px"></div>' +
     '</div>'
   ).join('');
+}
+
+function dailyUsualFoodManagerChanged(field) {
+  const item = field.closest('.usual-food-manager-item');
+  const memory = (nutritionMemory || []).find(value => value.id === item?.dataset.memoryId);
+  const button = item?.querySelector('.btn-primary');
+  if (!memory || !button) return;
+  const recipe = item.querySelector('.usual-food-recipe')?.value?.trim() || '';
+  const savedRecipe = String(memory.latest_raw_description || memory.canonical_name || '').trim();
+  const label = recipe !== savedRecipe || memory.needs_reestimate
+    ? 'Save & recalculate'
+    : 'Save changes';
+  button.dataset.idleLabel = label;
+  if (!button.disabled) button.textContent = label;
 }
 
 function dailyOpenUsualFoodsManager() {
@@ -5158,22 +5388,66 @@ async function dailySaveUsualFood(button) {
     if (status) status.textContent = 'Add a recipe or description first.';
     return;
   }
-  const recipeChanged = recipe !== String(memory.latest_raw_description || '').trim();
+  const savedRecipe = String(memory.latest_raw_description || memory.canonical_name || '').trim();
+  const savedDisplayName = memory.display_name || nutritionMemoryDisplayName(memory);
+  const recipeChanged = recipe !== savedRecipe;
+  const nameChanged = displayName !== savedDisplayName;
+  const recalculationNeeded = recipeChanged || memory.needs_reestimate === true;
+  if (!recalculationNeeded && !nameChanged) {
+    if (status) status.textContent = 'Nothing changed. Nutrition was not recalculated.';
+    dailyFlashButton(button, '✓ No changes', 1800);
+    return;
+  }
   button.disabled = true;
-  button.textContent = 'Saving…';
+  button.classList.add('is-working');
+  button.textContent = recalculationNeeded ? 'Saving & recalculating…' : 'Saving…';
+  if (status) status.textContent = recalculationNeeded
+    ? 'Updating this saved recipe and its nutrition estimate…'
+    : 'Saving the short name without recalculating nutrition…';
   try {
-    await sbPatch(TABLES.nutritionMemory, memory.id, {
+    const changes = {
       display_name: displayName,
-      latest_raw_description: recipe,
-      description_patterns: [...new Set([...(memory.description_patterns || []), recipe])].slice(-12),
-      needs_reestimate: memory.needs_reestimate === true || recipeChanged
-    }, withUserScope(), 'training');
+    };
+    if (recalculationNeeded) {
+      Object.assign(changes, {
+        latest_raw_description: recipe,
+        description_patterns: [...new Set([...(memory.description_patterns || []), recipe])].slice(-12),
+        needs_reestimate: true
+      });
+    }
+    await sbPatch(TABLES.nutritionMemory, memory.id, changes, withUserScope(), 'training');
+    if (recalculationNeeded) {
+      await sbFunction('nutrition-analyze-food', {
+        environment: ENV,
+        explicit_memory_only: true,
+        log_date: dailySelectedDate || dailyLocalDate(),
+        entries: [{
+          id: 'usual-food-' + memory.id,
+          time: '',
+          description: recipe,
+          photos: [],
+          memory_id: memory.id
+        }]
+      });
+    }
     await loadNutritionMemory(true);
     dailyRefreshUsualFoods();
+    const nextItem = Array.from(document.querySelectorAll('.usual-food-manager-item'))
+      .find(candidate => candidate.dataset.memoryId === memory.id);
+    const nextButton = nextItem?.querySelector('.btn-primary');
+    const nextStatus = nextItem?.querySelector('.usual-food-status');
+    if (nextStatus) nextStatus.textContent = recalculationNeeded
+      ? '✓ Recipe saved and nutrition recalculated.'
+      : '✓ Short name saved. Nutrition was not recalculated.';
+    dailyFlashButton(nextButton, recalculationNeeded ? '✓ Saved & recalculated' : '✓ Saved', 2200);
   } catch (error) {
     button.disabled = false;
-    button.textContent = 'Save changes';
-    if (status) status.textContent = 'Could not save: ' + error.message;
+    button.classList.remove('is-working');
+    button.classList.add('is-error');
+    button.textContent = recalculationNeeded ? 'Try recalculation again' : 'Try saving again';
+    if (status) status.textContent = recalculationNeeded
+      ? 'The recipe was saved, but nutrition could not be recalculated: ' + error.message
+      : 'The short name could not be saved: ' + error.message;
   }
 }
 
@@ -5183,14 +5457,15 @@ async function dailyDeleteUsualFood(button) {
   if (!item || !memory) return;
   if (!confirm('Delete “' + nutritionMemoryDisplayName(memory) + '” from Usual Foods? Existing Daily Logs will not be changed.')) return;
   button.disabled = true;
-  button.textContent = 'Deleting…';
+  button.classList.add('is-working');
   try {
     await sbDelete(TABLES.nutritionMemory, memory.id, withUserScope(), 'training');
     await loadNutritionMemory(true);
     dailyRefreshUsualFoods();
   } catch (error) {
     button.disabled = false;
-    button.textContent = 'Delete';
+    button.classList.remove('is-working');
+    button.classList.add('is-error');
     const status = item.querySelector('.usual-food-status');
     if (status) status.textContent = 'Could not delete: ' + error.message;
   }
@@ -5390,7 +5665,7 @@ function renderDailyLogForm() {
           '<div class="card-section-title" style="margin:0">Manage Usual Foods</div>' +
           '<button type="button" class="daily-remove-btn" style="width:36px" onclick="dailyCloseUsualFoodsManager()">×</button>' +
         '</div>' +
-        '<p style="font-size:12px;line-height:1.5;color:var(--text);opacity:.65;margin:0 0 8px">Rename the short button or revise the full recipe. A changed recipe is re-estimated once, the next time you log it.</p>' +
+        '<p style="font-size:12px;line-height:1.5;color:var(--text);opacity:.65;margin:0 0 8px">Edit the short name or full recipe below. Save &amp; recalculate updates the nutrition estimate immediately; existing Daily Logs are not changed.</p>' +
         '<div id="daily-usual-food-manager-list">' + dailyUsualFoodManagerMarkup() + '</div>' +
       '</div>' +
     '</div>';
@@ -5945,9 +6220,10 @@ function dailyRefreshNutritionRows(date) {
     if (entry.memory_id) {
       row.dataset.memoryId = entry.memory_id;
       row.dataset.memoryDescription = entry.memory_source_description || entry.description || '';
+      row.dataset.memoryQuantity = String(entry.memory_quantity || 1);
     }
     const slot = row.querySelector('.daily-food-estimate-slot');
-    if (slot) slot.outerHTML = dailyFoodEstimateMarkup(entry.nutrition || null);
+    if (slot) slot.outerHTML = dailyFoodEstimateMarkup(entry.nutrition || null, entry);
   }
   renderDailyNutritionSummary().catch(error => console.warn('Could not refresh nutrition summary.', error));
 }
@@ -5989,6 +6265,7 @@ function nutritionAnalyzeSelectedDay(options = {}) {
     try {
       const payload = await sbFunction('nutrition-analyze-food', {
         environment: ENV,
+        explicit_memory_only: true,
         log_date: analysisDate,
         entries: entries.map(entry => ({
           id: entry.id,

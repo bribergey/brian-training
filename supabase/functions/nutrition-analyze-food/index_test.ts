@@ -1,5 +1,5 @@
 import { assertEquals, assertThrows } from "@std/assert";
-import { validateEstimates } from "./index.ts";
+import { shouldPersistEstimateAsMemory, validateEstimates } from "./index.ts";
 
 const request = [{
   id: "food-1",
@@ -57,4 +57,12 @@ Deno.test("consistent estimates remain unchanged", () => {
   assertEquals(estimate.calories, 300);
   assertEquals(estimate.confidence, 0.8);
   assertEquals(estimate.assumptions, []);
+});
+
+Deno.test("explicit-save mode ignores the model memory recommendation", () => {
+  assertEquals(shouldPersistEstimateAsMemory("", true, true), false);
+});
+
+Deno.test("explicit-save mode still refreshes an already linked saved food", () => {
+  assertEquals(shouldPersistEstimateAsMemory("saved-food-id", false, true), true);
 });

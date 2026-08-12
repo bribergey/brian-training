@@ -1,7 +1,7 @@
 import "@supabase/functions-js/edge-runtime.d.ts"
 import { withSupabase } from "@supabase/server"
 
-const PROMPT_VERSION = "food-estimate-1.2.0"
+const PROMPT_VERSION = "food-estimate-1.3.0"
 const MAX_ENTRIES = 20
 const MAX_DESCRIPTION_LENGTH = 2400
 const MAX_PHOTOS_PER_ENTRY = 5
@@ -47,6 +47,14 @@ type NutritionEstimate = {
   added_sugar_g: number
   confidence: number
   assumptions: string[]
+}
+
+export function shouldPersistEstimateAsMemory(
+  memoryId: string,
+  memoryEligible: boolean,
+  explicitMemoryOnly: boolean,
+) {
+  return Boolean(memoryId) || (!explicitMemoryOnly && memoryEligible)
 }
 
 const responseSchema = {
@@ -452,6 +460,7 @@ export default {
     let provider: string | null = null
     let model: string | null = null
     let imageCount = 0
+    let explicitMemoryOnly = false
 
     try {
       // This project predates generated supabase-js Database types. The runtime
@@ -462,6 +471,7 @@ export default {
       const supabaseAdmin = ctx.supabaseAdmin as any
       const body = await req.json()
       environment = body?.environment === "production" ? "production" : "staging"
+      explicitMemoryOnly = body?.explicit_memory_only === true
       logDate = cleanText(body?.log_date, 10)
       if (!/^\d{4}-\d{2}-\d{2}$/.test(logDate)) return jsonError("A valid log_date is required.")
 
@@ -485,7 +495,7 @@ export default {
         return jsonError("Food entry IDs must be unique.")
       }
       entryIds = entries.map((entry) => entry.id)
-      inputHash = await sha256({ environment, logDate, entries, prompt: PROMPT_VERSION })
+      inputHash = await sha256({ environment, explicitMemoryOnly, logDate, entries, prompt: PROMPT_VERSION })
 
       const authUserId = cleanText(ctx.userClaims?.id || ctx.jwtClaims?.sub, 80)
       if (!authUserId) return jsonError("Authenticated user could not be resolved.", 401, "auth_mapping_failed")
@@ -526,9 +536,10 @@ export default {
       model = result.model
       const outputHash = await sha256(result.estimates)
 
-      for (const estimate of result.estimates.filter((item) =>
-        item.memory_eligible || Boolean(entries.find((entry) => entry.id === item.id)?.memory_id)
-      )) {
+      for (const estimate of result.estimates.filter((item) => {
+        const memoryId = entries.find((entry) => entry.id === item.id)?.memory_id || ""
+        return shouldPersistEstimateAsMemory(memoryId, item.memory_eligible, explicitMemoryOnly)
+      })) {
         const key = canonicalKey(estimate.canonical_name)
         if (!key) continue
         const original = entries.find((entry) => entry.id === estimate.id)
@@ -543,7 +554,8 @@ export default {
         const { data: existing, error: existingError } = await existingQuery.maybeSingle()
         if (existingError) console.error("Nutrition memory match failed", existingError.message)
 
-        const preserveConfirmed = existing?.user_confirmed === true && existing?.needs_reestimate !== true
+        const keepUserConfirmed = existing?.user_confirmed === true
+        const preserveConfirmed = keepUserConfirmed && existing?.needs_reestimate !== true
         const memoryBody = {
           user_id: appUserId,
           canonical_key: existing?.canonical_key || key,
@@ -577,7 +589,7 @@ export default {
           prompt_version: PROMPT_VERSION,
           times_used: (existing?.times_used || 0) + 1,
           correction_count: existing?.correction_count || 0,
-          user_confirmed: preserveConfirmed,
+          user_confirmed: keepUserConfirmed,
           needs_reestimate: false,
           last_used_at: new Date().toISOString(),
         }
