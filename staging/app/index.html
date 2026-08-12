@@ -5272,12 +5272,24 @@ function dailyAdjustUsualFoodQuantity(button, change) {
   const row = button.closest('.daily-food-entry');
   const memory = (nutritionMemory || []).find(item => item.id === control?.dataset.memoryId);
   const description = row?.querySelector('.daily-food-description')?.value?.trim() || '';
-  if (!row || !memory || !description) return;
+  const currentNutrition = nutritionFromElement(row);
+  if (!row || !memory || !description || !currentNutrition) return;
   const current = Math.max(1, Math.round(Number(row.dataset.memoryQuantity) || 1));
   const quantity = Math.min(20, Math.max(1, current + Number(change || 0)));
   if (quantity === current) return;
-  const nutrition = dailyNutritionFromMemory(memory, description, quantity);
-  if (!nutrition) return;
+  const ratio = quantity / current;
+  const nutrition = {
+    ...currentNutrition,
+    calories: (Number(currentNutrition.calories) || 0) * ratio,
+    protein_g: (Number(currentNutrition.protein_g) || 0) * ratio,
+    carbs_g: (Number(currentNutrition.carbs_g) || 0) * ratio,
+    fat_g: (Number(currentNutrition.fat_g) || 0) * ratio,
+    fiber_g: (Number(currentNutrition.fiber_g) || 0) * ratio,
+    sugar_g: (Number(currentNutrition.sugar_g) || 0) * ratio,
+    added_sugar_g: (Number(currentNutrition.added_sugar_g) || 0) * ratio,
+    memory_id: memory.id,
+    memory_quantity: quantity
+  };
   row.dataset.memoryId = memory.id;
   row.dataset.memoryDescription = description;
   row.dataset.memoryQuantity = String(quantity);
