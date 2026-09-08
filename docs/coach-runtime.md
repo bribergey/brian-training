@@ -5,9 +5,13 @@ in the training project conversation; Notion is the internal project record.
 
 ## Implementation status — 2026-09-08
 
-Source branch: `codex/telegram-coach`. Implementation and staging rehearsal are
-complete; live Telegram cutover is pending. The legacy OpenClaw coach configuration
-is unchanged. Do not describe the replacement as live until cutover is verified.
+Source branch: `codex/telegram-coach`, [PR #66](https://github.com/bribergey/brian-training/pull/66).
+The replacement Mac service is running and owns the existing Telegram bot.
+Runtime release: `59d2524ef94e3ab40ea6304c149406f583664ac1`.
+Launch agent: `com.briqtraining.coach`; its independent caffeinate parent is active.
+OpenClaw's coach account is disabled and explicitly stopped. The migration test
+was delivered to Brian's existing chat; his first reply is pending. Keep the
+roadmap In Progress and PR draft until the inbound coaching exchange is verified.
 Brian chose this Mac and the existing Telegram bot. Coach permanently uses
 `Asia/Shanghai` (China time), including while Brian travels; do not ask again. Existing bot: `@coach_trainerhub_bot`.
 
@@ -18,7 +22,7 @@ the account. The unrelated `/usr/local/bin/codex` wrapper is broken; do not use 
 
 ## Verified implementation results
 
-- 17 local regression tests pass, including per-set completeness, numeric UI
+- 18 local regression tests pass, including per-set completeness, numeric UI
   compatibility, scheme drift, block/week rollover, recipient restrictions,
   expired/unpresented/tampered approvals, receipt replay and Unicode delivery.
 - Live synthetic staging rehearsal passed monthly creation, weekly creation,
@@ -33,12 +37,31 @@ the account. The unrelated `/usr/local/bin/codex` wrapper is broken; do not use 
   not a guarantee of perfect coaching; ongoing real-use feedback still matters.
 - Managed ChatGPT authentication works. No paid API fallback is configured.
 
-Not yet verified: live Telegram inbound/outbound handover, launchd restart, and
-old consumer shutdown. These occur after timezone confirmation. The existing
-OpenClaw gateway's channel-status RPC currently fails on an unrelated Cleo
-SecretRef; account health must not be inferred from its process merely running.
+Cutover checks passed: confirmed bot identity and no webhook/pending updates;
+seeded the durable inbox offset from the current OpenClaw SQLite boundary;
+exclusive Telegram long-poll completed without a competing consumer; service
+started and restarted; migration message delivery succeeded. Brian's production
+fingerprint remained unchanged. No real program proposal or write occurred.
+
+Restart testing caught the app-server's empty-thread behavior: a thread with no
+first turn has no saved rollout. The service now recreates only an unused missing
+startup thread; it refuses to discard one that has started a turn. A separate live
+Codex rehearsal verified that a completed conversation resumes with its earlier
+context and dynamic tools. The recovery path has a regression test.
+
+OpenClaw's all-account channel-status RPC has an existing failure resolving a
+disabled Cleo SecretRef. Its Telegram hot reload aborted after stopping accounts;
+we issued an explicit coach stop and restarted default/Ian/PJ/PM individually.
+Their provider-start logs were verified; Coach did not restart. The status error
+occurs after the targeted lifecycle operation, as confirmed in the installed
+OpenClaw source. Runtime health claims rely on the lifecycle evidence and exclusive
+Telegram poll, not the broken aggregated RPC. Historical coach files are retained
+with `MIGRATED_TO_CODEX.md` pointing to this project.
+
 The active scheduler has a PM job and legacy Ian/Dex configuration remains, so
-this work does not authorize uninstalling all of OpenClaw.
+this work does not authorize uninstalling all of OpenClaw. Remaining acceptance:
+Brian replies to the delivered migration test; inspect the persisted inbound turn
+and response. No new actual training block is implied by successful migration.
 
 ## Sources of truth
 
@@ -129,7 +152,7 @@ For upgrades, boot out the old agent before loading the new committed release.
 
 ## Controlled cutover and rollback
 
-1. Verify the runtime, managed auth, tests and private context. Confirm timezone.
+1. Verify the runtime, managed auth, tests and private context. Preserve China time.
 2. Back up the old coach config/binding and relevant private instructions/history.
 3. Inspect active OpenClaw routing and current Telegram update offset. Current
    offsets are in OpenClaw SQLite `plugin_state_entries`, plugin `telegram`,
@@ -139,8 +162,7 @@ For upgrades, boot out the old agent before loading the new committed release.
    Retain an audit of the boundary. Never drop pending messages silently.
 5. Enable the new consumer and install a dedicated launchd agent. Verify only one
    consumer owns the bot and restart recovery works. The Mac must remain awake
-   and online; its existing OpenClaw-named sleep prevention is a dependency until
-   replaced with an independently owned service.
+   and online; the dedicated launch agent uses its own caffeinate parent.
 6. Send Brian a clearly identified migration test, verify a reply in the same
    Telegram chat, and check `/status`. Initial actual workout changes still need
    approval of their exact proposals. Do not create a return week automatically.
