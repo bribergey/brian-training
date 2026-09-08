@@ -1,5 +1,9 @@
 # Phase 4.5 Coach Rollout
 
+Historical OpenClaw rollout reference. The replacement Codex coach implementation
+and current release status are tracked in `docs/coach-runtime.md`. Do not copy
+this historical template over the new runtime instructions.
+
 Phase 4.5 updates coach and Telegram workflows for multi-user operation. The safest product shape is one coach context per user, with each context pinned to exactly one `user_id`.
 
 ## Current Scope

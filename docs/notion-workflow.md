@@ -11,6 +11,8 @@ Primary roadmap database:
 
 Important cards:
 
+- `Coach migration to Codex + coaching instructions refresh`: `3d5e5cb9-20a5-81d2-8433-ce0ccad38641`
+
 - `Create multiple users`: `34ce5cb9-20a5-8057-abbf-c1802ed6431c`
 - `Phase 3 - Real auth and single second-user pilot`: `383e5cb9-20a5-8198-8f3b-dc1f2cdf6f26`
 - `Phase 4 - Onboarding/admin hardening and second-user readiness`: `384e5cb9-20a5-816b-939f-d8b8351db545`
@@ -19,6 +21,9 @@ Important cards:
 ## How To Use Notion
 
 Use Notion as the project memory and PM surface.
+
+Brian makes decisions in the Codex conversation and does not maintain/read Notion
+as a required workflow step. Codex records the decisions and maintains the cards.
 
 For meaningful work:
 
