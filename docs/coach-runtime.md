@@ -65,6 +65,23 @@ coaching approach. The inbound update finished successfully, the conversation
 was persisted, no proposal was created and production data stayed unchanged.
 No new actual training block is implied by successful migration.
 
+## Telegram progress during long requests
+
+After the first monthly-planning request, Brian reported silence while Codex was
+actively reading history and generating commentary. The bridge had discarded
+commentary and sent only the final answer. `coach/progress.py` now acknowledges
+processing, refreshes typing every four seconds, forwards completed user-facing
+commentary, and sends a still-working notice after 90 seconds without a visible
+update. Reasoning and tool payloads are never forwarded. Notices stop before the
+final result; progress transport failures do not abort the coaching request.
+
+Regression coverage includes event/turn filtering, commentary versus final output,
+reasoning exclusion, notifier shutdown and nonfatal transport failures. A live
+synthetic Codex turn confirmed separate commentary and final delivery. Deploy
+only when the current inbox is idle; do not interrupt a real plan to update UI
+feedback. See the roadmap bug record for the final release and current-request
+verification.
+
 ## Sources of truth
 
 - `coach/instructions/COACH.md`: coaching judgment and operating rules.
