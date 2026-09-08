@@ -1,0 +1,10 @@
+{
+  "codex_binary": "/Applications/ChatGPT.app/Contents/Resources/codex",
+  "model": "gpt-6-astra",
+  "environment": "production",
+  "timezone": null,
+  "telegram_user_id": null,
+  "telegram_chat_id": null,
+  "writes_enabled": false,
+  "telegram_enabled": false
+}

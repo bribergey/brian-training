@@ -50,3 +50,20 @@ When wrapping up meaningful work, explicitly communicate full follow-through:
 - State the exact PR, branch, commit, deployment, or staging status.
 - Give Brian clear test steps with exact URLs and expected outcomes.
 - Call out anything not completed, blocked, or still requiring Brian's approval.
+
+## Training Coach Ownership
+
+- Codex owns engineering, QA, releases, documentation, and ongoing PM for the
+  Telegram coach as well as the app. Brian makes decisions in chat; do not require
+  him to read or maintain Notion to move work forward.
+- Coach source and reviewed instructions live in `coach/`. Read
+  `docs/coach-runtime.md` before changing its model, instructions, tools or service.
+- Keep coach credentials, athlete history, memory, proposals and runtime state
+  private, outside this public repository. Never commit a copied OpenClaw workspace.
+- Turn Brian's reported coach mistakes into regression tests. Check both coaching
+  reasoning and exact saved app fields; model upgrades alone are not verification.
+- Preserve the exact-production-action approval requirement. An infrastructure
+  migration does not authorize writing Brian's next monthly or weekly workouts.
+- Update the runtime/runbook, instruction version, tests, deployment status and
+  Notion checkpoint whenever coach behavior changes. Summarize the choices here
+  in chat so Brian can work with Codex on future updates.

@@ -57,3 +57,7 @@ Active Phase 4 work starts from:
 - `docs/phase4-onboarding-runbook.md`: repeatable staging-first onboarding/admin workflow.
 - `docs/coach-multi-user-operations.md`: coach and Telegram guardrails for multi-user reads/writes.
 - `docs/phase4-5-coach-rollout.md`: user-specific coach templates and test prompts.
+
+The Telegram coach is being migrated from OpenClaw to a dedicated Codex runtime.
+Codex owns ongoing coach PM and maintenance. See `docs/coach-runtime.md` for the
+verified runtime status, instruction sources, tests, cutover and rollback.

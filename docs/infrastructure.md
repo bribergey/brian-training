@@ -91,3 +91,10 @@ Staging deploy:
 - Legacy GitHub Pages staging URL redirects from `https://bribergey.github.io/brian-training/staging/`.
 
 GitHub Pages cache can lag briefly. Use cache-buster query strings during QA, for example `?v=qa-YYYYMMDD`.
+
+## Training coach runtime
+
+The Telegram coach replacement is a separate Mac service; see
+[coach-runtime.md](coach-runtime.md) for its exact implementation/cutover status,
+subscription authentication, approval boundary, deployment and rollback. It does
+not introduce a schema migration or change the static app deployment.
