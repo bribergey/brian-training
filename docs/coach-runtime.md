@@ -7,7 +7,7 @@ in the training project conversation; Notion is the internal project record.
 
 Source branch: `codex/telegram-coach`, [PR #66](https://github.com/bribergey/brian-training/pull/66).
 The replacement Mac service is running and owns the existing Telegram bot.
-Runtime release: `59d2524ef94e3ab40ea6304c149406f583664ac1`.
+Runtime release: `e05cb45e5dd928a46db1c94e713ca8da02796f37` ([progress fix PR #67](https://github.com/bribergey/brian-training/pull/67)).
 Launch agent: `com.briqtraining.coach`; its independent caffeinate parent is active.
 OpenClaw's coach account is disabled and explicitly stopped. The migration test
 was delivered to Brian's existing chat. His reply and the completed coaching
@@ -22,7 +22,7 @@ the account. The unrelated `/usr/local/bin/codex` wrapper is broken; do not use 
 
 ## Verified implementation results
 
-- 18 local regression tests pass, including per-set completeness, numeric UI
+- 21 local regression tests pass, including per-set completeness, numeric UI
   compatibility, scheme drift, block/week rollover, recipient restrictions,
   expired/unpresented/tampered approvals, receipt replay and Unicode delivery.
 - Live synthetic staging rehearsal passed monthly creation, weekly creation,
@@ -64,6 +64,26 @@ Brian replied to the migration test and Coach returned the expected updated
 coaching approach. The inbound update finished successfully, the conversation
 was persisted, no proposal was created and production data stayed unchanged.
 No new actual training block is implied by successful migration.
+
+## Telegram progress during long requests
+
+After the first monthly-planning request, Brian reported silence while Codex was
+actively reading history and generating commentary. The bridge had discarded
+commentary and sent only the final answer. `coach/progress.py` now acknowledges
+processing, refreshes typing every four seconds, forwards completed user-facing
+commentary, and sends a still-working notice after 90 seconds without a visible
+update. Reasoning and tool payloads are never forwarded. Notices stop before the
+final result; progress transport failures do not abort the coaching request.
+
+Regression coverage includes event/turn filtering, commentary versus final output,
+reasoning exclusion, notifier shutdown and nonfatal transport failures. A live
+synthetic Codex turn confirmed separate commentary and final delivery. Deploy
+only when the current inbox is idle; do not interrupt a real plan to update UI
+feedback. The real monthly request finished successfully in roughly nine minutes,
+and its validated proposal was delivered with an approval button before restart.
+The new release resumed the same conversation and retained that proposal. No
+production program was written by the fix. Roadmap record:
+https://app.notion.com/p/3d5e5cb920a581aaa48fd909b55908b1.
 
 ## Sources of truth
 

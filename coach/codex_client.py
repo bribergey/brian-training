@@ -113,7 +113,7 @@ class CodexClient:
                 'allowProviderModelFallback': False})
         return result['thread']['id']
 
-    def run(self, thread_id, text, timeout=600):
+    def run(self, thread_id, text, timeout=600, on_progress=None):
         self.notifications.clear()
         result = self.request('turn/start', {'threadId': thread_id,
             'input': [{'type': 'text', 'text': text}], 'environments': [],
@@ -131,6 +131,8 @@ class CodexClient:
                 item = p.get('item', {})
                 if item.get('type') == 'agentMessage' and item.get('phase') in (None, 'final_answer'):
                     final.append(item.get('text', ''))
+                elif item.get('type') == 'agentMessage' and item.get('phase') == 'commentary':
+                    if on_progress:on_progress(item.get('text', ''))
                 elif item.get('type') == 'dynamicToolCall':
                     tool_names.append(item.get('tool'))
             if message.get('method') == 'turn/completed' and p.get('turn', {}).get('id') == turn_id:
