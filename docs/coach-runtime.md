@@ -10,8 +10,8 @@ The replacement Mac service is running and owns the existing Telegram bot.
 Runtime release: `59d2524ef94e3ab40ea6304c149406f583664ac1`.
 Launch agent: `com.briqtraining.coach`; its independent caffeinate parent is active.
 OpenClaw's coach account is disabled and explicitly stopped. The migration test
-was delivered to Brian's existing chat; his first reply is pending. Keep the
-roadmap In Progress and PR draft until the inbound coaching exchange is verified.
+was delivered to Brian's existing chat. His reply and the completed coaching
+response were verified; cutover acceptance is complete.
 Brian chose this Mac and the existing Telegram bot. Coach permanently uses
 `Asia/Shanghai` (China time), including while Brian travels; do not ask again. Existing bot: `@coach_trainerhub_bot`.
 
@@ -59,9 +59,11 @@ Telegram poll, not the broken aggregated RPC. Historical coach files are retaine
 with `MIGRATED_TO_CODEX.md` pointing to this project.
 
 The active scheduler has a PM job and legacy Ian/Dex configuration remains, so
-this work does not authorize uninstalling all of OpenClaw. Remaining acceptance:
-Brian replies to the delivered migration test; inspect the persisted inbound turn
-and response. No new actual training block is implied by successful migration.
+this work does not authorize uninstalling all of OpenClaw. Acceptance completed:
+Brian replied to the migration test and Coach returned the expected updated
+coaching approach. The inbound update finished successfully, the conversation
+was persisted, no proposal was created and production data stayed unchanged.
+No new actual training block is implied by successful migration.
 
 ## Sources of truth
 
