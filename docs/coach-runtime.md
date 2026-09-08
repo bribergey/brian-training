@@ -8,8 +8,8 @@ in the training project conversation; Notion is the internal project record.
 Source branch: `codex/telegram-coach`. Implementation and staging rehearsal are
 complete; live Telegram cutover is pending. The legacy OpenClaw coach configuration
 is unchanged. Do not describe the replacement as live until cutover is verified.
-Brian chose this Mac and the existing Telegram bot. Time zone confirmation is
-pending. Existing bot: `@coach_trainerhub_bot`.
+Brian chose this Mac and the existing Telegram bot. Coach permanently uses
+`Asia/Shanghai` (China time), including while Brian travels; do not ask again. Existing bot: `@coach_trainerhub_bot`.
 
 Verified: the app-bundled CLI at
 `/Applications/ChatGPT.app/Contents/Resources/codex` is version 0.153.4 and accepts
@@ -117,8 +117,8 @@ and prepares `com.briqtraining.coach.plist`; it does not start a consumer.
 The definition uses an independent `caffeinate -i` parent, so the new coach's
 sleep prevention will not depend on OpenClaw. Record the full source commit.
 
-Private `config.json` follows `coach/config.example.json`. Set the confirmed
-IANA timezone and verified private Telegram user/chat IDs. Start with both
+Private `config.json` follows `coach/config.example.json`. Use the confirmed
+`Asia/Shanghai` timezone and verified private Telegram user/chat IDs. Start with both
 switches false. The credential file has `telegram_token` and
 `supabase_access_token`; never copy those values into public examples.
 

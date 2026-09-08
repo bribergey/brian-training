@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 import time
 import unittest
+from unittest.mock import patch
 import sys
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
@@ -12,6 +13,7 @@ from planning import prepare, calendar, validate_sets, render_proposal
 from data import Database, literal
 from state import State
 from service import Service
+from codex_client import CodexError
 from telegram import Telegram
 
 
@@ -179,6 +181,28 @@ class ApprovalTests(unittest.TestCase):
         self.service.config['writes_enabled']=True;self.service.db.environment='production'
         with self.assertRaisesRegex(ValueError,'environment'):self.service.approve(self.p['id'])
         self.assertEqual(self.service.db.calls,0)
+
+    def test_only_an_unused_missing_rollout_can_be_recreated(self):
+        self.service.runtime=Path(self.folder.name);self.service.codex=None
+        self.service.tools=lambda *args:None
+        self.service.config.update(codex_binary='fixture',model='fixture')
+        self.service.state.set('thread_id','empty-thread')
+        class FakeCodex:
+            calls=[]
+            def __init__(self,*args):pass
+            def account(self):return {'type':'chatgpt'}
+            def start(self,model,instructions,tools,thread_id=None):
+                self.calls.append(thread_id)
+                if thread_id:raise CodexError('no rollout found for thread id')
+                return 'new-empty-thread'
+            def close(self):pass
+        with patch('service.CodexClient',FakeCodex):
+            self.service.engine()
+            self.assertEqual(FakeCodex.calls,['empty-thread',None])
+            self.assertEqual(self.service.state.get('thread_id'),'new-empty-thread')
+            self.service.codex=None;self.service.state.set('thread_has_started_turn',True)
+            with self.assertRaises(CodexError):self.service.engine()
+            self.assertEqual(self.service.state.get('thread_id'),'new-empty-thread')
 
     def test_telegram_unicode_chunks_are_within_limit(self):
         class FakeTelegram(Telegram):
