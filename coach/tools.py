@@ -36,6 +36,10 @@ class CoachTools:
         if self.snapshot is None:self.snapshot=self.db.snapshot()
         return self.snapshot['data']
 
+    def with_evidence(self,rows):
+        evidence=self.state.evidence_for_rows(r['id'] for r in rows)
+        return [{**r,'private_coaching_evidence':evidence[r['id']]} if r['id'] in evidence else r for r in rows]
+
     def __call__(self,name,args):
         if not isinstance(args,dict):raise ValueError('Tool arguments must be an object')
         if name=='remember_coaching_fact':return self.state.remember(**args)
@@ -62,14 +66,14 @@ class CoachTools:
         if name=='get_exercise_catalog':
             return [e for e in d['exercises'] if args.get('search','').lower() in e['name'].lower()]
         if name=='get_week_calendar':return calendar(d,args['start_date'])
-        if name=='get_program_rows':return [r for r in d['program'] if r.get('week_number')==args['week_number']]
+        if name=='get_program_rows':return self.with_evidence([r for r in d['program'] if r.get('week_number')==args['week_number']])
         if name=='get_exercise_history':
             weeks=args.get('weeks',12)
             if type(weeks) is not int or not 1<=weeks<=52:raise ValueError('History window must be 1–52 weeks')
             # Anchor to the latest log when there is a training break; expose both dates.
             today=datetime.now(self.timezone).date()
             cutoff=(today-timedelta(weeks=weeks)).isoformat()
-            prescriptions={r.get('session_key'):r for r in d['program'] if r['exercise']==args['exercise']}
+            prescriptions={r.get('session_key'):r for r in self.with_evidence([r for r in d['program'] if r['exercise']==args['exercise']])}
             history=[]
             for s in sorted(d['sessions'],key=lambda s:(s['date'],s.get('logged_at') or ''),reverse=True):
                 if s['date']<cutoff or s.get('skipped'):continue
