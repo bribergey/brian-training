@@ -51,8 +51,9 @@ inbox idle with ten completed updates, fresh Telegram polling and no new service
 errors. The saved conversation ID, inbox offset and hash of all proposal/receipt
 rows matched the pre-deployment snapshot. The two real Telegram requests after
 the initial repair completed before cutover; no active plan was interrupted.
-The health success/delivery timestamps begin with the new release, so they remain
-null until its first real model request. Live `/status` after this release still
+At 21:07 China time, the new release completed and delivered a fresh real Telegram
+coaching response. Health recorded both model success and reply delivery, with
+eleven completed inbox updates and no pending work. Live `/status` still
 awaits Brian's check; its unavailable-model and busy-worker behavior passed the
 synthetic regression tests. No production training data was mutated by the
 deployment work. The PR remains open for source-history review; the Mac service
