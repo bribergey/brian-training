@@ -38,12 +38,25 @@ for `COACH.md`, two newline bytes, then `DATA_CONTRACT.md`.
   reads credential files nor calls Telegram or the model. It does not provide an
   external alert when the Mac itself is offline.
 
-Validation: 34 regression tests cover the previous coaching/approval contracts
-and the new failure/recovery paths. A live synthetic test uses the pinned CLI,
-an isolated conversation and a no-data dynamic tool; no athlete data or database
-write tool is available to it. Deployment and restart acceptance are recorded
-below after completion. The real Telegram request reported during this work
-finished before cutover; no active plan is interrupted for deployment.
+Validation: all 34 regression tests passed, along with Python compilation and
+the canonical app contract check. A live synthetic test on the pinned CLI passed
+inference, a dynamic-tool round trip, process restart and exact conversation
+recall. It used an isolated conversation and a no-data dynamic tool; no athlete
+data or database write tool was available to it.
+
+Deployed source: `6963f334da1ea80985908b7884baf262c409d771`, at 21:05 China time
+on November 2. The private CLI package is version `0.162.0-alpha.17.2`, package
+SHA256 prefix `2cca78e7ae38ee10`. Post-restart health was `healthy`, model `ready`,
+inbox idle with ten completed updates, fresh Telegram polling and no new service
+errors. The saved conversation ID, inbox offset and hash of all proposal/receipt
+rows matched the pre-deployment snapshot. The two real Telegram requests after
+the initial repair completed before cutover; no active plan was interrupted.
+The health success/delivery timestamps begin with the new release, so they remain
+null until its first real model request. Live `/status` after this release still
+awaits Brian's check; its unavailable-model and busy-worker behavior passed the
+synthetic regression tests. No production training data was mutated by the
+deployment work. The PR remains open for source-history review; the Mac service
+is already deployed, and the static app was not republished.
 
 The Mac still must be powered, logged in, awake and connected. This change does
 not make it an always-on hosted service, guarantee provider availability, or
