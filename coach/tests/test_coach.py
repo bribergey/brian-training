@@ -22,7 +22,7 @@ def row(day='A',week_type='normal'):
         'session_label':'Chest / Arms','superset_group':None,'sets':3,'reps':'5',
         'weight':40,'rest':'2:00','suggested_sets':[
             {'set':i,'reps':'5','weight':40,'rest':'2:00'} for i in range(1,4)],
-        'scheme':'straight','coach_notes':'Aim for controlled hard reps. Next target 3x6. Stop if painful.',
+        'scheme':'straight','coach_notes':'Keep each rep controlled and finish with two reps spare.',
         'evidence':'No direct prior non-deload log; synthetic fixture.',
         'contract':{'scheme':'straight','reps':'5','effort':'Two reps in reserve',
             'progression':'Build to 3x6 then reassess load','fallback':'Repeat if last rep missed',

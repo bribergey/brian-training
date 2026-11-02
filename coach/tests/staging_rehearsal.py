@@ -43,10 +43,14 @@ def run(runtime):
     for r in normal:
         c=template_contract(r)
         week_rows.append({**r,'reps':c['reps'],'rest':'2:00','suggested_sets':c['suggested_sets'],
-                          'scheme':c['scheme'],'coach_notes':'Synthetic session. Do not perform.',
+                          'scheme':c['scheme'],'coach_notes':'Synthetic session only—do not perform.',
                           'evidence':'No actual performance: synthetic QA fixture.'})
     w=prepare(snap,{'kind':'week','start_date':start.isoformat(),'summary':'QA new week','rows':week_rows},db.user,db.environment,today)
     week_receipt=db.apply(w);assert db.apply(w)==week_receipt
+    saved_week={r['id']:r for r in db.snapshot()['data']['program'] if r['id'] in {v['id'] for v in w['rows']}}
+    assert all(saved_week[r['id']]['coach_notes']==r['coach_notes'] for r in w['rows'])
+    assert all('synthetic QA fixture' not in r['coach_notes'] for r in saved_week.values())
+    assert all(w['coaching_evidence'][r['id']]['evidence']=='No actual performance: synthetic QA fixture.' for r in w['rows'])
     snap=db.snapshot();saved=[r for r in snap['data']['program'] if r['id']==w['rows'][0]['id']][0]
     adjust={**saved,'weight':45,'suggested_sets':[dict(s,weight=45) for s in saved['suggested_sets']],
             'scheme':'straight','evidence':'Synthetic QA comparison only.','change_reason':'Test a targeted adjustment'}
@@ -61,6 +65,7 @@ def run(runtime):
     after=production.snapshot()['fingerprint'];assert before==after,'Brian data changed during rehearsal; investigate'
     report={'month':month_receipt,'week':week_receipt,'adjustment':adjustment_receipt,
         'idempotent_replays':3,'stale_proposal_rejected':True,'brian_snapshot_unchanged':True,
+        'saved_notes_exact_without_evidence':True,
         'app_url':'https://briqtraining.com/staging/app/','week_start':start.isoformat()}
     (runtime/'state/staging-rehearsal.json').write_text(json.dumps(report,indent=2))
     print(json.dumps(report,indent=2))

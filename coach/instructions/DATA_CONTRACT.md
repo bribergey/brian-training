@@ -31,12 +31,25 @@ Each suggested_sets entry has exactly:
 There must be exactly sets entries, numbered consecutively. Each preset reps value must be a single positive numeric string, such as "5"
 or "30"; the app uses numeric fields and ranges like "5–8" would render blank.
 For time/distance use the catalog rep_type unit (sec, min or km), without a unit
-suffix in the numeric field. Put target ranges and fallback choices in notes. Use 0 for bodyweight, the catalog's unit for other weights (e.g. per-hand
-dumbbells). Row weight summarizes the highest working-set weight. coach_notes and
-row reps must explain any differing top/back-off or ramp set targets. The service
+suffix in the numeric field. Use notes for a range or fallback only when needed
+during the exercise. Use 0 for bodyweight, the catalog's unit for other weights (e.g. per-hand
+dumbbells). Row weight summarizes the highest working-set weight. Per-set presets
+show differing top/back-off or ramp targets; notes only clarify them if needed. The service
 derives the stored row reps/rest summaries from the exact per-set presets. Rest per
 set is M:SS. Evidence must name the actual dated prior sets, or explicitly state
 that no direct prior non-deload evidence exists and name what you used instead.
+Keep the decision, progression rationale and other detailed coaching analysis in
+evidence. The service retains this in the private proposal's coaching_evidence,
+covered by its integrity digest. It is not prefixed to the app's coach_notes.
+Saved proposal evidence is returned privately with get_program_rows and the
+prescription in get_exercise_history, so later coaching can review the decision.
+
+coach_notes is one individually written, short sentence: usually 15–30 words,
+at most 240 characters and 40 words, with no line breaks. Select the information
+that helps with this exercise today; there are no required cue/effort/history
+headings and no universal content template. Put any needed exercise-specific
+warm-up here. Keep a general Warm-up row limited to general preparation.
+Validation rejects excessive notes; it never silently truncates useful coaching.
 
 scheme must match the monthly contract: straight (same working weights),
 top_backoff (heavier first set, equal lighter back-off weights), ramp (increasing

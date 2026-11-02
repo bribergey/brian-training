@@ -22,6 +22,17 @@ def number(value):
     return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
 
 
+def validate_coach_note(note):
+    """Enforce a readable size, never a fixed content template or truncation."""
+    require(nonempty(note), 'Write one short, useful exercise note')
+    require('\n' not in note and '\r' not in note,
+            'Exercise notes must be one short sentence, not multiple lines')
+    require(len(note.strip()) <= 240 and len(note.split()) <= 40,
+            'Exercise note is too long: use at most 240 characters / 40 words; keep only what helps perform this exercise')
+    require(re.search(r'[.!?][\"\u201d\u2019]?\s+[A-Za-z]',note.strip()) is None,
+            'Exercise notes must be one sentence; keep detailed analysis in evidence')
+
+
 def iso_date(value):
     require(isinstance(value, str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}', value), 'Use an exact YYYY-MM-DD date')
     return date.fromisoformat(value)
@@ -127,6 +138,7 @@ def prepare(snapshot, args, user, environment, today):
     require(isinstance(raw,list) and 0<len(raw)<=250, 'Provide 1–250 complete exercise rows')
     require(nonempty(args.get('summary')), 'A coaching analysis/summary is required')
     p={'id':proposal_id,'kind':kind,'fingerprint':snapshot['fingerprint'],'rows':[],
+       'coaching_evidence':{},
        'summary':args['summary'],'environment':environment,'user_id':user,
        'units':{e['name']:e['unit'] for e in data['exercises']}}
     if kind=='week':
@@ -182,9 +194,13 @@ def prepare(snapshot, args, user, environment, today):
                 require(nonempty(item.get('change_reason')), 'Adjustment requires a reason')
                 require(iso_date(row['scheduled_date'])>=today, 'Cannot adjust a past workout')
             validate_sets(row,e,item.get('scheme'))
+            validate_coach_note(row.get('coach_notes'))
             require(e['rep_type']=='info' or nonempty(item.get('evidence')), 'Every exercise needs its actual prior performance evidence or an explicit missing-evidence statement')
-            if e['rep_type']!='info':
-                row['coach_notes']=item['evidence']+'\n'+row['coach_notes']
+            # Evidence remains in the private, integrity-checked proposal. Only
+            # the individually authored instruction is saved to the app field.
+            p['coaching_evidence'][row['id']]={'evidence':item.get('evidence',''),
+                'change_reason':item.get('change_reason')}
+            row['coach_notes']=row['coach_notes'].strip()
         p['rows'].append(row)
     if kind=='week':
         require({(r['day'],r['order_index']) for r in p['rows']}==set(template), 'Weekly proposal omits or adds monthly exercise slots')

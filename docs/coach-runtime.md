@@ -3,6 +3,70 @@
 Codex is the PM, engineering and release owner. Brian discusses coaching changes
 in the training project conversation; Notion is the internal project record.
 
+## Purposeful exercise notes — 2026-11-02
+
+Instruction version `2026-11-02.1`; bundle SHA256
+`97d1719e61d184b114c20434ab839c883954577d7807980bac8a2ce5fe21aa5a`
+for `COACH.md`, two newline bytes, then `DATA_CONTRACT.md`.
+
+Brian reported long exercise notes and a confusing Codex approval handoff.
+The bridge was prepending the complete evidence field to every working exercise
+note, despite the model authoring a separate short instruction. Old instructions
+also encouraged the same exhaustive checklist for every exercise.
+
+The bridge now saves only the authored note. Dated evidence and decisions remain
+in the private proposal, covered by its integrity digest; they are never added to
+the app note or weekly proposal attachment. Later program/history reads expose
+the latest applied proposal's reasoning privately to Coach. Unapproved or
+superseded reasoning cannot replace saved coaching history.
+
+Each note is one individually chosen useful sentence, normally 15–30 words.
+Validation rejects multiline, clearly multiple-sentence, or oversized notes
+(240 characters / 40 words); it never truncates them. This is a readability
+ceiling, not a content template. Needed exercise-specific ramps stay with that
+exercise, while accessory warm-ups, routine warnings and redundant fallbacks are
+not mandatory. General warm-up rows contain general preparation only.
+
+Coach owns recommendations about dose, progression, warm-ups and note wording.
+Set counts require a reason based on goals, overlapping work, performance,
+effort, recovery and time. A template records the agreed design rather than
+justifying it. Normal coaching decisions do not require Codex approval; an actual
+tool/runtime limitation still needs an engineering handoff. Brian's exact-plan
+approval remains necessary before any production workout save.
+
+Validation: 40 regression tests and compilation passed, including exact saved
+notes, private evidence integrity and later retrieval, legacy compatibility,
+length rejection and preserved approval boundaries. The live synthetic model
+rehearsal produced a concise note, explained its three-set dose, and explicitly
+said shortening notes did not need Codex approval. It could only read synthetic
+data and draft; it had no database-write capability. The live staging rehearsal
+verified the exact stored note field, month/week/adjustment writes, three
+idempotent replays and stale rejection. Brian's production fingerprint was
+unchanged and the synthetic fixture was restored. These are bounded behavior
+checks, not a guarantee that every future coaching judgment will be correct.
+
+Deployed source: `f0af2736efbf9aa05b2c2d27d87a8b09a11a8c52` at 21:47 China time.
+[PR #69](https://github.com/bribergey/brian-training/pull/69) is open, stacked on
+the stability work in PR #68. The Mac service is deployed; there is no static-app
+publish. Post-restart health is `healthy`, model `ready`, fresh Telegram polling,
+and an idle inbox. The saved conversation, inbox offset and applied receipts
+match the private backup; the deployed instruction files match this source.
+
+The unsaved draft was replaced with an editorial correction and delivered to
+Brian's pinned private Telegram chat, including its own approval button. All 38
+exercise slots, dates, working presets, loads and rests were compared exactly and
+preserved. Notes average 120 characters instead of 712; the longest is 220.
+The earlier draft is superseded, the correction is presented but unsaved, and the
+production fingerprint was unchanged throughout replacement. Existing saved
+workouts were not edited. To check the result, open
+https://t.me/coach_trainerhub_bot and read `week-2-short-notes.txt`; expect one
+short note per exercise and the agreed working prescription. Use the new button
+only when approving that exact plan, then inspect the notes at
+https://briqtraining.com/app/ after Coach confirms the verified save.
+
+Notion checkpoint remains blocked: the documented roadmap card returns
+`NOT_FOUND`, so its current status is unknown and was not updated.
+
 ## Stability hardening — 2026-11-02
 
 Follow-up work is tracked in [PR #68](https://github.com/bribergey/brian-training/pull/68).

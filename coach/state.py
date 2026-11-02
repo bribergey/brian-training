@@ -71,6 +71,20 @@ class State:
         with self.lock,self.db:
             self.db.execute('update proposals set status=?,receipt=coalesce(?,receipt) where id=?',(status,json.dumps(receipt) if receipt else None,proposal_id))
 
+    def evidence_for_rows(self,row_ids):
+        """Most recent applied reasoning only; unapproved drafts are not history."""
+        remaining=set(row_ids);result={}
+        if not remaining:return result
+        with self.lock:
+            rows=self.db.execute("select payload from proposals where status='applied' order by created desc,rowid desc").fetchall()
+        for (payload,) in rows:
+            evidence=json.loads(payload).get('coaching_evidence',{})
+            for row_id in remaining.intersection(evidence):
+                result[row_id]=evidence[row_id]
+            remaining.difference_update(result)
+            if not remaining:break
+        return result
+
     def remember(self,fact,evidence,review_date=None):
         if not isinstance(fact,str) or not isinstance(evidence,str) or not 1<=len(fact)<=3000 or not 1<=len(evidence)<=1000:
             raise ValueError('Memory needs a concise fact and its source/date')
