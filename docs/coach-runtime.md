@@ -45,11 +45,27 @@ idempotent replays and stale rejection. Brian's production fingerprint was
 unchanged and the synthetic fixture was restored. These are bounded behavior
 checks, not a guarantee that every future coaching judgment will be correct.
 
-The current unsaved draft is being reviewed for an editorial replacement with
-identical exercises, dates, sets, loads and rests. Existing saved workouts are
-outside this correction. Deployment and draft delivery are recorded below after
-verification. Notion checkpoint remains blocked: the documented roadmap card
-returns `NOT_FOUND`, so its current status is unknown and was not updated.
+Deployed source: `f0af2736efbf9aa05b2c2d27d87a8b09a11a8c52` at 21:47 China time.
+[PR #69](https://github.com/bribergey/brian-training/pull/69) is open, stacked on
+the stability work in PR #68. The Mac service is deployed; there is no static-app
+publish. Post-restart health is `healthy`, model `ready`, fresh Telegram polling,
+and an idle inbox. The saved conversation, inbox offset and applied receipts
+match the private backup; the deployed instruction files match this source.
+
+The unsaved draft was replaced with an editorial correction and delivered to
+Brian's pinned private Telegram chat, including its own approval button. All 38
+exercise slots, dates, working presets, loads and rests were compared exactly and
+preserved. Notes average 120 characters instead of 712; the longest is 220.
+The earlier draft is superseded, the correction is presented but unsaved, and the
+production fingerprint was unchanged throughout replacement. Existing saved
+workouts were not edited. To check the result, open
+https://t.me/coach_trainerhub_bot and read `week-2-short-notes.txt`; expect one
+short note per exercise and the agreed working prescription. Use the new button
+only when approving that exact plan, then inspect the notes at
+https://briqtraining.com/app/ after Coach confirms the verified save.
+
+Notion checkpoint remains blocked: the documented roadmap card returns
+`NOT_FOUND`, so its current status is unknown and was not updated.
 
 ## Stability hardening — 2026-11-02
 
