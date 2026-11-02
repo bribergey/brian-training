@@ -1,5 +1,5 @@
 {
-  "codex_binary": "/Applications/ChatGPT.app/Contents/Resources/codex",
+  "codex_binary": "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex",
   "model": "gpt-6-astra",
   "environment": "production",
   "timezone": null,

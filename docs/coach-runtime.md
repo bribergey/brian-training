@@ -3,7 +3,61 @@
 Codex is the PM, engineering and release owner. Brian discusses coaching changes
 in the training project conversation; Notion is the internal project record.
 
-## Implementation status — 2026-09-08
+## Startup recovery — 2026-11-02
+
+Brian reported that Coach was not responding. The dedicated launch agent was
+crashing before Telegram polling because its configured executable,
+`/Applications/ChatGPT.app/Contents/Resources/codex`, no longer existed. The
+installed executable is now
+`/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex`
+(verified version `0.162.0-alpha.17.2`). The installed CLI still supports the
+service's `app-server --stdio` transport.
+
+After correcting the path, the isolated coach sign-in returned no authenticated
+account. A private rollback snapshot preserved the old config, auth, launch
+definition and coach SQLite state. The coach's managed sign-in was restored
+locally from Brian's existing desktop sign-in; no credentials were printed or
+committed. The dedicated launch agent was restarted at 20:41 China time.
+
+Verified: ChatGPT account recognized, existing coach conversation resumed,
+GPT-6 Astra completed an isolated no-tool inference check, all 21 regressions
+passed, and the service reached its production polling loop. Runtime source
+remains `e05cb45e5dd928a46db1c94e713ca8da02796f37`; coaching instructions and
+approval rules are unchanged. No production data operations were performed by
+the repair. The SQLite inbox contained no pending messages, and Telegram reported
+zero pending updates for `@coach_trainerhub_bot`. Delivery of Brian's reported
+message is therefore unverified; a new message to that exact bot is needed for
+end-to-end acceptance.
+
+Notion checkpoint is blocked: the documented roadmap card returned `NOT_FOUND`
+through the connected workspace, and a search for `coach` returned no results.
+Its current status could not be read or updated. This dated entry preserves the
+checkpoint until access is restored.
+
+### Diagnosing startup silence
+
+Check the dedicated launch agent and private service log before consuming or
+replaying Telegram updates. A running launchd definition does not establish
+health: check the process state, restart count and successful service-start log.
+Never paste raw private logs or authentication files into Git or Notion.
+
+For a missing executable, locate and verify the installed app-bundled CLI; do not
+use the unrelated `/usr/local/bin/codex` wrapper. Stop only this coach agent,
+preserve a private rollback snapshot, and update its private `codex_binary`.
+Before restarting, check managed authentication, resume the saved conversation,
+and complete a no-tool model check in a separate test conversation. A successful
+`login status` alone is insufficient: during this incident it succeeded while
+`account/read` returned no account. If restoring credentials from an existing
+authorized desktop sign-in, keep all transfers local and files mode 0600.
+
+Preserve inbox offsets, proposal receipts and conversation history. Do not
+replay completed requests or approve proposals as a recovery test. After restart,
+send `/status` and a short text message to https://t.me/coach_trainerhub_bot; expect
+the status reply, a processing acknowledgment and then a completed response.
+The executable remains tied to the installed app layout, so future desktop
+updates still require a coach health check.
+
+## Original cutover — 2026-09-08
 
 Source branch: `codex/telegram-coach`, [PR #66](https://github.com/bribergey/brian-training/pull/66).
 The replacement Mac service is running and owns the existing Telegram bot.
@@ -15,8 +69,8 @@ response were verified; cutover acceptance is complete.
 Brian chose this Mac and the existing Telegram bot. Coach permanently uses
 `Asia/Shanghai` (China time), including while Brian travels; do not ask again. Existing bot: `@coach_trainerhub_bot`.
 
-Verified: the app-bundled CLI at
-`/Applications/ChatGPT.app/Contents/Resources/codex` is version 0.153.4 and accepts
+At cutover, the app-bundled CLI at
+`/Applications/ChatGPT.app/Contents/Resources/codex` was version 0.153.4 and accepted
 managed ChatGPT sign-in in an isolated coach home. GPT-6 Astra is available on
 the account. The unrelated `/usr/local/bin/codex` wrapper is broken; do not use it.
 
