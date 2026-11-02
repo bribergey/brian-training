@@ -1,5 +1,5 @@
 {
-  "codex_binary": "/Applications/ChatGPT.app/Contents/Resources/codex",
+  "codex_binary": "/absolute/path/returned/by/pin_runtime.py",
   "model": "gpt-6-astra",
   "environment": "production",
   "timezone": null,

@@ -14,6 +14,7 @@ from state import State
 from test_coach import snapshot
 
 runtime=Path.home()/'.local/share/briq-coach'
+config=json.loads((runtime/'config.json').read_text())
 source=Path(__file__).resolve().parents[1]
 s=snapshot()
 s['data']['monthly_program']=[{**r,'month_label':'Synthetic previous block','session_label':'Chest / Arms'} for r in s['data']['monthly_program']]
@@ -22,12 +23,12 @@ class Fixture:
     def snapshot(self):return copy.deepcopy(s)
 with tempfile.TemporaryDirectory() as folder:
     state=State(Path(folder)/'state.sqlite')
-    handler=CoachTools(Fixture(),state,'America/Los_Angeles')
-    client=CodexClient('/Applications/ChatGPT.app/Contents/Resources/codex',runtime,handler)
+    handler=CoachTools(Fixture(),state,config['timezone'])
+    client=CodexClient(str(Path(config['codex_binary']).expanduser()),runtime,handler)
     try:
         client.account()
         instructions='\n\n'.join((source/'instructions'/f).read_text() for f in ('COACH.md','DATA_CONTRACT.md'))
-        thread=client.start('gpt-6-astra',instructions,TOOLS)
+        thread=client.start(config['model'],instructions,TOOLS)
         result=client.run(thread,'This is a synthetic QA athlete, not Brian. Create a new monthly proposal using Test press only: one Monday training day, 3 straight sets of 5 at 40 kg with 2-minute rests for normal; 2 straight sets of 5 at 30 kg with 2-minute rests for deload. No warm-up catalog row exists. Goal strength, pain none, equipment known in 5 kg increments, no prior actual evidence. Set a concrete exercise effort target, progression condition and missed-target fallback. Treat these inputs as confirmed. Use the actual proposal tool, but do not apply or write a program. Do not ask about the personal hiking context: this fixture is synthetic.',timeout=600)
         assert len(handler.proposals)==1, 'Model did not produce a valid proposal'
         proposal=handler.proposals[0]

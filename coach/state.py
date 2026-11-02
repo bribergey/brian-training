@@ -30,15 +30,27 @@ class State:
         with self.lock,self.db:
             self.db.execute('insert into kv values(?,?) on conflict(key) do update set value=excluded.value',(key,json.dumps(value)))
 
-    def enqueue(self,update):
+    def enqueue(self,update,status='pending'):
+        if status not in ('pending','control'):raise ValueError('Invalid inbox queue')
         with self.lock,self.db:
-            self.db.execute('insert or ignore into inbox(id,payload) values(?,?)',(update['update_id'],json.dumps(update)))
+            self.db.execute('insert or ignore into inbox(id,payload,status) values(?,?,?)',(update['update_id'],json.dumps(update),status))
             self.db.execute('insert into kv values(?,?) on conflict(key) do update set value=excluded.value',('offset',json.dumps(update['update_id']+1)))
 
-    def pending(self):
-        with self.lock:
-            row=self.db.execute("select id,payload from inbox where status='pending' order by id limit 1").fetchone()
+    def pending(self,status='pending',claim=False):
+        with self.lock,self.db:
+            row=self.db.execute('select id,payload from inbox where status=? order by id limit 1',(status,)).fetchone()
+            if row and claim:self.db.execute("update inbox set status='processing' where id=?",(row[0],))
         return (row[0],json.loads(row[1])) if row else None
+
+    def recover_interrupted(self):
+        # Run only while holding the exclusive service lock. Never replay a
+        # request whose model turn, delivery or approved write may have started.
+        with self.lock,self.db:
+            self.db.execute("update inbox set status='interrupted' where status='processing'")
+
+    def counts(self):
+        with self.lock:
+            return dict(self.db.execute('select status,count(*) from inbox group by status'))
 
     def finish(self,update_id,status='done'):
         with self.lock,self.db:
