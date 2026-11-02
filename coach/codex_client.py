@@ -16,6 +16,10 @@ class CodexError(RuntimeError):
     pass
 
 
+class CodexAuthError(CodexError):
+    pass
+
+
 class CodexClient:
     def __init__(self, binary, runtime, handler=None):
         self.runtime = Path(runtime)
@@ -31,10 +35,14 @@ class CodexClient:
         self.serial = 0
         self.notifications = []
         threading.Thread(target=self._reader, daemon=True).start()
-        self.request('initialize', {'clientInfo': {'name': 'briq_coach',
-            'title': 'BRIQ Training Coach', 'version': '0.1.0'},
-            'capabilities': {'experimentalApi': True}})
-        self.send({'method': 'initialized'})
+        try:
+            self.request('initialize', {'clientInfo': {'name': 'briq_coach',
+                'title': 'BRIQ Training Coach', 'version': '0.2.0'},
+                'capabilities': {'experimentalApi': True}})
+            self.send({'method': 'initialized'})
+        except Exception:
+            self.close()
+            raise
 
     def _reader(self):
         try:
@@ -93,9 +101,9 @@ class CodexClient:
         raise CodexError('Codex request timed out')
 
     def account(self):
-        account = self.request('account/read', {'refreshToken': False}).get('account')
+        account = self.request('account/read', {'refreshToken': True}).get('account')
         if not account or account.get('type') != 'chatgpt':
-            raise CodexError('Coach requires ChatGPT sign-in; API billing is disabled')
+            raise CodexAuthError('Coach requires ChatGPT sign-in; API billing is disabled')
         return {'type': account['type'], 'planType': account.get('planType')}
 
     def start(self, model, instructions, tools, thread_id=None):
@@ -152,3 +160,4 @@ class CodexClient:
                 self.proc.wait(timeout=10)
             except subprocess.TimeoutExpired:
                 self.proc.kill()
+                self.proc.wait(timeout=10)

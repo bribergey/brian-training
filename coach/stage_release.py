@@ -5,12 +5,14 @@ OpenClaw ownership, Telegram offset, then bootstraps the prepared launch agent.
 """
 import argparse
 import io
+import json
 import os
 from pathlib import Path
 import plistlib
 import subprocess
 import sys
 import tarfile
+from pin_runtime import verify
 
 LABEL='com.briqtraining.coach'
 
@@ -20,6 +22,10 @@ def stage(runtime):
         raise SystemExit('Commit the coach source before staging a release')
     revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=repo,text=True).strip()
     runtime=runtime.expanduser().resolve()
+    config=json.loads((runtime/'config.json').read_text())
+    # Upgrades are deliberate; never ship a service dependent on the desktop's
+    # mutable application bundle again.
+    pinned=verify(config['codex_binary'],runtime)
     for name in ('','releases','state','backups','workspace'):
         folder=runtime/name;folder.mkdir(parents=True,exist_ok=True);folder.chmod(0o700)
     destination=runtime/'releases'/revision
@@ -45,6 +51,8 @@ def stage(runtime):
     path=runtime/(LABEL+'.plist')
     path.write_bytes(plistlib.dumps(plist));path.chmod(0o600)
     (runtime/'staged-release.txt').write_text(revision+'\n')
+    (destination/'runtime-version.json').write_text(json.dumps({
+        'version':pinned['version'],'package_sha256':pinned['package_sha256']},indent=2)+'\n')
     print('Staged release '+revision+'; launch agent prepared but not loaded: '+str(path))
 
 if __name__=='__main__':

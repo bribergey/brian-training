@@ -3,6 +3,92 @@
 Codex is the PM, engineering and release owner. Brian discusses coaching changes
 in the training project conversation; Notion is the internal project record.
 
+## Stability hardening — 2026-11-02
+
+Follow-up work is tracked in [PR #68](https://github.com/bribergey/brian-training/pull/68).
+The runtime bridge identifies as version `0.2.0`. The coaching instruction bundle
+is unchanged: SHA256
+`8223a5c2f9b93c897daea93a584af5c9a368e569f1ef8aa3ad7c63af2f813cf5`
+for `COACH.md`, two newline bytes, then `DATA_CONTRACT.md`.
+
+- Coach uses a complete private copy of the verified CLI package, including its
+  resources and helper binaries. `pin_runtime.py` records every file's SHA256;
+  release staging rejects an unpinned or changed package. Updating or moving the
+  desktop app no longer changes the deployed Coach executable. CLI upgrades are
+  deliberate, rehearsed releases, not automatic desktop upgrades.
+- Telegram polling starts independently of model availability. `/status` and
+  `/start` use a separate durable queue and do not wait behind a coaching turn.
+  Status distinguishes a connected model, unchecked startup, missing runtime,
+  and unavailable sign-in, and reports the last fully delivered coaching reply.
+- While idle, the worker checks/refreshes managed authentication every 15 minutes,
+  retries failed connections after one minute, and reconnects a dead model process
+  using the same saved conversation. It never copies credentials automatically,
+  changes the model, or falls back to paid API access. A revoked login still
+  requires restoring managed sign-in.
+- Requests are claimed durably before execution. After a crash, an already
+  claimed request becomes interrupted and receives a recovery notice; it is not
+  silently replayed. Unstarted requests remain queued. An approved save must be
+  retried using the same proposal button and its existing idempotent receipt.
+- The main loop detects a dead worker, an idle worker stuck over five minutes,
+  or an active request stuck over twenty minutes, then lets launchd restart it.
+  Model turns retain their existing ten-minute limit. Ordinary polling errors
+  retry after five seconds. Routine service logs rotate at 2 MiB with five backups.
+- `health.py` reads operational metadata only and exits nonzero for stale polling,
+  a stale worker, an overdue request or an unavailable/unchecked model. It neither
+  reads credential files nor calls Telegram or the model. It does not provide an
+  external alert when the Mac itself is offline.
+
+Validation: 34 regression tests cover the previous coaching/approval contracts
+and the new failure/recovery paths. A live synthetic test uses the pinned CLI,
+an isolated conversation and a no-data dynamic tool; no athlete data or database
+write tool is available to it. Deployment and restart acceptance are recorded
+below after completion. The real Telegram request reported during this work
+finished before cutover; no active plan is interrupted for deployment.
+
+The Mac still must be powered, logged in, awake and connected. This change does
+not make it an always-on hosted service, guarantee provider availability, or
+renew a revoked login without authorization. The existing independent caffeinate
+process prevents idle sleep while the launch agent is active. Hosting elsewhere
+would be a separate architecture/cost decision.
+
+Notion checkpoint remains blocked by access to the documented roadmap card;
+its current status is unknown and was not changed. Keep this runbook checkpoint
+until the connection can access the card again.
+
+### Pinned runtime upgrades and health
+
+Copy a verified installed package without changing the running service:
+
+```sh
+python3 coach/pin_runtime.py --source /Applications/ChatGPT.app/Contents/Resources/codex-cli
+```
+
+Use the returned `codex_binary` in the private runtime config only after a live
+synthetic inference/tool/restart rehearsal. Back up the config and launch
+definition first, wait for an idle inbox, stage a committed source release,
+and restart the dedicated agent. Preserve the previous runtime directory for
+rollback. Never point production at an untested newly copied version.
+
+Read health without interacting with the bot:
+
+```sh
+python3 coach/health.py --runtime ~/.local/share/briq-coach
+```
+
+Allow one completed Telegram long-poll after startup. Expect `healthy`, model
+`ready`, a recent `last_poll_ok`, and `busy: false` when idle. `ready` verifies
+authentication and conversation setup, not a new inference; the separate
+`last_model_success` and `last_reply_delivered` timestamps show actual completed
+work. Send `/status` to https://t.me/coach_trainerhub_bot to check the live command,
+including during a long request; expect a prompt status response. A normal text
+request should acknowledge processing and deliver its completed response.
+
+Rollback: stop only `com.briqtraining.coach`, restore the previous private config
+and launch definition, and bootstrap it again. Do not replace the current SQLite
+database with an older backup. Inspect any `processing`, `interrupted` or `control`
+inbox rows first: older releases do not understand those states. Do not reset
+offsets, replay an interrupted request, or revert programs as part of rollback.
+
 ## Startup recovery — 2026-11-02
 
 Brian reported that Coach was not responding. The dedicated launch agent was
@@ -54,8 +140,8 @@ Preserve inbox offsets, proposal receipts and conversation history. Do not
 replay completed requests or approve proposals as a recovery test. After restart,
 send `/status` and a short text message to https://t.me/coach_trainerhub_bot; expect
 the status reply, a processing acknowledgment and then a completed response.
-The executable remains tied to the installed app layout, so future desktop
-updates still require a coach health check.
+This initial path-only repair remained tied to the installed app layout; the
+subsequent stability hardening above removes that dependency.
 
 ## Original cutover — 2026-09-08
 
@@ -210,7 +296,9 @@ evidence, gives a recommendation and identifies what would change it.
 
 ## Release preparation
 
-After committing the source, run `python3 coach/stage_release.py`. It copies
+Pin and rehearse the CLI package first, then set the private config's
+`codex_binary` to the returned immutable path. After committing the source, run
+`python3 coach/stage_release.py`. It verifies the pinned package and copies
 that committed coach directory into the private runtime's `releases/<commit>/`,
 and prepares `com.briqtraining.coach.plist`; it does not start a consumer.
 The definition uses an independent `caffeinate -i` parent, so the new coach's
